@@ -6,48 +6,54 @@ namespace gisunnet
 {
 
 TcpServer::TcpServer(IoServicePoolPtr ios_pool)
-	: ios_pool_(ios_pool)
+	: TcpServer(ios_pool, ios_pool)
+{
+}
+
+TcpServer::TcpServer(IoServicePoolPtr acceptor_ios_pool, IoServicePoolPtr socket_ios_pool)
+	: listen_ios_pool_(acceptor_ios_pool)
+	, socket_ios_pool_(socket_ios_pool)
+	, acceptor_ios_(listen_ios_pool_->PickIoService())
 	, acceptor_(acceptor_ios_)
 {
 }
 
 TcpServer::~TcpServer()
 {
-	Stop();
+	Close();
 }
 
-void TcpServer::Start(unsigned short port, boost::asio::ip::tcp protocol)
+void TcpServer::Listen(unsigned short port, boost::asio::ip::tcp protocol)
 {
 	if (acceptor_.is_open())
-		return;
+	{
+		throw std::logic_error("Listen already called");
+	}
 
 	boost::asio::ip::tcp::endpoint endpoint(protocol, port);
-	Listen(endpoint);
+	DoListen(endpoint);
 }
 
-void TcpServer::Start(const std::string& host, const std::string& service)
+void TcpServer::Listen(const std::string& host, unsigned short port)
 {
 	if (acceptor_.is_open())
+	{
+		throw std::logic_error("Listen already called");
+	}
+
+	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
+	DoListen(endpoint);
+}
+
+void TcpServer::Close()
+{
+	if (!acceptor_.is_open())
 		return;
 
-	boost::asio::ip::tcp::resolver resolver(acceptor_ios_);
-	boost::asio::ip::tcp::resolver::query query(host, service);
-	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
-	Listen(endpoint);
+	acceptor_.close();
 }
 
-void TcpServer::Stop()
-{
-	acceptor_ios_.stop();
-}
-
-void TcpServer::Wait()
-{
-	if (acceptor_thread_.joinable())
-		acceptor_thread_.join();
-}
-
-void TcpServer::Listen(boost::asio::ip::tcp::endpoint endpoint)
+void TcpServer::DoListen(boost::asio::ip::tcp::endpoint endpoint)
 {
 	assert(!acceptor_.is_open());
 
@@ -57,42 +63,48 @@ void TcpServer::Listen(boost::asio::ip::tcp::endpoint endpoint)
 	acceptor_.listen(boost::asio::ip::tcp::acceptor::max_connections);
 
 	DoAccept();
-
-	acceptor_thread_ = std::thread([this]
-	{
-		acceptor_ios_.run();
-	});
 }
 
 void TcpServer::DoAccept()
 {
 	// 소켓에 할당할 io_service 객체를 얻는다
-	boost::asio::io_service& socket_ios = ios_pool_->PickIoService();
-	socket_ = std::move(std::make_unique<tcp::socket>(socket_ios));
+	boost::asio::io_service& socket_ios = socket_ios_pool_->PickIoService();
+	socket_ = std::make_unique<tcp::socket>(socket_ios);
 
 	acceptor_.async_accept(*socket_,
 		[this, &socket_ios](const boost::system::error_code& error) mutable
-	{
-		if (!error)
 		{
-			auto transport = std::make_shared<TcpTransport>(std::move(socket_));
-
-			if (AcceptedCallback)
+			if (!acceptor_.is_open())
 			{
-				AcceptedCallback(transport);
+				if (!error)
+				{
+					socket_->shutdown(tcp::socket::shutdown_both);
+					socket_->close();
+				}
+				socket_.release();
+				return;
 			}
 
-			// 시작
-			socket_ios.post([transport] { transport->Start(); });
-		}
-		else
-		{
-			std::cerr << "Accept error:" << error.message() << "\n";
-		}
+			if (!error)
+			{
+				auto transport = std::make_shared<TcpTransport>(std::move(socket_));
 
-		// 새로운 접속을 받는다
-		DoAccept();
-	});
+				if (ConnectHandler)
+				{
+					ConnectHandler(transport);
+				}
+
+				// 시작
+				socket_ios.post([transport = std::move(transport)] { transport->Start(); });
+			}
+			else
+			{
+				std::cerr << "Accept error:" << error.message() << "\n";
+			}
+
+			// 새로운 접속을 받는다
+			DoAccept();
+		});
 }
 
 }

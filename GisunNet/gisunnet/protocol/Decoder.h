@@ -25,7 +25,7 @@ class Decoder
 	//---------------------------------------------------------------
 	// 메시지 디코드 관련 함수들
 	//---------------------------------------------------------------
-	void DecodeMessage(gisunnet::ByteBuf& read_buf)
+	void DecodeMessage(gisunnet::Buffer& read_buf)
 	{
 		// 처리할 데이터가 있으면 반복
 		while (read_buf.IsReadable())
@@ -48,7 +48,7 @@ class Decoder
 	}
 
 	// 헤더 디코드
-	bool DecodeHeader(gisunnet::ByteBuf& read_buf)
+	bool DecodeHeader(gisunnet::Buffer& read_buf)
 	{
 		// 헤더 사이즈 만큼 받지 못했으면 리턴
 		if (!read_buf.IsReadable(HeaderSize))
@@ -65,7 +65,7 @@ class Decoder
 	}
 
 	// 바디 디코드
-	bool DecodeBody(gisunnet::ByteBuf& read_buf)
+	bool DecodeBody(gisunnet::Buffer& read_buf)
 	{
 		if (!read_buf.IsReadable(header.length))
 			return false;
@@ -83,7 +83,7 @@ class Decoder
 	}
 
 	// 완성된 메시지 처리
-	void OnReceive(MsgHeader& header, const gisunnet::ByteBuf& body, int bodyIndex, int bodyLength)
+	void OnReceive(MsgHeader& header, const gisunnet::Buffer& body, int bodyIndex, int bodyLength)
 	{
 		// Deserialize
 

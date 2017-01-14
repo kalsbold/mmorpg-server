@@ -76,7 +76,7 @@ public:
 	// bytes 만큼 읽은걸로 한다.
 	virtual bool SkipBytes(size_t bytes) = 0;
 	// size 만큼 쓴다.
-	virtual void Write(const uint8_t* src, size_t size) = 0;
+	virtual void Send(const uint8_t* src, size_t size) = 0;
 	// bytes 만큼 wirter pos 전진
 	virtual bool AheadWriter(size_t bytes) = 0;
 
@@ -96,7 +96,7 @@ public:
 	void Copy(IBuffer& src)
 	{
 		Clear();
-		Write(src.Data(src.ReaderPos()), src.ReadableBytes());
+		Send(src.Data(src.ReaderPos()), src.ReadableBytes());
 	}
 
 private:
@@ -492,54 +492,54 @@ public:
 		r_index_ += length;
 	}
 
-	//// Write the pod array.
+	//// Send the pod array.
 	//template <typename PodType, std::size_t N>
-	//void Write(const PodType(&src)[N])
+	//void Send(const PodType(&src)[N])
 	//{
 	//	// POD 타입이 아니면 컴파일 에러
 	//	static_assert(std::is_pod<PodType>::value, "src is not pod.");
 
-	//	Write((uint8_t*)src, N * sizeof(PodType));
+	//	Send((uint8_t*)src, N * sizeof(PodType));
 	//}
 
-	//// Write the pod std::array
+	//// Send the pod std::array
 	//template <typename PodType, std::size_t N>
-	//void Write(const std::array<PodType, N>& src)
+	//void Send(const std::array<PodType, N>& src)
 	//{
 	//	// POD 타입이 아니면 컴파일 에러
 	//	static_assert(std::is_pod<PodType>::value, "src is not pod.");
 
-	//	Write((uint8_t*)src.data(), src.size() * sizeof(PodType));
+	//	Send((uint8_t*)src.data(), src.size() * sizeof(PodType));
 	//}
 
-	//// Write the pod std::vector
+	//// Send the pod std::vector
 	//template <typename PodType, typename Allocator>
-	//void Write(const std::vector<PodType, Allocator>& src)
+	//void Send(const std::vector<PodType, Allocator>& src)
 	//{
 	//	// POD 타입이 아니면 컴파일 에러
 	//	static_assert(std::is_pod<PodType>::value, "src is not pod.");
 
-	//	Write((uint8_t*)src.data(), src.size() * sizeof(PodType));
+	//	Send((uint8_t*)src.data(), src.size() * sizeof(PodType));
 	//}
 
-	//// Write the std::string
+	//// Send the std::string
 	//template <typename Elem, typename Traits, typename Allocator>
-	//void Write(const std::basic_string<Elem, Traits, Allocator>& src)
+	//void Send(const std::basic_string<Elem, Traits, Allocator>& src)
 	//{
-	//	Write((uint8_t*)src.data(), src.size() * sizeof(Elem));
+	//	Send((uint8_t*)src.data(), src.size() * sizeof(Elem));
 	//}
 
-	void Write(const bool& value) { WritePOD(value); }
-	void Write(const int8_t& value) { WritePOD(value); }
-	void Write(const uint8_t& value) { WritePOD(value); }
-	void Write(const int16_t& value) { WritePOD(value); }
-	void Write(const uint16_t& value) { WritePOD(value); }
-	void Write(const int32_t& value) { WritePOD(value); }
-	void Write(const uint32_t& value) { WritePOD(value); }
-	void Write(const int64_t& value) { WritePOD(value); }
-	void Write(const uint64_t& value) { WritePOD(value); }
-	void Write(const float& value) { WritePOD(value); }
-	void Write(const double& value) { WritePOD(value); }
+	void Send(const bool& value) { WritePOD(value); }
+	void Send(const int8_t& value) { WritePOD(value); }
+	void Send(const uint8_t& value) { WritePOD(value); }
+	void Send(const int16_t& value) { WritePOD(value); }
+	void Send(const uint16_t& value) { WritePOD(value); }
+	void Send(const int32_t& value) { WritePOD(value); }
+	void Send(const uint32_t& value) { WritePOD(value); }
+	void Send(const int64_t& value) { WritePOD(value); }
+	void Send(const uint64_t& value) { WritePOD(value); }
+	void Send(const float& value) { WritePOD(value); }
+	void Send(const double& value) { WritePOD(value); }
 
 	// POD 타입만 쓴다. WriterIndex 를 쓴만큼 전진한다.
 	template <typename PodType>
@@ -663,7 +663,8 @@ protected:
 	std::vector<uint8_t> data_;
 };
 
-/// Typedef for the typical usage of ByteBuffer.
-typedef ByteBuffer<> ByteBuf;
+// 기본 버퍼 타입명.
+using Buffer = ByteBuffer<>;
+using BufferPtr = std::shared_ptr<Buffer>;
 
 } // namespace gisunnet

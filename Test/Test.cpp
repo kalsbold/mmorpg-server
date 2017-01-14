@@ -5,26 +5,39 @@
 #include <future>
 #include <gisunnet/IoServicePool.h>
 #include <gisunnet/TcpServer.h>
+#include <gisunnet/TcpClient.h>
 #include <gisunnet/TcpTransport.h>
 
 int main()
 {
-	auto ios_pool = std::make_shared<gisunnet::IoServicePool>(4);
-	gisunnet::TcpServer server(ios_pool);
+	using namespace gisunnet;
 
-	auto f = std::async(std::launch::async, [&]
+	auto ios_pool = std::make_shared<IoServicePool>(1);
+	TcpServer server(ios_pool);
+
+	server.ConnectHandler = [](TcpServer::TransportPtr& transport)
 	{
-		server.AcceptedCallback = [](gisunnet::TcpServer::TransportPtr& transport)
+		std::cout << "Connect from :" << transport->GetRemoteEndpoint() << "\n";
+	};
+
+	server.Listen(8843, boost::asio::ip::tcp::v6());
+
+	gisunnet::TcpClient client(ios_pool);
+	client.ConnectHandler = [](const TcpClient::error_code& error, TcpClient::TransportPtr& transport)
+	{
+		if (!error)
 		{
-			std::cout << transport->GetRemoteEndpoint() << "\n";
-		};
+			std::cout << "Connect success to : " << transport->GetRemoteEndpoint() << "\n";
+		}
+		else
+		{
+			std::cout << "Connect failed : " << error.message() << "\n";
+		}
+	};
 
-		server.Start(8843, boost::asio::ip::tcp::v6());
+	client.Connect("192.168.219.193", "8843");
 
-		ios_pool->Wait();
-	});
-
-	f.wait();
+	ios_pool->Wait();
 
 	return 0;
 }

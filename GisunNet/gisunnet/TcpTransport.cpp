@@ -24,7 +24,7 @@ void TcpTransport::Start()
 	// read 滚欺 积己
 	size_t initial_capacity = MIN_PREPARE_READ_BYTES;
 	size_t max_capacity = MAX_READ_BUF_CAPACITY;
-	read_buf_ = std::make_unique<ByteBuf>(initial_capacity, max_capacity);
+	read_buf_ = std::make_unique<Buffer>(initial_capacity, max_capacity);
 
 	DoRead(MIN_PREPARE_READ_BYTES);
 }
@@ -38,8 +38,8 @@ void TcpTransport::Close()
 	socket_->shutdown(tcp::socket::shutdown_both, ec);
 	socket_->close();
 
-	if (CloseCallback)
-		CloseCallback();
+	if (CloseHandler)
+		CloseHandler();
 }
 
 bool TcpTransport::PrepareRead(size_t min_prepare_bytes)
@@ -104,9 +104,9 @@ void TcpTransport::HandleRead(const error_code & error, std::size_t bytes_transf
 	
 	// 贸府
 	size_t min_next_read_size = 0;
-	if (ReadCallback)
+	if (ReceiveDataHandler)
 	{
-		ReadCallback(*read_buf_, min_next_read_size);
+		ReceiveDataHandler(*read_buf_, min_next_read_size);
 	}
 	else
 	{
@@ -117,7 +117,7 @@ void TcpTransport::HandleRead(const error_code & error, std::size_t bytes_transf
 	DoRead(prepare_size);
 }
 
-void TcpTransport::Write(std::shared_ptr<ByteBuf> buffer)
+void TcpTransport::Send(BufferPtr buffer)
 {
 	GetIoService().post([this, self = shared_from_this(), buf = std::move(buffer)]() mutable
 	{
@@ -125,7 +125,7 @@ void TcpTransport::Write(std::shared_ptr<ByteBuf> buffer)
 	});
 }
 
-void TcpTransport::_Write(std::shared_ptr<ByteBuf>& buf)
+void TcpTransport::_Write(std::shared_ptr<Buffer>& buf)
 {
 	pending_list_.emplace_back(std::move(buf));
 	if (sending_list_.empty())
@@ -192,8 +192,8 @@ void TcpTransport::HandleError(const error_code& error)
 		return;
 	}
 
-	if (ErrorCallback)
-		ErrorCallback(error);
+	if (ErrorHandler)
+		ErrorHandler(error);
 }
 
 } // namespace gisunnet

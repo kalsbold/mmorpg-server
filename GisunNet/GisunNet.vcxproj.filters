@@ -47,5 +47,8 @@
     <ClCompile Include="gisunnet\IoServicePool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gisunnet\TcpClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

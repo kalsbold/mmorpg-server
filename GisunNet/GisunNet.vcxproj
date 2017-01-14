@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gisunnet\IoServicePool.cpp" />
+    <ClCompile Include="gisunnet\TcpClient.cpp" />
     <ClCompile Include="gisunnet\TcpServer.cpp" />
     <ClCompile Include="gisunnet\TcpTransport.cpp" />
   </ItemGroup>
