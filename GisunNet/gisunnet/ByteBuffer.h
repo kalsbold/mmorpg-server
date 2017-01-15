@@ -333,7 +333,7 @@ public:
 	}
 
 	template <typename PodType>
-	void GetPOD(size_t index, PodType& dst)
+	void GetPOD(size_t index, PodType& dst) const
 	{
 		// POD 타입이 아니면 컴파일 에러
 		static_assert(std::is_pod<PodType>::value, "dst is not pod.");
@@ -342,22 +342,22 @@ public:
 		dst = *((PodType*)(data_.data() + index));
 	}
 
-	void GetBytes(size_t index, this_type& dst)
+	void GetBytes(size_t index, this_type& dst) const
 	{
 		GetBytes(index, dst, dst.WritableBytes());
 	}
 
-	void GetBytes(size_t index, this_type& dst, size_t length)
+	void GetBytes(size_t index, this_type& dst, size_t length) const
 	{
-		GetBytes(index, dst, dst.WritableBytes(), length);
+		GetBytes(index, dst, dst.WriterIndex(), length);
 	}
 
-	void GetBytes(size_t index, uint8_t* dst, size_t length)
+	void GetBytes(size_t index, uint8_t* dst, size_t length) const
 	{
 		GetBytes(index, dst, 0, length);
 	}
 
-	void GetBytes(size_t index, this_type& dst, size_t dstIndex, size_t length)
+	void GetBytes(size_t index, this_type& dst, size_t dstIndex, size_t length) const
 	{
 		CheckIndex(index, length);
 		dst.CheckIndex(dstIndex, length);
@@ -365,7 +365,7 @@ public:
 		GetBytes(index, dst.Data(), dstIndex, length);
 	}
 
-	void GetBytes(size_t index, uint8_t* dst, size_t dstIndex, size_t length)
+	void GetBytes(size_t index, uint8_t* dst, size_t dstIndex, size_t length) const
 	{
 		CheckIndex(index, length);
 		std::memcpy(dst + dstIndex, data_.data() + index, length);
@@ -529,17 +529,17 @@ public:
 	//	Send((uint8_t*)src.data(), src.size() * sizeof(Elem));
 	//}
 
-	void Send(const bool& value) { WritePOD(value); }
-	void Send(const int8_t& value) { WritePOD(value); }
-	void Send(const uint8_t& value) { WritePOD(value); }
-	void Send(const int16_t& value) { WritePOD(value); }
-	void Send(const uint16_t& value) { WritePOD(value); }
-	void Send(const int32_t& value) { WritePOD(value); }
-	void Send(const uint32_t& value) { WritePOD(value); }
-	void Send(const int64_t& value) { WritePOD(value); }
-	void Send(const uint64_t& value) { WritePOD(value); }
-	void Send(const float& value) { WritePOD(value); }
-	void Send(const double& value) { WritePOD(value); }
+	void Write(const bool& value) { WritePOD(value); }
+	void Write(const int8_t& value) { WritePOD(value); }
+	void Write(const uint8_t& value) { WritePOD(value); }
+	void Write(const int16_t& value) { WritePOD(value); }
+	void Write(const uint16_t& value) { WritePOD(value); }
+	void Write(const int32_t& value) { WritePOD(value); }
+	void Write(const uint32_t& value) { WritePOD(value); }
+	void Write(const int64_t& value) { WritePOD(value); }
+	void Write(const uint64_t& value) { WritePOD(value); }
+	void Write(const float& value) { WritePOD(value); }
+	void Write(const double& value) { WritePOD(value); }
 
 	// POD 타입만 쓴다. WriterIndex 를 쓴만큼 전진한다.
 	template <typename PodType>

@@ -33,9 +33,6 @@
     <ClInclude Include="gisunnet\IoServicePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\protocol\Decoder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gisunnet\TcpServer.cpp">
