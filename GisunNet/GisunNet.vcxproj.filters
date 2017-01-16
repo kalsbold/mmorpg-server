@@ -21,30 +21,48 @@
     <ClInclude Include="gisunnet\ByteBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gisunnet\IoServicePool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\NetServer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\NetSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\Decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\NetMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\TcpClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="gisunnet\TcpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gisunnet\TcpTransport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\TcpClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gisunnet\IoServicePool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="gisunnet\IoServicePool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gisunnet\NetServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gisunnet\NetSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gisunnet\TcpClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="gisunnet\TcpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gisunnet\TcpTransport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gisunnet\IoServicePool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gisunnet\TcpClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

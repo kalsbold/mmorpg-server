@@ -17,6 +17,15 @@ IoServicePool::IoServicePool(size_t thread_count)
 	}
 }
 
+IoServicePool::~IoServicePool()
+{
+	Stop();
+	for (auto& thread : threads_)
+	{
+		thread.detach();
+	}
+}
+
 void IoServicePool::Stop()
 {
 	for (auto& ios : io_services_)

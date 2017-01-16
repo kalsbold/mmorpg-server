@@ -19,18 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="common\protocol\Decoder.h" />
-    <ClInclude Include="common\network\NetServer.h" />
-    <ClInclude Include="common\network\NetSession.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\GisunNet\GisunNet.vcxproj">
       <Project>{934a6a3b-0413-48ee-aca8-0834826e7cbc}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="common\network\NetServer.cpp" />
-    <ClCompile Include="common\network\NetSession.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B8FD7C6C-F9CC-4D7F-A1C5-B30C1ECF8B42}</ProjectGuid>

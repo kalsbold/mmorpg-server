@@ -13,6 +13,7 @@ namespace gisunnet
 	public:
 		// Construct
 		IoServicePool(size_t thread_count);
+		~IoServicePool();
 
 		// Stop all io_service.
 		void Stop();

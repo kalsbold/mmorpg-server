@@ -20,7 +20,7 @@ int main()
 		std::cout << "Connect from :" << transport->GetRemoteEndpoint() << "\n";
 	};
 
-	server.Listen(8843, boost::asio::ip::tcp::v6());
+	server.Listen("localhost", 8843);
 
 	gisunnet::TcpClient client(ios_pool);
 	client.ConnectHandler = [](const TcpClient::error_code& error, TcpClient::TransportPtr& transport)
