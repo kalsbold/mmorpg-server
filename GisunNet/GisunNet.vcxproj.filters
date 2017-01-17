@@ -15,54 +15,54 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gisunnet\AsioHelper.h">
+    <ClInclude Include="gisunnet\network\TcpClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\ByteBuffer.h">
+    <ClInclude Include="gisunnet\network\TcpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\IoServicePool.h">
+    <ClInclude Include="gisunnet\network\TcpTransport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\NetServer.h">
+    <ClInclude Include="gisunnet\network\NetSession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\NetSession.h">
+    <ClInclude Include="gisunnet\network\NetServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\Decoder.h">
+    <ClInclude Include="gisunnet\common\ByteBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\NetMessage.h">
+    <ClInclude Include="gisunnet\common\IoServicePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\TcpClient.h">
+    <ClInclude Include="gisunnet\network\Decoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\TcpServer.h">
+    <ClInclude Include="gisunnet\utility\AsioHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\TcpTransport.h">
+    <ClInclude Include="gisunnet\types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gisunnet\IoServicePool.cpp">
+    <ClCompile Include="gisunnet\network\TcpClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gisunnet\NetServer.cpp">
+    <ClCompile Include="gisunnet\network\TcpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gisunnet\NetSession.cpp">
+    <ClCompile Include="gisunnet\network\TcpTransport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gisunnet\TcpClient.cpp">
+    <ClCompile Include="gisunnet\network\NetServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gisunnet\TcpServer.cpp">
+    <ClCompile Include="gisunnet\network\NetSession.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gisunnet\TcpTransport.cpp">
+    <ClCompile Include="gisunnet\common\IoServicePool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
