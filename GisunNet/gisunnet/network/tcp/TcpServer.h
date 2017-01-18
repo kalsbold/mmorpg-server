@@ -15,9 +15,16 @@ public:
 
 	TcpServer(const Configuration& config)
 		: config_(config)
-		, state_(State::Uninit)
+		, state_(State::Ready)
 	{
-		Initialize();
+		// 설정된 io_service_pool 이 없으면 생성.
+		if (config_.io_service_pool.get() == nullptr)
+		{
+			size_t thread_count = std::max<size_t>(config_.thread_count, 1);
+			config_.io_service_pool = std::make_shared<IoServicePool>(thread_count);
+		}
+		ios_pool_ = config_.io_service_pool;
+		ios_ = &(ios_pool_->PickIoService());
 	}
 
 	virtual ~TcpServer() override
@@ -39,11 +46,7 @@ public:
 
 	virtual void Stop() override
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		server_->Close();
-		state_ = State::Stop;
-		// 세션 맵을 비운다.
-		sessions_.clear();
+		DoStop();
 	}
 
 	State GetState()
@@ -55,36 +58,20 @@ public:
 private:
 	using SessionMap = std::map<SessionID, std::unique_ptr<Session>>;
 
-	void Initialize()
-	{
-		// 설정된 io_service_pool 이 없으면 생성.
-		if (config_.io_service_pool.get() == nullptr)
-		{
-			size_t thread_count = std::max<size_t>(config_.thread_count, 1);
-			config_.io_service_pool = std::make_shared<IoServicePool>(thread_count);
-		}
-		ios_pool_ = config_.io_service_pool;
-		acceptor_ios_ = &(ios_pool_->PickIoService());
-
-		state_ = State::Ready;
-	}
-
 	void DoStart(tcp::endpoint endpoint)
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		
 		if (!(state_ == State::Ready))
 		{
 			throw std::logic_error("Server is not State::Ready");
 		}
-
 		state_ = State::Start;
+		
 		DoListen(endpoint);
 	}
 
 	void DoListen(tcp::endpoint endpoint)
 	{
-		acceptor_ = std::make_unique<tcp::acceptor>(*acceptor_ios_);
+		acceptor_ = std::make_unique<tcp::acceptor>(*ios_);
 
 		acceptor_->open(endpoint.protocol());
 		acceptor_->set_option(tcp::acceptor::reuse_address(true));
@@ -96,18 +83,22 @@ private:
 
 	void DoAccept()
 	{
+		if (session_list_.size() >= config_.max_session_count)
+			return;
+
 		// Create tcp socket
 		socket_ = std::make_unique<tcp::socket>(ios_pool_->PickIoService());
 
 		acceptor_->async_accept(*socket_, [this](error_code error) mutable
 		{
-			if (!acceptor_->is_open())
+			if (state_ == State::Stop)
 			{
 				if (!error)
 				{
 					socket_->shutdown(tcp::socket::shutdown_both);
 					socket_->close();
 				}
+				socket_.release();
 				return;
 			}
 
@@ -133,6 +124,7 @@ private:
 					// 세션 리스트에서 지운다.
 					std::lock_guard<std::mutex> lock(mutex_);
 					session_list_.erase(session->ID());
+
 				};
 
 				std::lock_guard<std::mutex> lock(mutex_);
@@ -149,6 +141,18 @@ private:
 			// 새로운 접속을 받는다
 			DoAccept();
 		});
+	}
+
+	void DoStop()
+	{
+		state_ = State::Stop;
+		acceptor_->close();
+		// 세션 맵을 비운다.
+		for (auto& pair : session_list_)
+		{
+			(pair.second)->Close();
+		}
+		session_list_.clear();
 	}
 
 	// Session Handler
@@ -174,7 +178,7 @@ private:
 	SessionMap		session_list_;
 
 	// acceptor
-	boost::asio::io_service* acceptor_ios_;
+	boost::asio::io_service* ios_;
 	std::unique_ptr<tcp::acceptor> acceptor_;
 	// The next socket to be accepted.
 	std::unique_ptr<tcp::socket> socket_;

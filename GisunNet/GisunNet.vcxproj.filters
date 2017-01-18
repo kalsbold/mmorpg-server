@@ -48,10 +48,10 @@
     <ClInclude Include="gisunnet\network\Server.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\configuration.h">
+    <ClInclude Include="gisunnet\network\tcp\TcpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\tcp\TcpServer.h">
+    <ClInclude Include="gisunnet\network\Configuration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

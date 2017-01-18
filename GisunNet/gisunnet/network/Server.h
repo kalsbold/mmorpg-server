@@ -23,8 +23,7 @@ namespace gisunnet
 	public:
 		enum class State
 		{
-			Uninit = 0,
-			Ready,
+			Ready = 0,
 			Start,
 			Stop,
 		};

@@ -7,11 +7,13 @@
 
 namespace gisunnet
 {	
-	// A pool of io_service.
+	// Pool of io_service.
 	class IoServicePool
 	{
 	public:
-		// Construct
+		IoServicePool(const IoServicePool&) = delete;
+		IoServicePool& operator=(const IoServicePool&) = delete;
+
 		IoServicePool(size_t thread_count);
 		~IoServicePool();
 
