@@ -4,29 +4,27 @@
 #include <thread>
 #include <memory>
 #include <functional>
-#include <boost/asio.hpp>
+#include <gisunnet/types.h>
 
 namespace gisunnet
 {
 	class IoServicePool;
-	class TcpTransport;
+	class TcpSocket;
 
 	// Tcp 접속을 받아 들이는 클래스
-	class TcpServer
+	class TcpListener
 	{
 	public:
 		using tcp = boost::asio::ip::tcp;
-		using IoServicePoolPtr = std::shared_ptr<IoServicePool>;
-		using TransportPtr = std::shared_ptr<TcpTransport>;
 
-		TcpServer(const TcpServer&) = delete;
-		TcpServer& operator=(const TcpServer&) = delete;
+		TcpListener(const TcpListener&) = delete;
+		TcpListener& operator=(const TcpListener&) = delete;
 
-		explicit TcpServer(IoServicePoolPtr ios_pool);
-		TcpServer(IoServicePoolPtr listen_ios_pool, IoServicePoolPtr socket_ios_pool);
-		~TcpServer();
+		explicit TcpListener(Ptr<IoServicePool> ios_pool);
+		TcpListener(Ptr<IoServicePool> listen_ios_pool, Ptr<IoServicePool> socket_ios_pool);
+		~TcpListener();
 
-		// Listen the server
+		// Listen
 		void Listen(unsigned short port, tcp protocol = tcp::v4());
 		void Listen(const std::string& host, unsigned short port);
 
@@ -35,18 +33,18 @@ namespace gisunnet
 
 		// Callback
 		// TCP 클라이언트와 연결이 수락 되었을때 호출됨.
-		std::function<void(TransportPtr&)> ConnectHandler;
+		std::function<void(Ptr<TcpSocket>&)> ConnectHandler;
 
 	private:
 		void DoListen(boost::asio::ip::tcp::endpoint endpoint);
 		void DoAccept();
 
-		IoServicePoolPtr listen_ios_pool_;
-		IoServicePoolPtr socket_ios_pool_;
+		Ptr<IoServicePool> listen_ios_pool_;
+		Ptr<IoServicePool> socket_ios_pool_;
 		// acceptor
 		boost::asio::io_service& acceptor_ios_;
 		tcp::acceptor acceptor_;
 		// The next socket to be accepted.
-		std::unique_ptr<tcp::socket> socket_ = nullptr;
+		std::unique_ptr<tcp::socket> socket_;
 	};
 }

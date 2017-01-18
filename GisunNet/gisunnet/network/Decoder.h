@@ -10,7 +10,7 @@ namespace gisunnet
 	class Decoder
 	{
 	public:
-		Decoder(NetSession& session)
+		Decoder(Session& session)
 			: session_(session)
 		{
 
@@ -84,7 +84,7 @@ namespace gisunnet
 			return true;
 		}
 
-		NetSession& session_;
+		Session& session_;
 
 		Header header_;
 		bool header_decoded_ = false;

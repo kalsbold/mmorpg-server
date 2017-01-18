@@ -42,7 +42,7 @@ void TcpClient::DoConnect(tcp::resolver::iterator endpoint_iterator)
 				return;
 			}
 
-			auto transport = std::make_shared<TcpTransport>(std::move(socket_));
+			auto transport = std::make_shared<TcpSocket>(std::move(socket_));
 			transports_.push_back(transport);
 				
 			ConnectHandler(error, transport);

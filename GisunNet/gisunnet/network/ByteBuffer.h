@@ -663,8 +663,4 @@ protected:
 	std::vector<uint8_t> data_;
 };
 
-// 기본 버퍼 타입명.
-using Buffer = ByteBuffer<>;
-using BufferPtr = std::shared_ptr<Buffer>;
-
 } // namespace gisunnet

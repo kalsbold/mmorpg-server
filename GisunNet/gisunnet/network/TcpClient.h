@@ -6,7 +6,7 @@
 namespace gisunnet
 {
 	class IoServicePool;
-	class TcpTransport;
+	class TcpSocket;
 
 	class TcpClient
 	{
@@ -14,7 +14,7 @@ namespace gisunnet
 		using tcp = boost::asio::ip::tcp;
 		using error_code = boost::system::error_code;
 		using IoServicePoolPtr = std::shared_ptr<IoServicePool>;
-		using TransportPtr = std::shared_ptr<TcpTransport>;
+		using TransportPtr = std::shared_ptr<TcpSocket>;
 
 		TcpClient(IoServicePoolPtr ios_pool);
 		~TcpClient();

@@ -1,16 +1,16 @@
-#include "TcpServer.h"
-#include "IoServicePool.h"
-#include "TcpTransport.h"
+#include <gisunnet/network/TcpListener.h>
+#include <gisunnet/network/IoServicePool.h>
+#include <gisunnet/network/TcpSocket.h>
 
 namespace gisunnet
 {
 
-TcpServer::TcpServer(IoServicePoolPtr ios_pool)
-	: TcpServer(ios_pool, ios_pool)
+TcpListener::TcpListener(Ptr<IoServicePool> ios_pool)
+	: TcpListener(ios_pool, ios_pool)
 {
 }
 
-TcpServer::TcpServer(IoServicePoolPtr acceptor_ios_pool, IoServicePoolPtr socket_ios_pool)
+TcpListener::TcpListener(Ptr<IoServicePool> acceptor_ios_pool, Ptr<IoServicePool> socket_ios_pool)
 	: listen_ios_pool_(acceptor_ios_pool)
 	, socket_ios_pool_(socket_ios_pool)
 	, acceptor_ios_(listen_ios_pool_->PickIoService())
@@ -18,12 +18,12 @@ TcpServer::TcpServer(IoServicePoolPtr acceptor_ios_pool, IoServicePoolPtr socket
 {
 }
 
-TcpServer::~TcpServer()
+TcpListener::~TcpListener()
 {
 	Close();
 }
 
-void TcpServer::Listen(unsigned short port, boost::asio::ip::tcp protocol)
+void TcpListener::Listen(unsigned short port, boost::asio::ip::tcp protocol)
 {
 	if (acceptor_.is_open())
 	{
@@ -34,7 +34,7 @@ void TcpServer::Listen(unsigned short port, boost::asio::ip::tcp protocol)
 	DoListen(endpoint);
 }
 
-void TcpServer::Listen(const std::string& host, unsigned short port)
+void TcpListener::Listen(const std::string& host, unsigned short port)
 {
 	if (acceptor_.is_open())
 	{
@@ -45,7 +45,7 @@ void TcpServer::Listen(const std::string& host, unsigned short port)
 	DoListen(endpoint);
 }
 
-void TcpServer::Close()
+void TcpListener::Close()
 {
 	if (!acceptor_.is_open())
 		return;
@@ -53,7 +53,7 @@ void TcpServer::Close()
 	acceptor_.close();
 }
 
-void TcpServer::DoListen(boost::asio::ip::tcp::endpoint endpoint)
+void TcpListener::DoListen(boost::asio::ip::tcp::endpoint endpoint)
 {
 	assert(!acceptor_.is_open());
 
@@ -65,7 +65,7 @@ void TcpServer::DoListen(boost::asio::ip::tcp::endpoint endpoint)
 	DoAccept();
 }
 
-void TcpServer::DoAccept()
+void TcpListener::DoAccept()
 {
 	// 소켓에 할당할 io_service 객체를 얻는다
 	boost::asio::io_service& socket_ios = socket_ios_pool_->PickIoService();
@@ -87,15 +87,15 @@ void TcpServer::DoAccept()
 
 			if (!error)
 			{
-				auto transport = std::make_shared<TcpTransport>(std::move(socket_));
+				auto connection = std::make_shared<TcpSocket>(std::move(socket_));
 
 				if (ConnectHandler)
 				{
-					ConnectHandler(transport);
+					ConnectHandler(connection);
 				}
 
 				// 시작
-				socket_ios.post([transport = std::move(transport)] { transport->Start(); });
+				socket_ios.post([connection = std::move(connection)] { connection->Start(); });
 			}
 			else
 			{

@@ -19,24 +19,28 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="gisunnet\network\configuration.h" />
     <ClInclude Include="gisunnet\types.h" />
     <ClInclude Include="gisunnet\utility\AsioHelper.h" />
-    <ClInclude Include="gisunnet\common\ByteBuffer.h" />
+    <ClInclude Include="gisunnet\network\ByteBuffer.h" />
     <ClInclude Include="gisunnet\network\Decoder.h" />
-    <ClInclude Include="gisunnet\common\IoServicePool.h" />
-    <ClInclude Include="gisunnet\network\NetServer.h" />
-    <ClInclude Include="gisunnet\network\NetSession.h" />
+    <ClInclude Include="gisunnet\network\IoServicePool.h" />
+    <ClInclude Include="gisunnet\network\Server.h" />
+    <ClInclude Include="gisunnet\network\Session.h" />
     <ClInclude Include="gisunnet\network\TcpClient.h" />
-    <ClInclude Include="gisunnet\network\TcpServer.h" />
-    <ClInclude Include="gisunnet\network\TcpTransport.h" />
+    <ClInclude Include="gisunnet\network\TcpListener.h" />
+    <ClInclude Include="gisunnet\network\TcpSocket.h" />
+    <ClInclude Include="gisunnet\network\tcp\TcpSession.h" />
+    <ClInclude Include="gisunnet\network\tcp\TcpServer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gisunnet\common\IoServicePool.cpp" />
-    <ClCompile Include="gisunnet\network\NetServer.cpp" />
-    <ClCompile Include="gisunnet\network\NetSession.cpp" />
+    <ClCompile Include="gisunnet\network\IoServicePool.cpp" />
+    <ClCompile Include="gisunnet\network\Server.cpp" />
     <ClCompile Include="gisunnet\network\TcpClient.cpp" />
-    <ClCompile Include="gisunnet\network\TcpServer.cpp" />
-    <ClCompile Include="gisunnet\network\TcpTransport.cpp" />
+    <ClCompile Include="gisunnet\network\TcpListener.cpp" />
+    <ClCompile Include="gisunnet\network\TcpSocket.cpp" />
+    <ClCompile Include="gisunnet\network\tcp\TcpSession.cpp" />
+    <ClCompile Include="gisunnet\network\tcp\TcpServer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{934A6A3B-0413-48EE-ACA8-0834826E7CBC}</ProjectGuid>
@@ -118,6 +122,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>.\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

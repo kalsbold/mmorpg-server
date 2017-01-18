@@ -1,20 +1,20 @@
-#include "TcpTransport.h"
-#include "AsioHelper.h"
+#include <gisunnet/network/TcpSocket.h>
+#include <gisunnet/utility/AsioHelper.h>
 
 namespace gisunnet
 {
 
-TcpTransport::TcpTransport(std::unique_ptr<tcp::socket> socket)
+TcpSocket::TcpSocket(std::unique_ptr<tcp::socket> socket)
 	: socket_(std::move(socket))
 {
 	assert(socket_.get() != nullptr);
 }
 
-TcpTransport::~TcpTransport()
+TcpSocket::~TcpSocket()
 {
 }
 
-void TcpTransport::Start()
+void TcpSocket::Start()
 {
 	assert(socket_->is_open() == true);
 
@@ -24,12 +24,12 @@ void TcpTransport::Start()
 	// read 버퍼 생성
 	size_t initial_capacity = MIN_PREPARE_READ_BYTES;
 	size_t max_capacity = MAX_READ_BUF_CAPACITY;
-	read_buf_ = std::make_unique<Buffer>(initial_capacity, max_capacity);
+	read_buf_ = std::make_shared<Buffer>(initial_capacity, max_capacity);
 
 	DoRead(MIN_PREPARE_READ_BYTES);
 }
 
-void TcpTransport::Close()
+void TcpSocket::Close()
 {
 	if (IsClosed())
 		return;
@@ -42,7 +42,7 @@ void TcpTransport::Close()
 		CloseHandler();
 }
 
-bool TcpTransport::PrepareRead(size_t min_prepare_bytes)
+bool TcpSocket::PrepareRead(size_t min_prepare_bytes)
 {
 	// 읽을게 없으면 포지션을 리셋해준다.
 	if (read_buf_->ReadableBytes() == 0)
@@ -68,7 +68,7 @@ bool TcpTransport::PrepareRead(size_t min_prepare_bytes)
 	return true;
 }
 
-void TcpTransport::DoRead(size_t min_read_bytes)
+void TcpSocket::DoRead(size_t min_read_bytes)
 {
 	if (IsClosed())
 		return;
@@ -88,7 +88,7 @@ void TcpTransport::DoRead(size_t min_read_bytes)
 		});
 }
 
-void TcpTransport::HandleRead(const error_code & error, std::size_t bytes_transferred)
+void TcpSocket::HandleRead(const error_code & error, std::size_t bytes_transferred)
 {
 	if (IsClosed())
 		return;
@@ -117,15 +117,15 @@ void TcpTransport::HandleRead(const error_code & error, std::size_t bytes_transf
 	DoRead(prepare_size);
 }
 
-void TcpTransport::Send(BufferPtr buffer)
+void TcpSocket::Send(Ptr<Buffer> buffer)
 {
 	GetIoService().post([this, self = shared_from_this(), buf = std::move(buffer)]() mutable
 	{
-		_Write(buf);
+		PendWrite(buf);
 	});
 }
 
-void TcpTransport::_Write(std::shared_ptr<Buffer>& buf)
+void TcpSocket::PendWrite(Ptr<Buffer>& buf)
 {
 	pending_list_.emplace_back(std::move(buf));
 	if (sending_list_.empty())
@@ -134,7 +134,7 @@ void TcpTransport::_Write(std::shared_ptr<Buffer>& buf)
 	}
 }
 
-void TcpTransport::DoWrite()
+void TcpSocket::DoWrite()
 {
 	assert(sending_list_.empty());
 
@@ -165,7 +165,7 @@ void TcpTransport::DoWrite()
 		});
 }
 
-void TcpTransport::HandleWrite(const error_code& error)
+void TcpSocket::HandleWrite(const error_code& error)
 {
 	if (IsClosed())
 		return;
@@ -184,7 +184,7 @@ void TcpTransport::HandleWrite(const error_code& error)
 	}
 }
 
-void TcpTransport::HandleError(const error_code& error)
+void TcpSocket::HandleError(const error_code& error)
 {
 	// 상대방이 연결을 끊은것이다.
 	if (error == boost::asio::error::eof || error == boost::asio::error::operation_aborted)
