@@ -32,7 +32,7 @@ namespace gisunnet{
 
 		//void CloseSocket();
 
-		virtual void SendMessage(const uint16_t& message_type, const Ptr<Message>& message) = 0;
+		virtual void SendMessage0(const uint16_t& message_type, const Ptr<Message>& message) = 0;
 
 		virtual void Close() = 0;
 
@@ -45,7 +45,7 @@ namespace gisunnet{
 	};
 
 	Session::Session() {}
-	Session::~Session(){}
+	Session::~Session() {}
 }
 
 

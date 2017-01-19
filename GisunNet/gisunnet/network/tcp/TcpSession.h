@@ -14,87 +14,25 @@ namespace gisunnet
 		using tcp = boost::asio::ip::tcp;
 		using SessionID = uuid;
 
-		TcpSession(const SessionID& id, std::unique_ptr<tcp::socket> socket, const Configuration& config)
-			: id_(id)
-			, socket_(std::move(socket))
-		{
-			assert(socket_.get() != nullptr);
-			assert(socket_->is_open());
+		TcpSession(const SessionID& id, std::unique_ptr<tcp::socket> socket, const Configuration& config);
 
-			strand_ = std::make_unique<strand>(socket_->get_io_service());
-			remote_endpoint_ = socket_->remote_endpoint();
-			state_ = State::Opening;
+		virtual ~TcpSession();
 
-			// Set config
-			no_delay_ = config.no_delay;
-			min_receive_size_ = config.min_receive_size;
-			max_receive_buffer_size_ = config.max_receive_buffer_size;
-			max_transfer_size_ = config.max_transfer_size;
-		}
+		virtual const SessionID& ID() const override;
 
-		virtual ~TcpSession()
-		{
+		virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const override;
 
-		}
+		virtual void Close() override;
 
-		// Inherited via Session
-		virtual const SessionID& ID() const override
-		{
-			return id_;
-		}
+		virtual bool IsOpen() const override;
 
-		virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const override
-		{
-			if (state_ == State::Closed)
-				return false;
-
-			ip = remote_endpoint_.address().to_string();
-			port = remote_endpoint_.port();
-			return true;
-		}
-
-		virtual void Close() override
-		{
-			strand_->dispatch([this] {
-				if (!IsOpen())
-					return;
-
-				state_ = State::Closed;
-				boost::system::error_code ec;
-				socket_->shutdown(tcp::socket::shutdown_both, ec);
-				socket_->close();
-
-				if (closeHandler)
-					closeHandler(CloseReason::ActiveClose);
-			});
-		}
-
-		virtual bool IsOpen() const override
-		{
-			return state_ == State::Opened;
-		}
-
-		virtual void SendMessage(const string&message_type, const Ptr<Buffer>& message)
+		virtual void SendMessage0(const uint16_t& message_type, const Ptr<Message>& message) override
 		{
 
 		}
 
 		// 세션을 시작한다.
-		void Start()
-		{
-			strand_->dispatch([this] {
-
-				// read 버퍼 생성
-				size_t initial_capacity = min_receive_size_;
-				size_t max_capacity = max_receive_buffer_size_;
-				read_buf_ = std::make_shared<Buffer>(initial_capacity, max_capacity);
-
-				state_ = State::Opened;
-				Read(min_receive_size_);
-
-				openHandler();
-			});
-		}
+		void Start();
 
 		function<void()> openHandler;
 		function<void(CloseReason reason)> closeHandler;
