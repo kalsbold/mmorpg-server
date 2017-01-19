@@ -18,9 +18,6 @@
     <ClInclude Include="gisunnet\network\TcpClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\Decoder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="gisunnet\utility\AsioHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,6 +49,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gisunnet\network\Configuration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\protocol\Decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\protocol\Message.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

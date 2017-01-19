@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gisunnet\network\Configuration.h" />
+    <ClInclude Include="gisunnet\protocol\Message.h" />
     <ClInclude Include="gisunnet\types.h" />
     <ClInclude Include="gisunnet\utility\AsioHelper.h" />
     <ClInclude Include="gisunnet\network\ByteBuffer.h" />
