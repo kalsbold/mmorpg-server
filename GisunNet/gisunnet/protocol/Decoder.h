@@ -7,7 +7,7 @@
 namespace gisunnet 
 {
 
-	class Decoder
+	class MessageDecoder
 	{
 	public:
 		Decoder(Session& session)
@@ -18,8 +18,8 @@ namespace gisunnet
 
 		struct Header
 		{
-			uint8_t opCode;
 			int16_t payload_length;
+			int16_t message_type;
 		};
 
 		const int HEADER_SIZE = sizeof(Header);

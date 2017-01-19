@@ -23,7 +23,7 @@
     <ClInclude Include="gisunnet\types.h" />
     <ClInclude Include="gisunnet\utility\AsioHelper.h" />
     <ClInclude Include="gisunnet\network\ByteBuffer.h" />
-    <ClInclude Include="gisunnet\network\Decoder.h" />
+    <ClInclude Include="gisunnet\protocol\Decoder.h" />
     <ClInclude Include="gisunnet\network\IoServicePool.h" />
     <ClInclude Include="gisunnet\network\Server.h" />
     <ClInclude Include="gisunnet\network\Session.h" />

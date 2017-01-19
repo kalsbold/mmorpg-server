@@ -29,5 +29,9 @@ namespace gisunnet {
 
 	// 기본 버퍼 타입.
 	using Buffer = ByteBuffer<>;
+
 }
 
+#define DECLARE_CLASS_PTR(CLS) \
+  static const Ptr<CLS> NullPtr; \
+  static const WeakPtr<CLS> NullWeakPtr;

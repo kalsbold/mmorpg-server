@@ -10,11 +10,11 @@ namespace gisunnet {
 class TcpServer : public Server
 {
 public:
-	using SessionID = uuid;
 	using tcp = boost::asio::ip::tcp;
 
 	TcpServer(const Configuration& config)
-		: config_(config)
+		: Server()
+		, config_(config)
 		, state_(State::Ready)
 	{
 		// 설정된 io_service_pool 이 없으면 생성.
@@ -24,7 +24,7 @@ public:
 			config_.io_service_pool = std::make_shared<IoServicePool>(thread_count);
 		}
 		ios_pool_ = config_.io_service_pool;
-		ios_ = &(ios_pool_->PickIoService());
+		strand_ = std::make_unique<strand>(ios_pool_->PickIoService());
 	}
 
 	virtual ~TcpServer() override
@@ -35,61 +35,83 @@ public:
 	virtual void Start(uint16_t port) override
 	{
 		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), port);
-		DoStart(endpoint);
+		strand_->dispatch([this, endpoint] { DoStart(endpoint);  });
 	}
 
 	virtual void Start(string address, uint16_t port) override
 	{
 		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
-		DoStart(endpoint);
+		strand_->dispatch([this, endpoint] { DoStart(endpoint);  });
 	}
 
 	virtual void Stop() override
 	{
-		DoStop();
+		strand_->dispatch([this] { DoStop(); });
 	}
 
-	State GetState()
+	State GetState() override
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
 		return state_;
 	}
 
-private:
-	using SessionMap = std::map<SessionID, std::unique_ptr<Session>>;
+	Ptr<Session> Find(const SessionID& id) override
+	{
+		std::lock_guard<std::mutex> guard(mutex_);
+		auto it = session_list_.find(id);
+		return (it != session_list_.end()) ? (*it).second : Session::NullPtr;
+	}
 
+	// Register Handler
+	virtual void RegisterSessionOpenedHandler(const SessionOpenedHandler& handler) override
+	{
+		sessionOpenedHandler_ = handler;
+	}
+
+	virtual void RegisterSessionClosedHandler(const SessionClosedHandler& handler) override
+	{
+		sessionClosedHandler_ = handler;
+	}
+
+	virtual void RegisterMessageHandler(uint16_t message_type, const MessageHandler& handler) override
+	{
+		messageHandlerMap_.emplace(message_type, handler);
+	}
+
+private:
 	void DoStart(tcp::endpoint endpoint)
 	{
 		if (!(state_ == State::Ready))
-		{
-			throw std::logic_error("Server is not State::Ready");
-		}
+			return;
+
 		state_ = State::Start;
-		
-		DoListen(endpoint);
+		Listen(endpoint);
 	}
 
-	void DoListen(tcp::endpoint endpoint)
+	void Listen(tcp::endpoint endpoint)
 	{
-		acceptor_ = std::make_unique<tcp::acceptor>(*ios_);
+		acceptor_ = std::make_unique<tcp::acceptor>(strand_->get_io_service());
 
 		acceptor_->open(endpoint.protocol());
 		acceptor_->set_option(tcp::acceptor::reuse_address(true));
 		acceptor_->bind(endpoint);
 		acceptor_->listen(tcp::acceptor::max_connections);
 
-		DoAccept();
+		AcceptStart();
 	}
 
-	void DoAccept()
+	void AcceptStart()
 	{
+		// 최대 세션이면 리턴.
 		if (session_list_.size() >= config_.max_session_count)
+		{
+			accept_op_ = false;
 			return;
-
+		}
+		
 		// Create tcp socket
 		socket_ = std::make_unique<tcp::socket>(ios_pool_->PickIoService());
-
-		acceptor_->async_accept(*socket_, [this](error_code error) mutable
+		// Async accept
+		acceptor_->async_accept(*socket_, strand_->wrap([this](error_code error) mutable
 		{
 			if (state_ == State::Stop)
 			{
@@ -110,26 +132,19 @@ private:
 				SessionID id = boost::uuids::random_generator()();
 				// 세션 객체 생성.
 				auto session = std::make_shared<TcpSession>(std::move(socket_), id);
-				session->openHandler = [this, session]
-				{
-					if (sessionOpenedHandler)
-						sessionOpenedHandler(session);
+				// 핸들러 등록
+				session->openHandler = [this, session]{
+					HandleSessionOpen(session);
+				};
+				session->closeHandler = [this, session](CloseReason reason){
+					HandleSessionClose(session, reason);
 				};
 
-				session->closeHandler = [this, session](CloseReason reason)
-				{
-					if (sessionClosedHandler)
-						sessionClosedHandler(session, reason);
-
-					// 세션 리스트에서 지운다.
-					std::lock_guard<std::mutex> lock(mutex_);
-					session_list_.erase(session->ID());
-
-				};
-
-				std::lock_guard<std::mutex> lock(mutex_);
 				// 세션 리스트에 추가.
-				session_list_.emplace(id, session);
+				{
+					std::lock_guard<std::mutex> guard(mutex_);
+					session_list_.emplace(id, session);
+				}
 				// 세션 시작
 				session->Start();
 			}
@@ -139,47 +154,73 @@ private:
 			}
 
 			// 새로운 접속을 받는다
-			DoAccept();
-		});
+			AcceptStart();
+		}));
+
+		accept_op_ = true;
 	}
 
 	void DoStop()
 	{
 		state_ = State::Stop;
 		acceptor_->close();
-		// 세션 맵을 비운다.
+		// 세션을 닫는다.
 		for (auto& pair : session_list_)
 		{
 			(pair.second)->Close();
 		}
+
+		std::lock_guard<std::mutex> guard(mutex_);
 		session_list_.clear();
 	}
 
 	// Session Handler
-	void HandleSessionOpen(Ptr<Session>& session)
+	// Session(socket)에 할당된 io_service thread 에서 호출됨 동기화 필요함. 
+	void HandleSessionOpen(const Ptr<Session>& session)
 	{
-		if (sessionOpenedHandler)
-			sessionOpenedHandler(session);
+		if (sessionOpenedHandler_)
+			sessionOpenedHandler_(session);
 	}
 
-	void HandleSessionStop(Ptr<Session>& session, CloseReason reason)
+	void HandleSessionClose(const Ptr<Session>& session, CloseReason reason)
 	{
-		if (sessionClosedHandler)
-			sessionClosedHandler(session, reason);
+		if (sessionClosedHandler_)
+			sessionClosedHandler_(session, reason);
 
-		std::lock_guard<std::mutex> lock(mutex_);
-		session_list_.erase(session->ID());
+		strand_->dispatch([this, id = session->ID()]
+		{
+			{
+				// 세션 리스트에서 지워준다.
+				std::lock_guard<std::mutex> guard(mutex_);
+				session_list_.erase(id);
+			}
+
+			// 최대 세션이 아니고 Accept가 중단중 이면 Accept 재개
+			if (session_list_.size() < config_.max_session_count && !accept_op_)
+			{
+				AcceptStart();
+			}
+		});
 	}
 
-	std::mutex		mutex_;
+	using strand = boost::asio::io_service::strand;
+	using SessionMap = std::map<SessionID, Ptr<Session>>;
+	using MessageHandlerMap = std::map<uint16_t, MessageHandler>;
+	
+	// handler
+	SessionOpenedHandler	sessionOpenedHandler_;
+	SessionClosedHandler	sessionClosedHandler_;
+	MessageHandlerMap		messageHandlerMap_;
+
 	Configuration	config_;
 	State			state_;
 	Ptr<IoServicePool> ios_pool_;
+	std::mutex		mutex_;
 	SessionMap		session_list_;
 
-	// acceptor
-	boost::asio::io_service* ios_;
+	std::unique_ptr<strand> strand_;
 	std::unique_ptr<tcp::acceptor> acceptor_;
+	bool accept_op_ = false;
 	// The next socket to be accepted.
 	std::unique_ptr<tcp::socket> socket_;
 };

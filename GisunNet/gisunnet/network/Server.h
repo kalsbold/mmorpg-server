@@ -4,18 +4,15 @@
 #include <mutex>
 #include <boost/serialization/singleton.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+
 #include <gisunnet/types.h>
+#include <gisunnet/network/Session.h>
 
 namespace gisunnet
 {
 
-	enum CloseReason {
-		ActiveClose = 0,	// 서버에서 연결을 끊음.
-		Disconnected,		// 클라이언트에서 연결이 끊김.
-		Timeout,			//
-	};
+	
 
-	class Session;
 	class Message;
 
 	class Server
@@ -52,9 +49,11 @@ namespace gisunnet
 
 		virtual State GetState() = 0;
 		
-		SessionOpenedHandler	sessionOpenedHandler;
-		SessionClosedHandler	sessionClosedHandler;
-		MessageHandler			messageHandler;
+		virtual Ptr<Session> Find(const SessionID& id) = 0;
+
+		virtual void RegisterSessionOpenedHandler(const SessionOpenedHandler& handler) = 0;
+		virtual void RegisterSessionClosedHandler(const SessionClosedHandler& handler) = 0;
+		virtual void RegisterMessageHandler(uint16_t message_type, const MessageHandler& handler) = 0;
 
 	protected:
 		Server();

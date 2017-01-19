@@ -1,16 +1,24 @@
 #pragma once
 
-#include <memory>
 #include <gisunnet/types.h>
-#include <gisunnet/network/Server.h>
 
 namespace gisunnet{
+
+	using SessionID = uuid;
+
+	enum CloseReason {
+		ActiveClose = 0,	// 서버에서 연결을 끊음.
+		Disconnected,		// 클라이언트에서 연결이 끊김.
+		Timeout,			//
+	};
+
+	class Message;
 
 	class Session
 	{
 	public:
-		using SessionID = uuid;
-		
+		DECLARE_CLASS_PTR(Session)
+
 		Session(const Session&) = delete;
 		Session& operator=(const Session&) = delete;
 
@@ -24,16 +32,13 @@ namespace gisunnet{
 
 		//void CloseSocket();
 
-		virtual void SendMessage(const string& message_type, const Ptr<Buffer>& message) = 0;
+		virtual void SendMessage(const uint16_t& message_type, const Ptr<Message>& message) = 0;
 
 		virtual void Close() = 0;
 
 		virtual bool IsOpen() const = 0;
 
 		//void SetPingTimeout();
-
-		function<void()> openHandler;
-		function<void(CloseReason reason)> closeHandler;
 
 	protected:
 		Session();
