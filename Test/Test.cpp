@@ -3,41 +3,61 @@
 
 #include "stdafx.h"
 #include <future>
-#include <gisunnet/IoServicePool.h>
-#include <gisunnet/TcpServer.h>
-#include <gisunnet/TcpClient.h>
-#include <gisunnet/TcpTransport.h>
+#include <gisunnet/network/Server.h>
+#include <gisunnet/network/Client.h>
+#include <gisunnet/network/IoServicePool.h>
 
 int main()
 {
 	using namespace gisunnet;
 
-	auto ios_pool = std::make_shared<IoServicePool>(1);
-	TcpServer server(ios_pool);
+	Configuration config;
+	config.io_service_pool = std::make_shared<IoServicePool>(4);
+	auto server = Server::Create(config);
 
-	server.ConnectHandler = [](TcpServer::TransportPtr& transport)
+	server->RegisterSessionOpenedHandler([](auto& session)
 	{
-		std::cout << "Connect from :" << transport->GetRemoteEndpoint() << "\n";
-	};
+		std::cout << "Connect session id :" << session->ID() << "\n";
+		string ip;
+		uint16_t port;
+		session->GetRemoteEndpoint(ip, port);
+		std::cout << "Connect from :" << ip << ":" << port <<"\n";
+	});
 
-	server.Listen("localhost", 8843);
-
-	gisunnet::TcpClient client(ios_pool);
-	client.ConnectHandler = [](const TcpClient::error_code& error, TcpClient::TransportPtr& transport)
+	server->RegisterSessionClosedHandler([](auto& session, auto& reason)
 	{
-		if (!error)
-		{
-			std::cout << "Connect success to : " << transport->GetRemoteEndpoint() << "\n";
-		}
-		else
-		{
-			std::cout << "Connect failed : " << error.message() << "\n";
-		}
-	};
+		std::cout << "Close session id :" << session->ID() << "\n";
+	});
 
-	client.Connect("192.168.219.193", "8843");
+	server->Start(8413);
 
-	ios_pool->Wait();
+	ClientConfiguration clientConfig;
+	auto client = Client::Create(clientConfig);
+	client->RegisterNetEventHandler([](const NetEventType& net_event)
+	{
+		if (net_event == NetEventType::Opened)
+		{
+			std::cout << "Connect success<<" << "\n";
+		}
+		else if (net_event == NetEventType::ConnectFailed)
+		{
+			std::cout << "Connect failed" << "\n";
+		}
+		else if (net_event == NetEventType::Closed)
+		{
+			std::cout << "Connect close" << "\n";
+		}
+	});
+
+	client->Connect("127.0.0.1", "8413");
+	while (true)
+	{
+		std::string str;
+		std::cin >> str;
+		auto buffer = std::make_shared<Buffer>(str.size());
+		buffer->WriteBytes((uint8_t*)str.data(), str.size());
+		client->Send(std::move(buffer));
+	}
 
 	return 0;
 }

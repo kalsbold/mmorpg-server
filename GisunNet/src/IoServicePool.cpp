@@ -1,7 +1,6 @@
-#include "IoServicePool.h"
+#include "gisunnet/network/IoServicePool.h"
 
-namespace gisunnet
-{
+namespace gisunnet {
 
 IoServicePool::IoServicePool(size_t thread_count)
 	: idx_(0)

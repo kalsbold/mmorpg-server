@@ -2,30 +2,43 @@
 //
 
 #include "stdafx.h"
-#include <gisunnet/IoServicePool.h>
-#include <gisunnet/TcpClient.h>
-#include <gisunnet/TcpTransport.h>
+#include <string>
+#include <iostream>
+#include <gisunnet/network/Client.h>
+#include <gisunnet/network/IoServicePool.h>
 
 int main()
 {
 	using namespace gisunnet;
 
-	auto ios_pool = std::make_shared<IoServicePool>(2);
-	TcpClient client(ios_pool);
-
-	client.ConnectHandler = [](const TcpClient::error_code& error, TcpClient::TransportPtr& transport)
+	ClientConfiguration clientConfig;
+	auto client = Client::Create(clientConfig);
+	client->RegisterNetEventHandler([](const NetEventType& net_event)
 	{
-		if (error)
+		if (net_event == NetEventType::Opened)
 		{
-			std::cout << " Connect Error : " << error.message() << "\n";
-			return;
+			std::cout << "Connect success" << "\n";
 		}
-		std::cout << "Connect success. -> " << transport->GetRemoteEndpoint() << "\n";
-	};
+		else if (net_event == NetEventType::ConnectFailed)
+		{
+			std::cout << "Connect failed" << "\n";
+		}
+		else if (net_event == NetEventType::Closed)
+		{
+			std::cout << "Connect close" << "\n";
+		}
+	});
 
-	client.Connect("127.0.0.1", "8413");
+	client->Connect("127.0.0.1", "8413");
+	while (true)
+	{
+		std::string str;
+		std::cin >> str;
 
-	ios_pool->Wait();
+		auto buffer = std::make_shared<Buffer>(str.size());
+		buffer->WriteBytes((uint8_t*)str.data(), str.size());
+		client->Send(std::move(buffer));
+	}
 
     return 0;
 }

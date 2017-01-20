@@ -7,8 +7,7 @@
 #include <array>
 #include <vector>
 
-namespace gisunnet
-{
+namespace gisunnet {
 /*
 class IBuffer
 {

@@ -4,8 +4,7 @@
 
 using namespace boost;
 
-namespace gisunnet
-{
+namespace gisunnet {
 
 // Get a buffer that asio input sequence.
 template <typename BufferType>

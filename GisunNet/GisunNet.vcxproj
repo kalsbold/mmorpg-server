@@ -19,29 +19,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="gisunnet\network\Client.h" />
     <ClInclude Include="gisunnet\network\Configuration.h" />
-    <ClInclude Include="gisunnet\protocol\Message.h" />
+    <ClInclude Include="gisunnet\network\tcp\TcpClient.h" />
     <ClInclude Include="gisunnet\types.h" />
     <ClInclude Include="gisunnet\utility\AsioHelper.h" />
     <ClInclude Include="gisunnet\network\ByteBuffer.h" />
-    <ClInclude Include="gisunnet\protocol\Decoder.h" />
     <ClInclude Include="gisunnet\network\IoServicePool.h" />
     <ClInclude Include="gisunnet\network\Server.h" />
     <ClInclude Include="gisunnet\network\Session.h" />
-    <ClInclude Include="gisunnet\network\TcpClient.h" />
-    <ClInclude Include="gisunnet\network\TcpListener.h" />
-    <ClInclude Include="gisunnet\network\TcpSocket.h" />
     <ClInclude Include="gisunnet\network\tcp\TcpSession.h" />
     <ClInclude Include="gisunnet\network\tcp\TcpServer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gisunnet\network\IoServicePool.cpp" />
-    <ClCompile Include="gisunnet\network\Server.cpp" />
-    <ClCompile Include="gisunnet\network\TcpClient.cpp" />
-    <ClCompile Include="gisunnet\network\TcpListener.cpp" />
-    <ClCompile Include="gisunnet\network\TcpSocket.cpp" />
-    <ClCompile Include="gisunnet\network\tcp\TcpSession.cpp" />
-    <ClCompile Include="gisunnet\network\tcp\TcpServer.cpp" />
+    <ClCompile Include="src\Client.cpp" />
+    <ClCompile Include="src\IoServicePool.cpp" />
+    <ClCompile Include="src\Server.cpp" />
+    <ClCompile Include="src\Session.cpp" />
+    <ClCompile Include="src\TcpClient.cpp" />
+    <ClCompile Include="src\TcpSession.cpp" />
+    <ClCompile Include="src\TcpServer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{934A6A3B-0413-48EE-ACA8-0834826E7CBC}</ProjectGuid>
