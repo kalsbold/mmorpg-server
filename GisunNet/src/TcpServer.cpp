@@ -89,7 +89,8 @@ inline void TcpServer::AcceptStart()
 		{
 			//if (!error)
 			//{
-				socket_->shutdown(tcp::socket::shutdown_both);
+				error_code ec;
+				socket_->shutdown(tcp::socket::shutdown_both, ec);
 				socket_->close();
 			//}
 			socket_.release();
@@ -99,7 +100,8 @@ inline void TcpServer::AcceptStart()
 		// ÃÖ´ë ¼¼¼ÇÀÌ¸é ´Ý¾ÆÁÜ.
 		if (session_list_.size() >= config_.max_session_count)
 		{
-			socket_->shutdown(tcp::socket::shutdown_both);
+			error_code ec;
+			socket_->shutdown(tcp::socket::shutdown_both, ec);
 			socket_->close();
 			socket_.release();
 			//accept_op_ = false;

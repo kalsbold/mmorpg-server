@@ -153,16 +153,19 @@ inline bool TcpSession::PrepareRead(size_t min_prepare_bytes)
 	return true;
 }
 
-inline void TcpSession::PendWrite(Ptr<Buffer>& buf)
+inline void TcpSession::PendWrite(Ptr<Buffer> buf)
 {
-	if (!IsOpen())
-		return;
-
-	pending_list_.emplace_back(std::move(buf));
-	if (sending_list_.empty())
+	strand_->dispatch([this, buf = std::move(buf)]() mutable
 	{
-		Write();
-	}
+		if (!IsOpen())
+			return;
+
+		pending_list_.emplace_back(std::move(buf));
+		if (sending_list_.empty())
+		{
+			Write();
+		}
+	});
 }
 
 inline void TcpSession::Write()
@@ -186,6 +189,7 @@ inline void TcpSession::Write()
 	std::vector<asio::const_buffer> bufs;
 	for (auto& buffer : sending_list_)
 	{
+		EncodeSendData(buffer);
 		bufs.emplace_back(const_buffer(*buffer));
 	}
 

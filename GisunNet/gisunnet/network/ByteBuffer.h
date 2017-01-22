@@ -380,22 +380,22 @@ public:
 		*(PodType*)(data_.data() + index) = value;
 	}
 
-	void SetByte(size_t index, this_type& src)
+	void SetByte(size_t index, const this_type& src)
 	{
 		SetBytes(index, src, src.ReadableBytes());
 	}
 
-	void SetBytes(size_t index, this_type& src, size_t length)
+	void SetBytes(size_t index, const this_type& src, size_t length)
 	{
 		SetBytes(index, src, src.ReaderIndex(), length);
 	}
 
-	void SetBytes(size_t index, uint8_t* src, size_t length)
+	void SetBytes(size_t index, const uint8_t* src, size_t length)
 	{
 		SetBytes(index, src, 0, length);
 	}
 
-	void SetBytes(size_t index, this_type& src, size_t srcIndex, size_t length)
+	void SetBytes(size_t index, const this_type& src, size_t srcIndex, size_t length)
 	{
 		CheckIndex(index, length);
 		src.CheckIndex(srcIndex, length);
@@ -403,7 +403,7 @@ public:
 		SetBytes(index, src.Data(), srcIndex, length);
 	}
 
-	void SetBytes(size_t index, uint8_t* src, size_t srcIndex, size_t length)
+	void SetBytes(size_t index, const uint8_t* src, size_t srcIndex, size_t length)
 	{
 		CheckIndex(index, length);
 		std::memcpy(data_.data() + index, src + srcIndex, length);
@@ -568,19 +568,19 @@ public:
 		src.ReaderIndex(src.ReaderIndex() + length);
 	}
 
-	void WriteBytes(this_type& src, size_t srcIndex, size_t length)
+	void WriteBytes(const this_type& src, size_t srcIndex, size_t length)
 	{
 		EnsureWritable(length);
 		SetBytes(w_index_, src, srcIndex, length);
 		w_index_ += length;
 	}
 
-	void WriteBytes(uint8_t* src, size_t length)
+	void WriteBytes(const uint8_t* src, size_t length)
 	{
 		WriteBytes(src, 0, length);
 	}
 
-	void WriteBytes(uint8_t* src, size_t srcIndex, size_t length)
+	void WriteBytes(const uint8_t* src, size_t srcIndex, size_t length)
 	{
 		EnsureWritable(length);
 		SetBytes(w_index_, src, srcIndex, length);

@@ -30,7 +30,11 @@ public:
 
 	//void CloseSocket();
 
-	virtual void Send(Ptr<Buffer> message) = 0;
+	virtual void Send(const uint8_t* data, size_t size) = 0;
+
+	virtual void Send(Ptr<Buffer> data) = 0;
+
+	virtual void Send(const Buffer& data) = 0;
 
 	virtual void Close() = 0;
 

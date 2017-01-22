@@ -17,7 +17,7 @@ public:
 	bool	no_delay = false;
 	size_t	min_receive_size = 1024 * 4;
 	size_t	max_receive_buffer_size = std::numeric_limits<size_t>::max();
-	size_t	max_transfer_size = std::numeric_limits<size_t>::max();
+	size_t	max_transfer_size = std::numeric_limits<size_t>::max(); // 기능 미적용
 };
 
 struct ClientConfiguration
@@ -28,7 +28,7 @@ public:
 	bool	no_delay = false;
 	size_t	min_receive_size = 1024 * 4;
 	size_t	max_receive_buffer_size = std::numeric_limits<size_t>::max();
-	size_t	max_transfer_size = std::numeric_limits<size_t>::max();
+	size_t	max_transfer_size = std::numeric_limits<size_t>::max(); // 기능 미적용
 };
 
 } // namespace gisunnet

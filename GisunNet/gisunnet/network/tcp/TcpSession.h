@@ -28,12 +28,23 @@ public:
 
 	virtual bool IsOpen() const override;
 
+	// Inherited via Session
+	virtual void Send(const uint8_t * data, size_t size) override
+	{
+		auto buffer = std::make_shared<Buffer>(size);
+		buffer->WriteBytes(data, size);
+
+		Send(std::move(buffer));
+	}
+	virtual void Send(const Buffer& data) override
+	{
+		auto buffer = std::make_shared<Buffer>(data);
+
+		Send(std::move(buffer));
+	}
 	virtual void Send(Ptr<Buffer> message) override
 	{
-		strand_->dispatch([this, message = std::move(message)]() mutable
-		{
-			PendWrite(message);
-		});
+		PendWrite(std::move(message));
 	}
 
 	// 세션을 시작한다.
@@ -74,11 +85,16 @@ private:
 		read_buf.Clear();
 	}
 
-	void PendWrite(Ptr<Buffer>& buf);
+	void PendWrite(Ptr<Buffer> buf);
 	void Write();
 	void HandleWrite(const error_code& error);
 	void HandleError(const error_code& error);
 	void _Close(CloseReason reason);
+
+	void EncodeSendData(Buffer& data)
+	{
+
+	}
 
 	std::unique_ptr<tcp::socket> socket_;
 	std::unique_ptr<strand> strand_;

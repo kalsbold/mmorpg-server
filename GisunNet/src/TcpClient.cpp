@@ -58,7 +58,8 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 		{
 			if (!error)
 			{
-				socket_->shutdown(tcp::socket::shutdown_both);
+				error_code ec;
+				socket_->shutdown(tcp::socket::shutdown_both, ec);
 				socket_->close();
 			}
 			socket_.release();
