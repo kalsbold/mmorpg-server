@@ -3,12 +3,11 @@
 
 namespace gisunnet {
 	/// Contains result sets and provides access interface.
-	class ResultSets {
+	class ResultSets
+	{
 	public:
-		class Impl;
-
-		explicit ResultSets(const Ptr<Impl> &impl);
-
+		ResultSets();
+		/*
 		/// Gets the result set count.
 		/// @return the result set count.
 		size_t GetResultSetCount() const;
@@ -137,32 +136,30 @@ namespace gisunnet {
 			WallClock::kEmptyDuration) const;
 
 	private:
-		Ptr<Impl> impl_;
+	*/
 	};
 
 
-	class MySQL {
+	class MySQL
+	{
 	public:
-		struct Error {
+		struct Error
+		{
 			int code;
 			string desc;
 			string sqlstate;
 		};
 
-		typedef function<void(const Ptr<ResultSets> &,
-			const Error &)> QueryExecuteHandler;
+		typedef function<void(const Ptr<ResultSets>&, const Error&)> QueryExecuteHandler;
 
-		static Ptr<MySQL> Create(const string& address, const string& id,
-			const string& password, const string &database,
-			size_t connection_count,
-			const string& connection_charset = string(""),
-			bool auto_retry_on_deadlock = false);
+		static Ptr<MySQL> Create(const string& address, const string& id, const string& password, const string &database,
+			size_t connection_count, const string& connection_charset = string(""), bool auto_retry_on_deadlock = false);
 
 		void Initialize();
 		void Finalize();
 
-		void ExecuteQuery(const string& query, const QueryExecuteHandler& handler);
-		Ptr<ResultSets> ExecuteQuerySync(const string& query, Error* error = nullptr);
+		void ExecuteQueryAsync(const string& query, const QueryExecuteHandler& handler);
+		Ptr<ResultSets> ExecuteQuery(const string& query, Error* error = nullptr);
 
 		const string& address() const;
 		const string& id() const;
@@ -170,12 +167,8 @@ namespace gisunnet {
 		size_t connection_count() const;
 
 	private:
-		class Impl;
+		MySQL(const string& address, const string& id, const string& password, const string& database,
+			size_t connection_count, const string& connection_charset, bool auto_retry_on_deadlock);
 
-		MySQL(const string& address, const string& id, const string& password,
-			const string& database, size_t connection_count,
-			const string& connection_charset, bool auto_retry_on_deadlock);
-
-		Ptr<Impl> impl_;
 	};
 }
