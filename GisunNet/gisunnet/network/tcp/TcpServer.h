@@ -43,15 +43,14 @@ public:
 		session_closed_handler_ = handler;
 	}
 
-	virtual void RegisterMessageHandler(uint16_t message_type, const MessageHandler& handler) override
+	virtual void RegisterMessageHandler(const MessageHandler& handler) override
 	{
-		message_handler_map_.emplace(message_type, handler);
+		message_handler_ = handler;
 	}
 
 private:
 	using strand = boost::asio::io_service::strand;
 	using SessionMap = std::map<SessionID, Ptr<Session>>;
-	using MessageHandlerMap = std::map<uint16_t, MessageHandler>;
 
 	void Listen(tcp::endpoint endpoint);
 	void AcceptStart();
@@ -59,11 +58,12 @@ private:
 	// Session Handler. Session(socket)에 할당된 io_service thread 에서 호출된다. 동기화 필요함. 
 	void HandleSessionOpen(const WeakPtr<Session>& session);
 	void HandleSessionClose(const WeakPtr<Session>& session, CloseReason reason);
+	void HandleSessionReceive(const WeakPtr<Session>& session, const uint8_t* buf, size_t bytes);
 	
 	// handler
 	SessionOpenedHandler	session_opened_handler_;
 	SessionClosedHandler	session_closed_handler_;
-	MessageHandlerMap		message_handler_map_;
+	MessageHandler		message_handler_;
 
 	Configuration	config_;
 	State			state_;

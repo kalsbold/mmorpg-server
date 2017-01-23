@@ -21,18 +21,30 @@ public:
 		return state_ == State::Connected;
 	}
 
+	// Inherited via Client
+	virtual void Send(const uint8_t * data, size_t size) override
+	{
+		auto buffer = std::make_shared<Buffer>(size);
+		buffer->WriteBytes(data, size);
+		Send(std::move(buffer));
+	}
+	virtual void Send(const Buffer & data) override
+	{
+		auto buffer = std::make_shared<Buffer>(data);
+		Send(std::move(buffer));
+	}
 	virtual void Send(Ptr<Buffer> message) override
 	{
-		strand_->dispatch([this, message = std::move(message)]() mutable { PendWrite(message); });
+		PendWrite(std::move(message));
 	}
 
 	virtual void RegisterNetEventHandler(const NetEventHandler& handler) override
 	{
 		net_event_handler_ = handler;
 	}
-	virtual void RegisterMessageHandler(uint16_t message_type, const MessageHandler& handler) override
+	virtual void RegisterMessageHandler(const MessageHandler& handler) override
 	{
-		message_handler_map_.emplace(message_type, handler);
+		message_handler_ = handler;
 	}
 
 private:
@@ -44,43 +56,90 @@ private:
 		Closed,
 	};
 
+	struct Header
+	{
+		int32_t payload_len;
+	};
+
 	using strand = boost::asio::io_service::strand;
+	using SendMsg = std::tuple<Buffer, Ptr<Buffer>>;
 	using MessageHandlerMap = std::map<uint16_t, MessageHandler>;
 
 	void ConnectStart(tcp::resolver::iterator endpoint_iterator);
 	void Read(size_t min_read_bytes);
 	void HandleRead(const error_code & error, std::size_t bytes_transferred);
 
-	void HandleReceiveData(Buffer& read_buf, size_t&)
+	void HandleReceiveData(Buffer& read_buf, size_t& next_read_size)
 	{
-		// To Do : 
-		string str(read_buf.Data() + read_buf.ReaderIndex(), read_buf.Data() + read_buf.WriterIndex());
-		std::cout << str << std::endl;
-		read_buf.Clear();
+		DecodeRecvData(read_buf, next_read_size);
 	}
 
 	bool PrepareRead(size_t min_prepare_bytes);
-	void PendWrite(Ptr<Buffer>& buf);
+	void PendWrite(Ptr<Buffer> buf);
 	void Write();
 	void HandleWrite(const error_code & error);
 	void HandleError(const error_code & error);
 	void _Close();
 
+	SendMsg EncodeSendData(Ptr<Buffer>& data)
+	{
+		// Make header
+		Header header;
+		header.payload_len = data->ReadableBytes();
+
+		// To Do : 암호화나 압축 등..
+
+		Buffer header_buf(sizeof(Header));
+		header_buf.Write(header.payload_len);
+		return std::make_tuple(std::move(header_buf), data);
+	}
+
+	void DecodeRecvData(Buffer& buf, size_t&)
+	{
+		Header header = {0};
+		// 처리할 데이터가 있으면 반복
+		while (buf.IsReadable())
+		{
+			// Decode Header
+			// 헤더 사이즈 만큼 받지 못했으면 리턴
+			if (!buf.IsReadable(sizeof(Header)))
+				return;
+
+			// TO DO : 헤더 검증?
+			buf.GetPOD(buf.ReaderIndex(), header.payload_len);
+
+			// Decode Body
+			// Header + Body 사이즈 만큼 받지 못했으면 리턴
+			if (!buf.IsReadable(sizeof(Header) + header.payload_len))
+				return;
+
+			// 헤더 사이즈만큼 전진
+			buf.SkipBytes(sizeof(Header));
+			// TO DO : 복호화?
+
+			// Call receive handler
+			if (message_handler_)
+				message_handler_(buf.Data() + buf.ReaderIndex(), header.payload_len);
+
+			// 바디 사이즈만큼 전진
+			buf.SkipBytes(header.payload_len);
+		}
+	}
+
 	NetEventHandler net_event_handler_;
-	MessageHandlerMap message_handler_map_;
+	MessageHandler message_handler_;
 
 	std::unique_ptr<tcp::socket> socket_;
 	std::unique_ptr<strand> strand_;
 	
 	Ptr<Buffer> read_buf_;
 	std::vector<Ptr<Buffer>> pending_list_;
-	std::vector<Ptr<Buffer>> sending_list_;
+	std::vector<SendMsg> sending_list_;
 
 	ClientConfiguration	config_;
 	State				state_;
 	Ptr<IoServicePool>	ios_pool_;
 	//std::mutex			mutex_;
-	
 };
 
 } // namespace gisunnet

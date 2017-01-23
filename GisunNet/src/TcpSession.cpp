@@ -42,7 +42,8 @@ bool TcpSession::GetRemoteEndpoint(string & ip, uint16_t & port) const
 
 void TcpSession::Close()
 {
-	strand_->dispatch([this] {
+	strand_->dispatch([this , self = shared_from_this()]
+	{
 		_Close(CloseReason::ActiveClose);
 	});
 }
@@ -54,7 +55,7 @@ bool TcpSession::IsOpen() const
 
 void TcpSession::Start()
 {
-	strand_->dispatch([this]()
+	strand_->dispatch([this, self = shared_from_this()]
 	{
 		try
 		{
@@ -94,7 +95,7 @@ inline void TcpSession::Read(size_t min_read_bytes)
 
 	auto asio_buf = mutable_buffer(*read_buf_);
 	socket_->async_read_some(boost::asio::buffer(asio_buf), strand_->wrap(
-		[this](const error_code& error, std::size_t bytes_transferred)
+		[this, self = shared_from_this()](const error_code& error, std::size_t bytes_transferred)
 	{
 		HandleRead(error, bytes_transferred);
 	}));
@@ -155,7 +156,7 @@ inline bool TcpSession::PrepareRead(size_t min_prepare_bytes)
 
 inline void TcpSession::PendWrite(Ptr<Buffer> buf)
 {
-	strand_->dispatch([this, buf = std::move(buf)]() mutable
+	strand_->dispatch([this, self = shared_from_this(), buf = std::move(buf)]() mutable
 	{
 		if (!IsOpen())
 			return;
@@ -179,22 +180,19 @@ inline void TcpSession::Write()
 		return;
 
 	// TO DO : sending_list_.swap(pending_list_);
+	// Scatter-Gather I/O
+	std::vector<asio::const_buffer> bufs;
 	for (auto& buffer : pending_list_)
 	{
-		sending_list_.emplace_back(std::move(buffer));
+		auto send_msg = EncodeSendData(buffer);
+		bufs.emplace_back(const_buffer(std::get<0>(send_msg)));
+		bufs.emplace_back(const_buffer(*(std::get<1>(send_msg))));
+		sending_list_.emplace_back(std::move(send_msg));
 	}
 	pending_list_.clear();
 
-	// Scatter-Gather I/O
-	std::vector<asio::const_buffer> bufs;
-	for (auto& buffer : sending_list_)
-	{
-		EncodeSendData(buffer);
-		bufs.emplace_back(const_buffer(*buffer));
-	}
-
 	boost::asio::async_write(*socket_, bufs, strand_->wrap(
-		[this](error_code const& ec, std::size_t)
+		[this, self = shared_from_this()](error_code const& ec, std::size_t)
 	{
 		HandleWrite(ec);
 	}));

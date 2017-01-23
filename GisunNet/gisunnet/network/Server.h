@@ -22,8 +22,8 @@ public:
 	// Handler to be notified on session close. This one ignores the close reason.
 	using SessionClosedHandler = function<void(const Ptr<Session>&/*session*/, const CloseReason&)>;
 
-	// Message handler type.
-	using MessageHandler = function<void(const Ptr<Session>&/*session*/, const Ptr<Buffer>&/*message*/)>;
+	// Receive handler type.
+	using MessageHandler = function<void(const Ptr<Session>&/*session*/, const uint8_t*, size_t)>;
 
 	// Create server instance.
 	static Ptr<Server> Create(const Configuration& config);
@@ -44,7 +44,7 @@ public:
 
 	virtual void RegisterSessionOpenedHandler(const SessionOpenedHandler& handler) = 0;
 	virtual void RegisterSessionClosedHandler(const SessionClosedHandler& handler) = 0;
-	virtual void RegisterMessageHandler(uint16_t message_type, const MessageHandler& handler) = 0;
+	virtual void RegisterMessageHandler(const MessageHandler& handler) = 0;
 
 protected:
 	Server() {};

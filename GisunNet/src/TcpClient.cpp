@@ -26,7 +26,7 @@ void TcpClient::Connect(const std::string & host, const std::string & service)
 {
 	strand_->dispatch([this, host, service]
 	{
-		if (!(state_ == State::Ready))
+		if (state_ != State::Ready)
 			return;
 
 		tcp::resolver resolver(ios_pool_->PickIoService());
@@ -79,13 +79,13 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 
 			// Read
 			Read(config_.min_receive_size);
-			net_event_handler_(NetEventType::Opened);
+			if(net_event_handler_) net_event_handler_(NetEventType::Opened);
 		}
 		else
 		{
 			HandleError(error);
 			_Close();
-			net_event_handler_(NetEventType::ConnectFailed);
+			if(net_event_handler_) net_event_handler_(NetEventType::ConnectFailed);
 		}
 	}));
 }
@@ -98,7 +98,7 @@ inline void TcpClient::Read(size_t min_read_bytes)
 	if (!PrepareRead(min_read_bytes))
 	{
 		_Close();
-		net_event_handler_(NetEventType::Closed);
+		if(net_event_handler_) net_event_handler_(NetEventType::Closed);
 		return;
 	}
 
@@ -119,7 +119,7 @@ inline void TcpClient::HandleRead(const error_code & error, std::size_t bytes_tr
 	{
 		HandleError(error);
 		_Close();
-		net_event_handler_(NetEventType::Closed);
+		if(net_event_handler_) net_event_handler_(NetEventType::Closed);
 		return;
 	}
 
@@ -160,16 +160,19 @@ inline bool TcpClient::PrepareRead(size_t min_prepare_bytes)
 	return true;
 }
 
-inline void TcpClient::PendWrite(Ptr<Buffer>& buf)
+inline void TcpClient::PendWrite(Ptr<Buffer> buf)
 {
-	if (!IsConnected())
-		return;
-
-	pending_list_.emplace_back(std::move(buf));
-	if (sending_list_.empty())
+	strand_->dispatch([this, buf = std::move(buf)]() mutable
 	{
-		Write();
-	}
+		if (!IsConnected())
+			return;
+
+		pending_list_.emplace_back(std::move(buf));
+		if (sending_list_.empty())
+		{
+			Write();
+		}
+	});
 }
 
 inline void TcpClient::Write()
@@ -183,18 +186,16 @@ inline void TcpClient::Write()
 		return;
 
 	// TO DO : sending_list_.swap(pending_list_);
-	for (auto& buffer : pending_list_)
-	{
-		sending_list_.emplace_back(std::move(buffer));
-	}
-	pending_list_.clear();
-
 	// Scatter-Gather I/O
 	std::vector<asio::const_buffer> bufs;
-	for (auto& buffer : sending_list_)
+	for (auto& buffer : pending_list_)
 	{
-		bufs.emplace_back(const_buffer(*buffer));
+		auto send_msg = EncodeSendData(buffer);
+		bufs.emplace_back(const_buffer(std::get<0>(send_msg)));
+		bufs.emplace_back(const_buffer(*(std::get<1>(send_msg))));
+		sending_list_.emplace_back(std::move(send_msg));
 	}
+	pending_list_.clear();
 
 	boost::asio::async_write(*socket_, bufs, strand_->wrap(
 		[this](error_code const& ec, std::size_t)
@@ -212,7 +213,7 @@ inline void TcpClient::HandleWrite(const error_code & error)
 	{
 		HandleError(error);
 		_Close();
-		net_event_handler_(NetEventType::Closed);
+		if(net_event_handler_) net_event_handler_(NetEventType::Closed);
 		return;
 	}
 

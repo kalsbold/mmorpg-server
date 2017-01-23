@@ -122,6 +122,9 @@ inline void TcpServer::AcceptStart()
 			session->closeHandler = [this, session_weak](CloseReason reason) {
 				HandleSessionClose(session_weak, reason);
 			};
+			session->recvHandler = [this, session_weak](const uint8_t* buf, size_t bytes) {
+				HandleSessionReceive(session_weak, buf, bytes);
+			};
 
 			// 세션 리스트에 추가.
 			{
@@ -173,6 +176,14 @@ inline void TcpServer::HandleSessionClose(const WeakPtr<Session>& session, Close
 			//AcceptStart();
 		//}
 	});
+}
+
+inline void TcpServer::HandleSessionReceive(const WeakPtr<Session>& session, const uint8_t* buf, size_t bytes)
+{
+	auto s = session.lock();
+	if (!s) return;
+	if (message_handler_)
+		message_handler_(s, buf, bytes);
 }
 
 } // namespace gisunnet

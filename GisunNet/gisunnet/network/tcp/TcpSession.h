@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include "gisunnet/types.h"
 #include "gisunnet/network/Session.h"
 #include "gisunnet/network/Configuration.h"
@@ -7,7 +8,7 @@
 
 namespace gisunnet {
 
-class TcpSession : public Session
+class TcpSession : public Session, public std::enable_shared_from_this<TcpSession>
 {
 public:
 	using tcp = boost::asio::ip::tcp;
@@ -28,7 +29,6 @@ public:
 
 	virtual bool IsOpen() const override;
 
-	// Inherited via Session
 	virtual void Send(const uint8_t * data, size_t size) override
 	{
 		auto buffer = std::make_shared<Buffer>(size);
@@ -52,10 +52,9 @@ public:
 
 	function<void()> openHandler;
 	function<void(CloseReason reason)> closeHandler;
+	function<void(uint8_t*, size_t)> recvHandler;
 
 private:
-	using strand = boost::asio::io_service::strand;
-
 	enum State
 	{
 		Ready,
@@ -66,9 +65,11 @@ private:
 		
 	struct Header
 	{
-		uint16_t payload_length;
-		uint16_t message_type;
+		int32_t payload_len;
 	};
+
+	using SendMsg = std::tuple<Buffer, Ptr<Buffer>>;
+	using strand = boost::asio::io_service::strand;
 
 	void Read(size_t min_read_bytes);
 	void HandleRead(const error_code & error, std::size_t bytes_transferred);
@@ -77,12 +78,7 @@ private:
 	// Parse Message
 	void HandleReceiveData(Buffer& read_buf, size_t& next_read_size)
 	{
-		// To Do : 
-		string str(read_buf.Data() + read_buf.ReaderIndex(), read_buf.Data() + read_buf.WriterIndex());
-		std::cout << str << std::endl;
-		Ptr<Buffer> buf = std::make_shared<Buffer>(read_buf);
-		Send(std::move(buf));
-		read_buf.Clear();
+		DecodeRecvData(read_buf, next_read_size);
 	}
 
 	void PendWrite(Ptr<Buffer> buf);
@@ -91,9 +87,49 @@ private:
 	void HandleError(const error_code& error);
 	void _Close(CloseReason reason);
 
-	void EncodeSendData(Buffer& data)
+	SendMsg EncodeSendData(Ptr<Buffer>& data)
 	{
+		// Make Header
+		Header header;
+		header.payload_len = data->ReadableBytes();
 
+		// To Do : 암호화나 압축 등..
+		
+		Buffer header_buf(sizeof(Header));
+		header_buf.Write(header.payload_len);
+		return std::make_tuple(std::move(header_buf), data);
+	}
+
+	void DecodeRecvData(Buffer& buf, size_t&)
+	{
+		Header header = {0};
+		// 처리할 데이터가 있으면 반복
+		while (buf.IsReadable())
+		{
+			// Decode Header
+			// 헤더 사이즈 만큼 받지 못했으면 리턴
+			if (!buf.IsReadable(sizeof(Header)))
+				return;
+
+			// TO DO : 헤더 검증?
+			buf.GetPOD(buf.ReaderIndex(), header.payload_len);
+
+			// Decode Body
+			// Header + Body 사이즈 만큼 받지 못했으면 리턴
+			if (!buf.IsReadable(sizeof(Header) + header.payload_len))
+				return;
+
+			// 헤더 사이즈만큼 전진
+			buf.SkipBytes(sizeof(Header));
+			// TO DO : 복호화?
+			
+			// Call receive handler
+			if (recvHandler)
+				recvHandler(buf.Data() + buf.ReaderIndex(), header.payload_len);
+			
+			// 바디 사이즈만큼 전진
+			buf.SkipBytes(header.payload_len);
+		}
 	}
 
 	std::unique_ptr<tcp::socket> socket_;
@@ -105,7 +141,7 @@ private:
 
 	Ptr<Buffer> read_buf_;
 	std::vector<Ptr<Buffer>> pending_list_;
-	std::vector<Ptr<Buffer>> sending_list_;
+	std::vector<SendMsg> sending_list_;
 
 	// config
 	bool	no_delay_ = false;
