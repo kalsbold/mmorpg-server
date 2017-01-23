@@ -92,8 +92,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Program Files (x86)\MySQL\MySQL Connector C++ 1.1.7\include;$(BOOST_ROOT);$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files (x86)\MySQL\MySQL Connector C++ 1.1.7\lib\opt;$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
@@ -120,11 +120,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>.\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd party\mysql-connector-c++\include;.\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>..\3rd party\mysql-connector-c++\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
