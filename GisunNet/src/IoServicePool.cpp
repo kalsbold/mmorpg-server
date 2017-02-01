@@ -6,7 +6,7 @@ IoServicePool::IoServicePool(size_t thread_count)
 	: idx_(0)
 {
 	if (thread_count == 0)
-		throw std::runtime_error("thread_count is 0");
+		throw std::invalid_argument("thread_count : " + thread_count);
 
 	for (int i = 0; i < thread_count; i++)
 	{
@@ -19,10 +19,7 @@ IoServicePool::IoServicePool(size_t thread_count)
 IoServicePool::~IoServicePool()
 {
 	Stop();
-	for (auto& thread : threads_)
-	{
-		thread.detach();
-	}
+	Wait();
 }
 
 void IoServicePool::Stop()
