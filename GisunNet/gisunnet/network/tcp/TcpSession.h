@@ -12,16 +12,15 @@ class TcpSession : public Session, public std::enable_shared_from_this<TcpSessio
 {
 public:
 	using tcp = boost::asio::ip::tcp;
-	using SessionID = uuid;
 
 	TcpSession(const TcpSession&) = delete;
 	TcpSession& operator=(const TcpSession&) = delete;
 
-	TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id, const Configuration& config);
+	TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, const Configuration& config);
 
 	virtual ~TcpSession();
 
-	virtual const SessionID& ID() const override;
+	virtual const uuid& ID() const override;
 
 	virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const override;
 
@@ -136,7 +135,7 @@ private:
 	std::unique_ptr<strand> strand_;
 	tcp::endpoint remote_endpoint_;
 		
-	SessionID id_;
+	uuid id_;
 	State state_;
 
 	Ptr<Buffer> read_buf_;

@@ -4,8 +4,6 @@
 
 namespace gisunnet {
 
-using SessionID = uuid;
-
 enum CloseReason {
 	ActiveClose = 0,	// 서버에서 연결을 끊음.
 	Disconnected,		// 클라이언트에서 연결이 끊김.
@@ -22,7 +20,7 @@ public:
 
 	virtual ~Session() {};
 
-	virtual const SessionID& ID() const = 0;
+	virtual const uuid& ID() const = 0;
 
 	virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const = 0;
 

@@ -2,7 +2,7 @@
 
 namespace gisunnet {
 
-TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id, const Configuration & config)
+TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, const Configuration & config)
 	: socket_(std::move(socket))
 	, id_(id)
 	, state_(State::Ready)
@@ -25,12 +25,12 @@ TcpSession::~TcpSession()
 	std::cerr << "Session destroy\n";
 }
 
-const SessionID & TcpSession::ID() const
+const uuid& TcpSession::ID() const
 {
 	return id_;
 }
 
-bool TcpSession::GetRemoteEndpoint(string & ip, uint16_t & port) const
+bool TcpSession::GetRemoteEndpoint(string& ip, uint16_t& port) const
 {
 	if (state_ == State::Closed)
 		return false;

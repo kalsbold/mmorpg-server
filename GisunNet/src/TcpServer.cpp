@@ -3,7 +3,7 @@
 namespace gisunnet {
 
 TcpServer::TcpServer(const Configuration & config)
-	: Server()
+	: NetServer()
 	, config_(config)
 	, state_(State::Ready)
 {
@@ -39,7 +39,7 @@ void TcpServer::Start(string address, uint16_t port)
 		AcceptStart();
 		state_ = State::Start;
 		
-		std::cerr << "Server start :" << endpoint << "\n";
+		std::cerr << "NetServer start :" << endpoint << "\n";
 	});
 }
 
@@ -62,7 +62,7 @@ void TcpServer::Stop()
 		}
 		state_ = State::Stop;
 
-		std::cerr << "Server stop\n";
+		std::cerr << "NetServer stop\n";
 	});
 }
 
@@ -110,7 +110,7 @@ inline void TcpServer::AcceptStart()
 		else if (!error)
 		{
 			// Session ID 발급.
-			SessionID id = boost::uuids::random_generator()();
+			uuid id = boost::uuids::random_generator()();
 			// 세션 객체 생성.
 			auto session = std::make_shared<TcpSession>(std::move(socket_), id, config_);
 			// 핸들러 등록

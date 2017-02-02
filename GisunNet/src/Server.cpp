@@ -3,7 +3,7 @@
 
 namespace gisunnet {
 
-Ptr<Server> Server::Create(const Configuration& config)
+Ptr<NetServer> NetServer::Create(const Configuration& config)
 {
 	return std::make_shared<TcpServer>(config);
 }

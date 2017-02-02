@@ -1,13 +1,14 @@
 #pragma once
 
 #include <mutex>
-#include "gisunnet/network/Server.h"
+#include <set>
+#include "gisunnet/network/NetServer.h"
 #include <gisunnet/network/tcp/TcpSession.h>
 #include "gisunnet/network/IoServicePool.h"
 
 namespace gisunnet {
 
-class TcpServer : public Server
+class TcpServer : public NetServer
 {
 public:
 	using tcp = boost::asio::ip::tcp;
@@ -24,7 +25,7 @@ public:
 		return state_;
 	}
 
-	Ptr<Session> Find(const SessionID& id) override
+	Ptr<Session> Find(const uuid& id) override
 	{
 		// TO DO : lock 을 꼭 써야 할까? future promise 사용 고려.
 		std::lock_guard<std::mutex> guard(mutex_);
@@ -50,7 +51,6 @@ public:
 
 private:
 	using strand = boost::asio::io_service::strand;
-	using SessionMap = std::map<SessionID, Ptr<Session>>;
 
 	void Listen(tcp::endpoint endpoint);
 	void AcceptStart();
@@ -63,13 +63,13 @@ private:
 	// handler
 	SessionOpenedHandler	session_opened_handler_;
 	SessionClosedHandler	session_closed_handler_;
-	MessageHandler		message_handler_;
+	MessageHandler			message_handler_;
 
-	Configuration	config_;
-	State			state_;
-	Ptr<IoServicePool> ios_pool_;
-	std::mutex		mutex_;
-	SessionMap		session_list_;
+	Configuration			config_;
+	State					state_;
+	Ptr<IoServicePool>		ios_pool_;
+	std::mutex				mutex_;
+	std::map<uuid, Ptr<Session>>	session_list_;
 
 	std::unique_ptr<strand> strand_;
 	std::unique_ptr<tcp::acceptor> acceptor_;

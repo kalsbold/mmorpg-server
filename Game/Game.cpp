@@ -44,7 +44,7 @@ void Run()
 {
 	namespace asio = boost::asio;
 	using namespace gisunnet;
-
+	
 	LOG("Run Game Server");
 
 	LOG("Create IoServicePool");
