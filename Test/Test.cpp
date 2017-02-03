@@ -56,67 +56,22 @@
 #include <future>
 #include <thread>
 #include <boost/asio.hpp>
+#include <gisunnet/types.h>
 
 using namespace boost;
-
-std::future<bool> async_func(asio::io_service& ios)
-{
-	auto p = std::make_shared<std::promise<bool>>();
-	auto f = p->get_future();
-	ios.post([p]() {
-		p->set_value(false);
-	});
-
-	return std::move(f);
-}
-
-template <class Service, class CompletionHandler>
-auto post_future(Service& s, CompletionHandler&& handler)
-{
-	using return_type = decltype(handler());
-	auto promise = std::make_shared<std::promise<return_type>>();
-	auto future = promise->get_future();
-	s.post([promise, handler] {
-		promise->set_value(handler());
-	});
-
-	return future;
-}
-
-template <class Service, class CompletionHandler>
-auto dispatch_future(Service& s, CompletionHandler&& handler)
-{
-	using return_type = decltype(handler());
-	auto promise = std::make_shared<std::promise<return_type>>();
-	auto future = promise->get_future();
-	s.dispatch([promise, handler] {
-		promise->set_value(handler());
-	});
-
-	return future;
-}
+using namespace gisunnet;
 
 int main()
 {
-	std::cout << std::this_thread::get_id() << "\n";
-	asio::io_service ios;
-	asio::io_service::strand strand(ios);
-	//auto f = async_func(ios);
-	
-	auto func1 = [] {
-		std::cout << std::this_thread::get_id() << " Call func1\n";
-		return false;
-	};
-	auto func2 = [] {
-		std::cout << std::this_thread::get_id() << " Call func1\n";
-		return false;
-	};
+	Buffer buf(64,256);
+	buf.Write('a');
+	buf.Write('b');
+	buf.Write('c');
+	buf.Write('d');
+	buf.Write('e');
+	buf.Write('f');
 
-	auto f = post_future(strand, func1);
-	auto f2 = dispatch_future(strand, func2);
+	uint8_t array[5] = { 'g','h','i','j','k' };
+	buf.InsertBytes(63, array, 0, 5);
 
-	std::async(std::launch::async, [&] { ios.run(); });
-
-	std::cout<< f.get();
-	std::cout << f2.get();
 }

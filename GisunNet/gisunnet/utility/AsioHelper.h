@@ -24,9 +24,11 @@ asio::mutable_buffers_1 mutable_buffer(BufferType& buf)
 }
 
 template <class Service, class CompletionHandler>
-auto post_future(Service& s, CompletionHandler&& handler)
+decltype(auto) post_future(Service& s, CompletionHandler&& handler)
 {
 	using return_type = decltype(handler());
+	//using return_type = std::result_of<CompletionHandler()>::type;
+
 	auto promise = std::make_shared<std::promise<return_type>>();
 	auto future = promise->get_future();
 	s.post([promise, handler] {
@@ -37,9 +39,11 @@ auto post_future(Service& s, CompletionHandler&& handler)
 }
 
 template <class Service, class CompletionHandler>
-auto dispatch_future(Service& s, CompletionHandler&& handler)
+decltype(auto) dispatch_future(Service& s, CompletionHandler&& handler)
 {
 	using return_type = decltype(handler());
+	//using return_type = std::result_of<CompletionHandler()>::type;
+
 	auto promise = std::make_shared<std::promise<return_type>>();
 	auto future = promise->get_future();
 	s.dispatch([promise, handler] {

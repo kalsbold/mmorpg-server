@@ -168,6 +168,11 @@
     </ClCompile>
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GisunNet\GisunNet.vcxproj">
+      <Project>{934a6a3b-0413-48ee-aca8-0834826e7cbc}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

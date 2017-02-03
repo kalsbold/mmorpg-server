@@ -13,7 +13,7 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 
-#include <gisunnet/network/Server.h>
+#include <gisunnet/network/NetServer.h>
 #include <gisunnet/network/IoServicePool.h>
 
 

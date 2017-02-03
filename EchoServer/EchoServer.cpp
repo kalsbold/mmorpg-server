@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include <string>
 #include <iostream>
-#include <gisunnet/network/Server.h>
+#include <gisunnet/network/NetServer.h>
 #include <gisunnet/network/IoServicePool.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
@@ -17,7 +17,7 @@ int main()
 {
 	Configuration config;
 	config.max_session_count = 5;
-	auto server = Server::Create(config);
+	auto server = NetServer::Create(config);
 
 	server->RegisterSessionOpenedHandler([](auto& session)
 	{
@@ -69,7 +69,7 @@ int main()
 	std::getline(std::cin, input, '\n');
 	
 	server->Stop();
-	while (server->GetState() != Server::State::Stop)
+	while (server->GetState() != NetServer::State::Stop)
 	{
 	}
 

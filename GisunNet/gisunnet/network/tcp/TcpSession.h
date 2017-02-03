@@ -86,7 +86,7 @@ private:
 	void HandleError(const error_code& error);
 	void _Close(CloseReason reason);
 
-	SendMsg EncodeSendData(Ptr<Buffer>& data)
+	void EncodeSendData(Ptr<Buffer>& data)
 	{
 		// Make Header
 		Header header;
@@ -94,9 +94,7 @@ private:
 
 		// To Do : 암호화나 압축 등..
 		
-		Buffer header_buf(sizeof(Header));
-		header_buf.Write(header.payload_len);
-		return std::make_tuple(std::move(header_buf), data);
+		data->InsertBytes(data->ReaderIndex(), reinterpret_cast<uint8_t*>(&header.payload_len), 0, sizeof(uint8_t));
 	}
 
 	void DecodeRecvData(Buffer& buf, size_t&)
@@ -140,7 +138,7 @@ private:
 
 	Ptr<Buffer> read_buf_;
 	std::vector<Ptr<Buffer>> pending_list_;
-	std::vector<SendMsg> sending_list_;
+	std::vector<Ptr<Buffer>> sending_list_;
 
 	// config
 	bool	no_delay_ = false;

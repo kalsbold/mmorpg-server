@@ -184,7 +184,7 @@ inline void TcpSession::Write()
 	std::vector<asio::const_buffer> bufs;
 	for (auto& buffer : pending_list_)
 	{
-		auto send_msg = EncodeSendData(buffer);
+		EncodeSendData(buffer);
 		bufs.emplace_back(const_buffer(std::get<0>(send_msg)));
 		bufs.emplace_back(const_buffer(*(std::get<1>(send_msg))));
 		sending_list_.emplace_back(std::move(send_msg));
