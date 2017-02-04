@@ -58,11 +58,10 @@ private:
 
 	struct Header
 	{
-		int32_t payload_len;
+		uint16_t payload_len;
 	};
 
 	using strand = boost::asio::io_service::strand;
-	using SendMsg = std::tuple<Buffer, Ptr<Buffer>>;
 	using MessageHandlerMap = std::map<uint16_t, MessageHandler>;
 
 	void ConnectStart(tcp::resolver::iterator endpoint_iterator);
@@ -81,7 +80,7 @@ private:
 	void HandleError(const error_code & error);
 	void _Close();
 
-	SendMsg EncodeSendData(Ptr<Buffer>& data)
+	void EncodeSendData(Ptr<Buffer>& data)
 	{
 		// Make header
 		Header header;
@@ -89,9 +88,8 @@ private:
 
 		// To Do : 암호화나 압축 등..
 
-		Buffer header_buf(sizeof(Header));
-		header_buf.Write(header.payload_len);
-		return std::make_tuple(std::move(header_buf), data);
+		data->InsertBytes(data->ReaderIndex(), reinterpret_cast<uint8_t*>(&header.payload_len), 0, sizeof(header.payload_len));
+		data->WriterIndex(data->WriterIndex() + sizeof(header.payload_len));
 	}
 
 	void DecodeRecvData(Buffer& buf, size_t&)
@@ -134,7 +132,7 @@ private:
 	
 	Ptr<Buffer> read_buf_;
 	std::vector<Ptr<Buffer>> pending_list_;
-	std::vector<SendMsg> sending_list_;
+	std::vector<Ptr<Buffer>> sending_list_;
 
 	ClientConfiguration	config_;
 	State				state_;

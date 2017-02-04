@@ -33,9 +33,6 @@
     <ClInclude Include="gisunnet\network\tcp\TcpSession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\Server.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="gisunnet\network\tcp\TcpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -46,6 +43,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gisunnet\network\Client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gisunnet\network\NetServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

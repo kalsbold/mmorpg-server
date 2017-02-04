@@ -8,6 +8,7 @@
 #include <gisunnet/network/IoServicePool.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
+#include <boost/locale.hpp>
 
 using namespace gisunnet;
 using namespace MyGame::Sample;
@@ -57,6 +58,9 @@ int main()
 			auto weapon_name = weapon->name()->str(); // "Axe"
 			auto weapon_damage = weapon->damage();    // 5
 		}
+
+		//std::cout << "Monster name : " << boost::locale::conv::from_utf<char>(name, "EUC-KR") << "\n";
+		std::cout << "Monster name : " << name << "\n";
 	});
 
 	client->Connect("127.0.0.1", "8413");
@@ -103,8 +107,8 @@ int main()
 		//auto buffer = std::make_shared<Buffer>(str.size());
 		//buffer->WriteBytes((uint8_t*)str.data(), str.size());
 		client->Send(builder.GetBufferPointer(), builder.GetSize());
-		client->Send(builder.GetBufferPointer(), builder.GetSize());
-		client->Send(builder.GetBufferPointer(), builder.GetSize());
+		//client->Send(builder.GetBufferPointer(), builder.GetSize());
+		//client->Send(builder.GetBufferPointer(), builder.GetSize());
 	}
 
     return 0;

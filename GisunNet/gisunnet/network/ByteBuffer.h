@@ -334,11 +334,17 @@ public:
 	template <typename PodType>
 	void GetPOD(size_t index, PodType& dst) const
 	{
+		GetPOD(index, &dst);
+	}
+
+	template <typename PodType>
+	void GetPOD(size_t index, PodType* dst) const
+	{
 		// POD 타입이 아니면 컴파일 에러
 		static_assert(std::is_pod<PodType>::value, "dst is not pod.");
 
-		//std::memcpy(&dst, data_.at(0) + rpos_, length);
-		dst = *((PodType*)(data_.data() + index));
+		//std::memcpy(dst, data_.at(0) + rpos_, length);
+		*dst = *((PodType*)(data_.data() + index));
 	}
 
 	void GetBytes(size_t index, this_type& dst) const
@@ -373,11 +379,17 @@ public:
 	template <typename PodType>
 	void SetPOD(size_t index, const PodType& value)
 	{
+		SetPOD(index, &value);
+	}
+
+	template <typename PodType>
+	void SetPOD(size_t index, const PodType* value)
+	{
 		// POD 타입이 아니면 컴파일 에러
 		static_assert(std::is_pod<PodType>::value, "value is not pod.");
 
-		//std::memcpy(data_.data() + wpos_, src, length);
-		*(PodType*)(data_.data() + index) = value;
+		//std::memcpy(data_.data() + index, value, length);
+		*(PodType*)(data_.data() + index) = *value;
 	}
 
 	void SetByte(size_t index, const this_type& src)
@@ -409,7 +421,19 @@ public:
 		std::memcpy(data_.data() + index, src + srcIndex, length);
 	}
 
+	// index 위치에 삽입. ReaderIndex, WriterIndex 를 변경하지 않는다. 필요하면 직접 변경 하도록한다.
+	void InsertBytes(size_t index, const uint8_t* src, size_t srcIndex, size_t length)
+	{
+		CheckIndex(index);
+		size_t old_cap = Capacity();
+		int add_length = (index > w_index_) ? (index - w_index_) : 0;
+		EnsureWritable(length + add_length);
+		std::memmove(Data() + index + length, Data() + index, old_cap - index);
+		SetBytes(index, src, srcIndex, length);
+	}
+
 	void Read(bool& dst) { ReadPOD(dst); }
+	void Read(char& dst) { ReadPOD(dst); }
 	void Read(int8_t& dst) { ReadPOD(dst); }
 	void Read(uint8_t& dst) { ReadPOD(dst); }
 	void Read(int16_t& dst) { ReadPOD(dst); }
@@ -421,13 +445,30 @@ public:
 	void Read(float& dst) { ReadPOD(dst); }
 	void Read(double& dst) { ReadPOD(dst); }
 
+	void Read(bool* dst) { ReadPOD(dst); }
+	void Read(char* dst) { ReadPOD(dst); }
+	void Read(int8_t* dst) { ReadPOD(dst); }
+	void Read(uint8_t* dst) { ReadPOD(dst); }
+	void Read(int16_t* dst) { ReadPOD(dst); }
+	void Read(uint16_t* dst) { ReadPOD(dst); }
+	void Read(int32_t* dst) { ReadPOD(dst); }
+	void Read(uint32_t* dst) { ReadPOD(dst); }
+	void Read(int64_t* dst) { ReadPOD(dst); }
+	void Read(uint64_t* dst) { ReadPOD(dst); }
+	void Read(float* dst) { ReadPOD(dst); }
+	void Read(double* dst) { ReadPOD(dst); }
+
 	// POD 타입만 읽는다. ReaderIndex 를 읽은만큼 전진시킨다.
 	template <typename PodType>
 	void ReadPOD(PodType& dst)
 	{
-		// POD 타입이 아니면 컴파일 에러
-		static_assert(std::is_pod<PodType>::value, "dst is not pod.");
+		ReadPOD(&dst);
+	}
 
+	// POD 타입만 읽는다. ReaderIndex 를 읽은만큼 전진시킨다.
+	template <typename PodType>
+	void ReadPOD(PodType* dst)
+	{
 		constexpr size_t length = sizeof(PodType);
 		CheckReadableBytes(length);
 		GetPOD(r_index_, dst);
@@ -529,6 +570,7 @@ public:
 	//}
 
 	void Write(const bool& value) { WritePOD(value); }
+	void Write(const char& value) { WritePOD(value); }
 	void Write(const int8_t& value) { WritePOD(value); }
 	void Write(const uint8_t& value) { WritePOD(value); }
 	void Write(const int16_t& value) { WritePOD(value); }
@@ -540,13 +582,29 @@ public:
 	void Write(const float& value) { WritePOD(value); }
 	void Write(const double& value) { WritePOD(value); }
 
+	void Write(const bool* value) { WritePOD(value); }
+	void Write(const char* value) { WritePOD(value); }
+	void Write(const int8_t* value) { WritePOD(value); }
+	void Write(const uint8_t* value) { WritePOD(value); }
+	void Write(const int16_t* value) { WritePOD(value); }
+	void Write(const uint16_t* value) { WritePOD(value); }
+	void Write(const int32_t* value) { WritePOD(value); }
+	void Write(const uint32_t* value) { WritePOD(value); }
+	void Write(const int64_t* value) { WritePOD(value); }
+	void Write(const uint64_t* value) { WritePOD(value); }
+	void Write(const float* value) { WritePOD(value); }
+	void Write(const double* value) { WritePOD(value); }
+
 	// POD 타입만 쓴다. WriterIndex 를 쓴만큼 전진한다.
 	template <typename PodType>
 	void WritePOD(const PodType& src)
 	{
-		// POD 타입이 아니면 컴파일 에러
-		static_assert(std::is_pod<PodType>::value, "src is not pod.");
+		WritePOD(&src);
+	}
 
+	template <typename PodType>
+	void WritePOD(const PodType* src)
+	{
 		constexpr size_t length = sizeof(PodType);
 		EnsureWritable(length);
 		SetPOD(w_index_, src);

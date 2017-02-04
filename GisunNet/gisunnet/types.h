@@ -21,14 +21,16 @@ namespace gisunnet {
 
 	using std::function;
 
-	using uuid = boost::uuids::uuid;
+	using boost::uuids::uuid;
 
-	using string = std::string;
+	using std::string;
 
-	using error_code = boost::system::error_code;
+	using boost::system::error_code;
 
 	// 기본 버퍼 타입.
 	using Buffer = ByteBuffer<>;
+
+	namespace asio = boost::asio;
 
 } // namespace gisunnet
 

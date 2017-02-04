@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include <string>
 #include <iostream>
-#include <gisunnet/network/Server.h>
+#include <gisunnet/network/NetServer.h>
 #include <gisunnet/network/IoServicePool.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
@@ -17,7 +17,7 @@ int main()
 {
 	Configuration config;
 	config.max_session_count = 5;
-	auto server = Server::Create(config);
+	auto server = NetServer::Create(config);
 
 	server->RegisterSessionOpenedHandler([](auto& session)
 	{
@@ -40,7 +40,6 @@ int main()
 		auto hp = monster->hp();
 		auto mana = monster->mana();
 		auto name = monster->name()->c_str();
-		std::cout << boost::locale::conv::from_utf<char>(name, "EUC-KR") << "\n";
 		auto pos = monster->pos();
 		auto x = pos->x();
 		auto y = pos->y();
@@ -60,6 +59,8 @@ int main()
 			auto weapon_damage = weapon->damage();    // 5
 		}
 
+		//std::cout << "Monster name : " << boost::locale::conv::from_utf<char>(name, "EUC-KR") << "\n";
+		std::cout << "Monster name : " << name << "\n";
 		session->Send(data, bytes);
 	});
 
@@ -69,11 +70,9 @@ int main()
 	std::getline(std::cin, input, '\n');
 	
 	server->Stop();
-	while (server->GetState() != Server::State::Stop)
-	{
-	}
-
-	flatbuffers::FlatBufferBuilder fbb;
+	auto ios_pool = server->GetIoServicePool();
+	ios_pool->Stop();
+	ios_pool->Wait();
 
     return 0;
 }

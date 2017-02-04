@@ -12,16 +12,15 @@ class TcpSession : public Session, public std::enable_shared_from_this<TcpSessio
 {
 public:
 	using tcp = boost::asio::ip::tcp;
-	using SessionID = uuid;
 
 	TcpSession(const TcpSession&) = delete;
 	TcpSession& operator=(const TcpSession&) = delete;
 
-	TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id, const Configuration& config);
+	TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, const Configuration& config);
 
 	virtual ~TcpSession();
 
-	virtual const SessionID& ID() const override;
+	virtual const uuid& ID() const override;
 
 	virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const override;
 
@@ -65,7 +64,7 @@ private:
 		
 	struct Header
 	{
-		int32_t payload_len;
+		uint16_t payload_len;
 	};
 
 	using SendMsg = std::tuple<Buffer, Ptr<Buffer>>;
@@ -87,7 +86,7 @@ private:
 	void HandleError(const error_code& error);
 	void _Close(CloseReason reason);
 
-	SendMsg EncodeSendData(Ptr<Buffer>& data)
+	void EncodeSendData(Ptr<Buffer>& data)
 	{
 		// Make Header
 		Header header;
@@ -95,9 +94,8 @@ private:
 
 		// To Do : 암호화나 압축 등..
 		
-		Buffer header_buf(sizeof(Header));
-		header_buf.Write(header.payload_len);
-		return std::make_tuple(std::move(header_buf), data);
+		data->InsertBytes(data->ReaderIndex(), reinterpret_cast<uint8_t*>(&header.payload_len), 0, sizeof(header.payload_len));
+		data->WriterIndex(data->WriterIndex() + sizeof(header.payload_len));
 	}
 
 	void DecodeRecvData(Buffer& buf, size_t&)
@@ -136,12 +134,12 @@ private:
 	std::unique_ptr<strand> strand_;
 	tcp::endpoint remote_endpoint_;
 		
-	SessionID id_;
+	uuid id_;
 	State state_;
 
 	Ptr<Buffer> read_buf_;
 	std::vector<Ptr<Buffer>> pending_list_;
-	std::vector<SendMsg> sending_list_;
+	std::vector<Ptr<Buffer>> sending_list_;
 
 	// config
 	bool	no_delay_ = false;

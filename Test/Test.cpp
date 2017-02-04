@@ -2,63 +2,76 @@
 //
 
 #include "stdafx.h"
+//#include <mysql_connection.h>
+//#include <mysql_driver.h>
+//#include <mysql_error.h>
+//#include <cppconn/driver.h>
+//#include <cppconn/exception.h>
+//#include <cppconn/resultset.h>
+//#include <cppconn/statement.h>
+//#include <cppconn/prepared_statement.h>
+//
+//int main()
+//{
+//	sql::Driver *driver;
+//	sql::Connection *con;
+//	sql::Statement *stmt;
+//	sql::ResultSet *res;
+//	sql::PreparedStatement *pstmt;
+//
+//	try {
+//		driver = sql::mysql::get_mysql_driver_instance();
+//		con = driver->connect("tcp://127.0.0.1:3306", sql::SQLString("root"), sql::SQLString(""));
+//		con->setSchema("mob_management");
+//		
+//		stmt = con->createStatement();
+//		stmt->execute("insert into character_table (name) values('orc'),('five')");
+//		delete stmt;
+//		
+//		pstmt = con->prepareStatement("select * from character_table");
+//		res = pstmt->executeQuery();
+//		while (res->next())
+//		        std::cout << res->getInt("id") << "  " << res->getString("name") << std::endl;
+//		delete res;
+//		delete pstmt;
+//		
+//		pstmt = con->prepareStatement("delete from character_table where id=?");
+//		pstmt->setInt(1, 10);
+//		pstmt->executeUpdate();
+//		//pstmt->setInt(1, 11);
+//		//pstmt->executeUpdate();
+//		
+//		delete pstmt;
+//		
+//		delete con;
+//	}
+//	catch (sql::SQLException &e) {
+//		std::cout << e.what();
+//	}
+//
+//	return 0;
+//}
+
+#include <iostream>
 #include <future>
-#include <gisunnet/network/Server.h>
-#include <gisunnet/network/Client.h>
-#include <gisunnet/network/IoServicePool.h>
+#include <thread>
+#include <boost/asio.hpp>
+#include <gisunnet/types.h>
+
+using namespace boost;
+using namespace gisunnet;
 
 int main()
 {
-	using namespace gisunnet;
+	Buffer buf(64,256);
+	buf.Write('a');
+	buf.Write('b');
+	buf.Write('c');
+	buf.Write('d');
+	buf.Write('e');
+	buf.Write('f');
 
-	Configuration config;
-	config.io_service_pool = std::make_shared<IoServicePool>(4);
-	auto server = Server::Create(config);
+	uint8_t array[5] = { 'g','h','i','j','k' };
+	buf.InsertBytes(63, array, 0, 5);
 
-	server->RegisterSessionOpenedHandler([](auto& session)
-	{
-		std::cout << "Connect session id :" << session->ID() << "\n";
-		string ip;
-		uint16_t port;
-		session->GetRemoteEndpoint(ip, port);
-		std::cout << "Connect from :" << ip << ":" << port <<"\n";
-	});
-
-	server->RegisterSessionClosedHandler([](auto& session, auto& reason)
-	{
-		std::cout << "Close session id :" << session->ID() << "\n";
-	});
-
-	server->Start(8413);
-
-	ClientConfiguration clientConfig;
-	auto client = Client::Create(clientConfig);
-	client->RegisterNetEventHandler([](const NetEventType& net_event)
-	{
-		if (net_event == NetEventType::Opened)
-		{
-			std::cout << "Connect success<<" << "\n";
-		}
-		else if (net_event == NetEventType::ConnectFailed)
-		{
-			std::cout << "Connect failed" << "\n";
-		}
-		else if (net_event == NetEventType::Closed)
-		{
-			std::cout << "Connect close" << "\n";
-		}
-	});
-
-	client->Connect("127.0.0.1", "8413");
-	while (true)
-	{
-		std::string str;
-		std::cin >> str;
-		auto buffer = std::make_shared<Buffer>(str.size());
-		buffer->WriteBytes((uint8_t*)str.data(), str.size());
-		client->Send(std::move(buffer));
-	}
-
-	return 0;
 }
-

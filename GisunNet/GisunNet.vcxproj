@@ -26,7 +26,7 @@
     <ClInclude Include="gisunnet\utility\AsioHelper.h" />
     <ClInclude Include="gisunnet\network\ByteBuffer.h" />
     <ClInclude Include="gisunnet\network\IoServicePool.h" />
-    <ClInclude Include="gisunnet\network\Server.h" />
+    <ClInclude Include="gisunnet\network\NetServer.h" />
     <ClInclude Include="gisunnet\network\Session.h" />
     <ClInclude Include="gisunnet\network\tcp\TcpSession.h" />
     <ClInclude Include="gisunnet\network\tcp\TcpServer.h" />
@@ -92,10 +92,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Program Files (x86)\MySQL\MySQL Connector C++ 1.1.7\include;$(BOOST_ROOT);$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files (x86)\MySQL\MySQL Connector C++ 1.1.7\lib\opt;$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
     <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -125,6 +129,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -151,6 +158,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>.\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
