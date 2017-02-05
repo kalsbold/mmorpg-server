@@ -19,6 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="gisunnet\logging\services\basic_logger.hpp" />
+    <ClInclude Include="gisunnet\logging\logger.h" />
+    <ClInclude Include="gisunnet\logging\services\logger_service.hpp" />
     <ClInclude Include="gisunnet\network\Client.h" />
     <ClInclude Include="gisunnet\network\Configuration.h" />
     <ClInclude Include="gisunnet\network\tcp\TcpClient.h" />
@@ -32,6 +35,7 @@
     <ClInclude Include="gisunnet\network\tcp\TcpServer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="gisunnet\logging\services\logger_service.cpp" />
     <ClCompile Include="src\Client.cpp" />
     <ClCompile Include="src\IoServicePool.cpp" />
     <ClCompile Include="src\Server.cpp" />

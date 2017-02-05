@@ -57,7 +57,7 @@ void Run()
 	config.min_receive_size = 256;
 	config.no_delay = true;
 
-	Ptr<Server> server = Server::Create(config);
+	Ptr<NetServer> server = NetServer::Create(config);
 	server->RegisterSessionOpenedHandler([](const Ptr<Session>& session) {
 		LOG("Session Open");
 	});
