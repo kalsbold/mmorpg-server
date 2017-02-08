@@ -1,4 +1,5 @@
 #include "gisunnet/network/tcp/TcpClient.h"
+#include "gisunnet/log/logger.h"
 
 namespace gisunnet {
 
@@ -27,15 +28,17 @@ void TcpClient::Connect(const std::string & host, const std::string & service)
 	strand_->dispatch([this, host, service]
 	{
 		if (state_ != State::Ready)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Can not connect. state is not ready";
 			return;
+		}
 
 		tcp::resolver resolver(ios_pool_->PickIoService());
 		auto endpoint_iterator = resolver.resolve({ host, service });
 
+		BOOST_LOG_TRIVIAL(info) << "Connect to : " << host << ":" << service;
 		ConnectStart(endpoint_iterator);
 		state_ = State::Connecting;
-
-		std::cerr << "Connecting to : " << host << ":" << service << "\n";
 	});
 }
 
@@ -76,7 +79,7 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 			size_t max_capacity = config_.max_receive_buffer_size;
 			read_buf_ = std::make_shared<Buffer>(initial_capacity, max_capacity);
 			state_ = State::Connected;
-
+			BOOST_LOG_TRIVIAL(info) << "Client Connected";
 			// Read
 			Read(config_.min_receive_size);
 			if(net_event_handler_) net_event_handler_(NetEventType::Opened);
@@ -85,6 +88,7 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 		{
 			HandleError(error);
 			_Close();
+			BOOST_LOG_TRIVIAL(info) << "Client Connect failed";
 			if(net_event_handler_) net_event_handler_(NetEventType::ConnectFailed);
 		}
 	}));
@@ -152,7 +156,7 @@ inline bool TcpClient::PrepareRead(size_t min_prepare_bytes)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "TcpTransport::PrepareRead Exception : " << e.what() << "\n";
+		BOOST_LOG_TRIVIAL(warning) << "Client prepare read exception : " << e.what();
 		read_buf_->Clear();
 		return false;
 	}
@@ -231,7 +235,7 @@ inline void TcpClient::HandleError(const error_code & error)
 		return;
 	}
 
-	std::cerr << "Socket Error : " << error.message() << "\n";
+	BOOST_LOG_TRIVIAL(info) << "Client socket error : " << error.message();
 }
 
 void TcpClient::_Close()
@@ -243,6 +247,8 @@ void TcpClient::_Close()
 	socket_->shutdown(tcp::socket::shutdown_both, ec);
 	socket_->close();
 	state_ = State::Closed;
+
+	BOOST_LOG_TRIVIAL(info) << "Client close";
 }
 
 } // namespace gisunnet

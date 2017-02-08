@@ -14,6 +14,8 @@ IoServicePool::IoServicePool(size_t thread_count)
 		works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*io_services_[i]));
 		threads_.emplace_back(std::thread([this, i]() { (*io_services_[i]).run(); }));
 	}
+
+	BOOST_LOG_TRIVIAL(info) << "Run IoServicePool. thread_count:" << thread_count;
 }
 
 IoServicePool::~IoServicePool()
@@ -28,6 +30,7 @@ void IoServicePool::Stop()
 	{
 		ios->stop();
 	}
+	BOOST_LOG_TRIVIAL(info) << "Stop IoServicePool";
 }
 
 void IoServicePool::Wait()

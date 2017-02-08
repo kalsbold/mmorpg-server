@@ -1,4 +1,5 @@
 #include "gisunnet/network/tcp/TcpServer.h"
+#include "gisunnet/log/logger.h"
 
 namespace gisunnet {
 
@@ -33,13 +34,16 @@ void TcpServer::Start(string address, uint16_t port)
 	strand_->dispatch([this, endpoint]()
 	{
 		if (!(state_ == State::Ready))
+		{
+			BOOST_LOG_TRIVIAL(info) << "NetServer can't start : State is not Ready\n";
 			return;
-		
+		}
+
 		Listen(endpoint);
 		AcceptStart();
 		state_ = State::Start;
 		
-		std::cerr << "NetServer start :" << endpoint << "\n";
+		BOOST_LOG_TRIVIAL(info) << "NetServer start " << endpoint;
 	});
 }
 
@@ -62,7 +66,7 @@ void TcpServer::Stop()
 		}
 		state_ = State::Stop;
 
-		std::cerr << "NetServer stop\n";
+		BOOST_LOG_TRIVIAL(info) << "NetServer stop";
 	});
 }
 
@@ -106,6 +110,7 @@ inline void TcpServer::AcceptStart()
 			socket_.release();
 			//accept_op_ = false;
 			//return;
+			BOOST_LOG_TRIVIAL(info) << "Session is full. max_session_count:" << config_.max_session_count;
 		}
 		else if (!error)
 		{
@@ -114,7 +119,7 @@ inline void TcpServer::AcceptStart()
 			// 세션 객체 생성.
 			auto session = std::make_shared<TcpSession>(std::move(socket_), id, config_);
 			// 핸들러 등록
-			// TO DO : 객체 소유권 넘기는게 번잡스럽다.. weak_ptr이 아니고 shared_ptr로 넘기면 메모리 해제가 안된다! signal2 로 변경을 고려해본다(track).
+			// TO DO : 객체 소유권 넘기는게 번잡스럽다.. weak_ptr이 아니고 shared_ptr로 넘기면 메모리 해제가 안된다! signal2 로 변경을 고려해본다(track 기능).
 			WeakPtr<TcpSession> session_weak = session;
 			session->openHandler = [this, session_weak] {
 				HandleSessionOpen(session_weak);
@@ -136,7 +141,7 @@ inline void TcpServer::AcceptStart()
 		}
 		else
 		{
-			std::cerr << "Accept error:" << error.message() << "\n";
+			BOOST_LOG_TRIVIAL(info) << "Accept error : " << error.message();
 		}
 
 		// 새로운 접속을 받는다

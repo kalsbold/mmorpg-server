@@ -3,7 +3,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
-#include <boost/asio.hpp>
+#include "gisunnet/types.h"
 
 namespace gisunnet {
 

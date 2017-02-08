@@ -48,13 +48,7 @@
     <ClInclude Include="gisunnet\network\NetServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\logging\logger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gisunnet\logging\services\basic_logger.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gisunnet\logging\services\logger_service.hpp">
+    <ClInclude Include="gisunnet\gisunnet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,9 +72,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Session.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gisunnet\logging\services\logger_service.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

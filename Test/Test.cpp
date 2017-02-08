@@ -56,22 +56,17 @@
 #include <future>
 #include <thread>
 #include <boost/asio.hpp>
-#include <gisunnet/types.h>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
 
-using namespace boost;
-using namespace gisunnet;
 
 int main()
 {
-	Buffer buf(64,256);
-	buf.Write('a');
-	buf.Write('b');
-	buf.Write('c');
-	buf.Write('d');
-	buf.Write('e');
-	buf.Write('f');
+	boost::asio::io_service ios;
 
-	uint8_t array[5] = { 'g','h','i','j','k' };
-	buf.InsertBytes(63, array, 0, 5);
-
+	for (size_t i = 0; i < 10; i++)
+	{
+		BOOST_LOG_TRIVIAL(info) << "Teeeeeeeeeeeeeeeeeeeeeeeeeeeeest";
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
 }

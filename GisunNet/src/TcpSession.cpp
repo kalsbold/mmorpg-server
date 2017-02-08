@@ -1,4 +1,5 @@
 #include "gisunnet/network/tcp/TcpSession.h"
+#include "gisunnet/log/logger.h"
 
 namespace gisunnet {
 
@@ -22,7 +23,6 @@ TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, cons
 
 TcpSession::~TcpSession()
 {
-	std::cerr << "Session destroy\n";
 }
 
 const uuid& TcpSession::ID() const
@@ -69,14 +69,16 @@ void TcpSession::Start()
 			size_t max_capacity = max_receive_buffer_size_;
 			read_buf_ = std::make_shared<Buffer>(initial_capacity, max_capacity);
 		}
-		catch (const std::exception&)
+		catch (const std::exception& e)
 		{
+			BOOST_LOG_TRIVIAL(info) << "Session socket set option exception : " << e.what();
 			_Close(CloseReason::ActiveClose);
 			return;
 		}
 
 		state_ = State::Opened;
 		Read(min_receive_size_);
+		BOOST_LOG_TRIVIAL(info) << "Session start";
 
 		openHandler();
 	});
@@ -146,7 +148,7 @@ inline bool TcpSession::PrepareRead(size_t min_prepare_bytes)
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "TcpTransport::PrepareRead Exception : " << e.what() << "\n";
+		BOOST_LOG_TRIVIAL(warning) << "Session prepare read exception : " << e.what() << "\n";
 		read_buf_->Clear();
 		return false;
 	}
@@ -225,7 +227,7 @@ void TcpSession::HandleError(const error_code & error)
 		return;
 	}
 
-	std::cerr << "Socket Error : " << error.message() << "\n";
+	BOOST_LOG_TRIVIAL(info) << "Session socket error : " << error.message();
 }
 
 void TcpSession::_Close(CloseReason reason)
@@ -237,6 +239,8 @@ void TcpSession::_Close(CloseReason reason)
 	socket_->shutdown(tcp::socket::shutdown_both, ec);
 	socket_->close();
 	state_ = State::Closed;
+
+	BOOST_LOG_TRIVIAL(info) << "Session Close";
 
 	if (closeHandler)
 		closeHandler(reason);
