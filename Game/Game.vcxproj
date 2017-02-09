@@ -75,15 +75,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(BOOST_ROOT);C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;C:\Program Files\MySQL\MySQL Connector C 6.1\lib;C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\lib\opt;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
-    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;C:\Program Files\MySQL\MySQL Connector C 6.1\lib;C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\lib\opt;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -112,7 +112,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>GisunNet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>GisunNet.lib;libmysql.lib;mysqlcppconn.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -150,16 +150,20 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>GisunNet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>GisunNet.lib;libmysql.lib;mysqlcppconn.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AccountManager.h" />
     <ClInclude Include="GameServer.h" />
+    <ClInclude Include="MessageHandlers.h" />
+    <ClInclude Include="Singleton.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />

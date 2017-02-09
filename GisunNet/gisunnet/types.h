@@ -36,9 +36,9 @@ namespace gisunnet {
 } // namespace gisunnet
 
 #define DECLARE_CLASS_PTR(CLS) \
-  static const Ptr<CLS> NullPtr; \
-  static const WeakPtr<CLS> NullWeakPtr;
+  static const gisunnet::Ptr<CLS> NullPtr; \
+  static const gisunnet::WeakPtr<CLS> NullWeakPtr;
 
 #define DEFINE_CLASS_PTR(CLS) \
-  const Ptr<CLS> CLS::NullPtr; \
-  const WeakPtr<CLS> CLS::NullWeakPtr;
+  const gisunnet::Ptr<CLS> CLS::NullPtr; \
+  const gisunnet::WeakPtr<CLS> CLS::NullWeakPtr;
