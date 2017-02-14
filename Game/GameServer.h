@@ -4,6 +4,7 @@
 #include <gisunnet/gisunnet.h>
 #include <flatbuffers/flatbuffers.h>
 #include "Singleton.h"
+#include "MySQL.h"
 
 using namespace gisunnet;
 
@@ -14,14 +15,21 @@ public:
 	void Initialize();
 	void Run(uint16_t bind_port);
 	void Stop();
+
 	const Ptr<IoServicePool>& GetIoServicePool()
 	{
 		return ios_pool_;
 	}
 
+	const Ptr<MySQLPool>& GetDB()
+	{
+		return db_;
+	}
+
 private:
 	Ptr<IoServicePool> ios_pool_;
 	Ptr<NetServer> net_server_;
+	Ptr<MySQLPool> db_;
 
 	void OnSessionOpen(const Ptr<Session>& session)
 	{
@@ -51,6 +59,7 @@ void GameServer::Initialize()
 	size_t thread_count = 4;
 	ios_pool_ = std::make_shared<IoServicePool>(thread_count);
 
+	// Init NetServer
 	Configuration config;
 	config.io_service_pool = ios_pool_;
 	config.max_session_count = 1000;
@@ -73,6 +82,7 @@ void GameServer::Initialize()
 	});
 
 	// Init DB
+	db_ = std::make_shared<MySQLPool>("127.0.0.1:8413", "nusigmik", "56561163", "Project_MMOG", 4);
 }
 
 void GameServer::Run(uint16_t bind_port)

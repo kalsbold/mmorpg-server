@@ -1,38 +1,132 @@
 #pragma once
 
+#include <mutex>
+#include <future>
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
 #include <cppconn/resultset.h>
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
 
+using ResultPtr = std::shared_ptr<sql::ResultSet>;
 
-
-class MySQL
+class MySQLPool
 {
 public:
-	MySQL(const std::string& url, const std::string& username, const std::string& password,
-		const std::string& database, size_t connection_count,
-		const std::string& connection_charset)
+	MySQLPool(const std::string& url, const std::string& user, const std::string& password,
+		const std::string& database, size_t connection_count = 1,
+		const std::string& connection_charset = "")
+		: url_(url), user_(user), password_(password)
+		, database_(database), connection_count_(connection_count)
+		, connection_charset_(connection_charset)
 	{
+		Initialize();
+	}
 
-		driver_ = get_driver_instance();
+	~MySQLPool()
+	{
+		Finalize();
+	}
+
+	sql::Connection* GetConnection()
+	{
+		std::lock_guard<std::mutex> guard(mutex_);
+		if (pool_list_.empty())
+		{
+			sql::Connection* conn = CreateConnection();
+			connection_pool_.push_back(conn);
+			pool_list_.push_front(conn);
+		}
+
+		sql::Connection* conn = pool_list_.front();
+		pool_list_.pop_front();
+		
+		return conn;
+	}
+
+	void ReleaseConnection(sql::Connection* conn)
+	{
+		std::lock_guard<std::mutex> guard(mutex_);
+		pool_list_.push_front(conn);
+	}
+
+	using ConnectionGuard = std::unique_ptr<sql::Connection, std::function<void(sql::Connection*)>>;
+
+	std::future<ResultPtr> ExcuteAsync(const string& query)
+	{
+		return std::async(std::launch::async, [this, query] {
+				ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
+						ReleaseConnection(ptr);
+					});
+
+				std::unique_ptr<sql::Statement> stmt;
+				ResultPtr result;
+				stmt.reset(conn->createStatement());
+				result.reset(stmt->executeQuery(query.c_str()));
+
+				return result;
+			});
+	}
+
+	ResultPtr Excute(const string& query)
+	{
+		ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
+			ReleaseConnection(ptr);
+		});
+
+		std::unique_ptr<sql::Statement> stmt;
+		ResultPtr result;
+		stmt.reset(conn->createStatement());
+		result.reset(stmt->executeQuery(query.c_str()));
+
+		return result;
 	}
 
 private:
-	void CreateConnectionPool()
+	void Initialize()
 	{
+		driver_ = get_driver_instance();
+
+		std::lock_guard<std::mutex> guard(mutex_);
 		for (size_t i = 0; i < connection_count_; i++)
 		{
-			sql::Connection* conn = driver_->connect(url_, username_, password_);
+			sql::Connection* conn = CreateConnection();
+			connection_pool_.push_back(conn);
+			pool_list_.push_front(conn);
 		}
 	}
 
-	sql::Driver* driver_;
+	void Finalize()
+	{
+		std::lock_guard<std::mutex> guard(mutex_);
+		for (sql::Connection* conn : connection_pool_)
+		{
+			delete conn;
+		}
+		connection_pool_.clear();
+		pool_list_.clear();
+	}
+
+	sql::Connection* CreateConnection()
+	{
+		sql::Connection* conn = driver_->connect(url_.c_str(), user_.c_str(), password_.c_str());
+		conn->setSchema(database_.c_str());
+		conn->setClientOption("characterSetResults", connection_charset_.c_str());
+		bool reconnect = true;
+		conn->setClientOption("OPT_RECONNECT", (void*)&reconnect);
+
+		return conn;
+	}
+	
 	std::string url_;
-	std::string username_;
+	std::string user_;
 	std::string password_;
 	std::string database_;
 	size_t connection_count_;
 	std::string connection_charset_;
+	
+	std::mutex mutex_;
+	sql::Driver* driver_;
+	std::vector<sql::Connection*> connection_pool_;
+	std::list<sql::Connection*> pool_list_;
 };

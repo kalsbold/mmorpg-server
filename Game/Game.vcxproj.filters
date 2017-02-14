@@ -16,6 +16,12 @@
     <Filter Include="Account">
       <UniqueIdentifier>{a4a5b7ec-f88d-487c-8c47-4d125f2aea64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Database">
+      <UniqueIdentifier>{bf5cb8f8-91ab-46cb-b39c-f136293a83ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Protocol">
+      <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -23,9 +29,6 @@
   <ItemGroup>
     <ClInclude Include="World.h">
       <Filter>World</Filter>
-    </ClInclude>
-    <ClInclude Include="MessageHandlers.h">
-      <Filter>Message</Filter>
     </ClInclude>
     <ClInclude Include="GameServer.h">
       <Filter>Server</Filter>
@@ -37,6 +40,15 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Singleton.h">
       <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="MySQL.h">
+      <Filter>Database</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageHandlerRegistry.h">
+      <Filter>Message</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageHandlers.h">
+      <Filter>Protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

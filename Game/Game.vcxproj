@@ -105,7 +105,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet;..\3rd party\flatbuffers\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -141,7 +141,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet;..\3rd party\flatbuffers\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -159,7 +159,9 @@
   <ItemGroup>
     <ClInclude Include="AccountManager.h" />
     <ClInclude Include="GameServer.h" />
+    <ClInclude Include="MessageHandlerRegistry.h" />
     <ClInclude Include="MessageHandlers.h" />
+    <ClInclude Include="MySQL.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
