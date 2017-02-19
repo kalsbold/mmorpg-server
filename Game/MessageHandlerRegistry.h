@@ -15,6 +15,7 @@ public:
 	{
 		handler_map_.emplace(message_type, message_handler);
 	}
+
 	void Dispatch(const Ptr<Session>&, const MessageType& message_type, const Message& message)
 	{
 		auto it = handler_map_.find(message_type);
@@ -28,7 +29,3 @@ private:
 	std::map<MessageType, MessageHandler> handler_map_;
 };
 
-//void OnLogin(const Ptr<Session>& session, )
-//{
-//
-//}
