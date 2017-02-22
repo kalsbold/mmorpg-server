@@ -160,7 +160,6 @@
     <ClInclude Include="AccountManager.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="game_message_generated.h" />
-    <ClInclude Include="MessageHandlerRegistry.h" />
     <ClInclude Include="MessageHandlers.h" />
     <ClInclude Include="MySQL.h" />
     <ClInclude Include="Singleton.h" />

@@ -8,8 +8,9 @@
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
 
-using ResultPtr = std::shared_ptr<sql::ResultSet>;
+using ResultSetPtr = std::shared_ptr<sql::ResultSet>;
 
+// MySQL database connection pool
 class MySQLPool
 {
 public:
@@ -28,6 +29,7 @@ public:
 		Finalize();
 	}
 
+	// 풀에서 커넥션을 가져온다.
 	sql::Connection* GetConnection()
 	{
 		std::lock_guard<std::mutex> guard(mutex_);
@@ -44,6 +46,7 @@ public:
 		return conn;
 	}
 
+	// 커넥션을 풀로 되돌린다.
 	void ReleaseConnection(sql::Connection* conn)
 	{
 		std::lock_guard<std::mutex> guard(mutex_);
@@ -52,7 +55,8 @@ public:
 
 	using ConnectionGuard = std::unique_ptr<sql::Connection, std::function<void(sql::Connection*)>>;
 
-	std::future<ResultPtr> ExcuteAsync(const string& query)
+	// 비동기로 쿼리를 실행
+	std::future<ResultSetPtr> ExcuteAsync(const string& query)
 	{
 		return std::async(std::launch::async, [this, query] {
 				ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
@@ -60,7 +64,7 @@ public:
 					});
 
 				std::unique_ptr<sql::Statement> stmt;
-				ResultPtr result;
+				ResultSetPtr result;
 				stmt.reset(conn->createStatement());
 				result.reset(stmt->executeQuery(query.c_str()));
 
@@ -68,14 +72,15 @@ public:
 			});
 	}
 
-	ResultPtr Excute(const string& query)
+	// 동기로 쿼리를 실행
+	ResultSetPtr Excute(const string& query)
 	{
 		ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
 			ReleaseConnection(ptr);
 		});
 
 		std::unique_ptr<sql::Statement> stmt;
-		ResultPtr result;
+		ResultSetPtr result;
 		stmt.reset(conn->createStatement());
 		result.reset(stmt->executeQuery(query.c_str()));
 
