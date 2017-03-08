@@ -56,7 +56,7 @@ public:
 	using ConnectionGuard = std::unique_ptr<sql::Connection, std::function<void(sql::Connection*)>>;
 
 	// 비동기로 쿼리를 실행
-	std::future<ResultSetPtr> ExcuteAsync(const string& query)
+	std::future<ResultSetPtr> ExcuteAsync(const std::string& query)
 	{
 		return std::async(std::launch::async, [this, query] {
 				ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
@@ -65,15 +65,17 @@ public:
 
 				std::unique_ptr<sql::Statement> stmt;
 				ResultSetPtr result;
+
 				stmt.reset(conn->createStatement());
-				result.reset(stmt->executeQuery(query.c_str()));
+				if (stmt->execute(query.c_str()))
+					result.reset(stmt->getResultSet());
 
 				return result;
 			});
 	}
 
 	// 동기로 쿼리를 실행
-	ResultSetPtr Excute(const string& query)
+	ResultSetPtr Excute(const std::string& query)
 	{
 		ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
 			ReleaseConnection(ptr);
@@ -81,8 +83,10 @@ public:
 
 		std::unique_ptr<sql::Statement> stmt;
 		ResultSetPtr result;
+		
 		stmt.reset(conn->createStatement());
-		result.reset(stmt->executeQuery(query.c_str()));
+		if (stmt->execute(query.c_str()))
+			result.reset(stmt->getResultSet());
 
 		return result;
 	}
@@ -91,6 +95,8 @@ private:
 	void Initialize()
 	{
 		driver_ = get_driver_instance();
+		if (driver_ == nullptr)
+			return;
 
 		std::lock_guard<std::mutex> guard(mutex_);
 		for (size_t i = 0; i < connection_count_; i++)

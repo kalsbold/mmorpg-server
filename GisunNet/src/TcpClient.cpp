@@ -1,5 +1,4 @@
 #include "gisunnet/network/tcp/TcpClient.h"
-#include "gisunnet/log/logger.h"
 
 namespace gisunnet {
 

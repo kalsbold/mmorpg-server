@@ -19,6 +19,9 @@
     <Filter Include="Message">
       <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{5e56521b-c6e5-46c5-b3f3-7c170e20bdce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -41,15 +44,21 @@
     <ClInclude Include="MySQL.h">
       <Filter>Database</Filter>
     </ClInclude>
-    <ClInclude Include="MessageHandlers.h">
-      <Filter>Message</Filter>
-    </ClInclude>
     <ClInclude Include="game_message_generated.h">
       <Filter>Message</Filter>
+    </ClInclude>
+    <ClInclude Include="TestMySQL.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="GameSession.h">
+      <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="GameServer.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -13,3 +13,12 @@
 
 
 // TODO: reference additional headers your program requires here
+#include <cstdint>
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <functional>
+#include <algorithm>
+#include <vector>
+#include <list>
+#include <map>

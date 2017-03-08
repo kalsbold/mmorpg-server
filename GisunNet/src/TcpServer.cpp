@@ -1,5 +1,4 @@
 #include "gisunnet/network/tcp/TcpServer.h"
-#include "gisunnet/log/logger.h"
 
 namespace gisunnet {
 
@@ -31,43 +30,40 @@ void TcpServer::Start(uint16_t port)
 void TcpServer::Start(string address, uint16_t port)
 {
 	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
-	strand_->dispatch([this, endpoint]()
+	
+	std::lock_guard<std::mutex> guard(mutex_);
+	if (!(state_ == State::Ready))
 	{
-		if (!(state_ == State::Ready))
-		{
-			BOOST_LOG_TRIVIAL(info) << "NetServer can't start : State is not Ready\n";
-			return;
-		}
+		BOOST_LOG_TRIVIAL(info) << "NetServer can't start : State is not Ready\n";
+		return;
+	}
 
-		Listen(endpoint);
-		AcceptStart();
-		state_ = State::Start;
+	Listen(endpoint);
+	AcceptStart();
+	state_ = State::Start;
 		
-		BOOST_LOG_TRIVIAL(info) << "NetServer start " << endpoint;
-	});
+	BOOST_LOG_TRIVIAL(info) << "NetServer start " << endpoint;
 }
 
 void TcpServer::Stop()
 {
-	// TO DO : future 사용으로 종료 결과 반환받기?
-	strand_->dispatch([this]()
+	std::lock_guard<std::mutex> guard(mutex_);
+	if (!(state_ == State::Start))
 	{
-		acceptor_->close();
-		// 모든 세션을 닫는다.
-		for (auto& pair : session_list_)
-		{
-			(pair.second)->Close();
-		}
-		
-		// TO DO : lock 사용을 더 줄일수 있을까?
-		{
-			std::lock_guard<std::mutex> guard(mutex_);
-			session_list_.clear();
-		}
-		state_ = State::Stop;
+		return;
+	}
 
-		BOOST_LOG_TRIVIAL(info) << "NetServer stop";
-	});
+	acceptor_->close();
+	// 모든 세션을 닫는다.
+	for (auto& pair : session_list_)
+	{
+		(pair.second)->Close();
+	}
+	
+	session_list_.clear();
+	state_ = State::Stop;
+
+	BOOST_LOG_TRIVIAL(info) << "NetServer stop";
 }
 
 void TcpServer::Listen(tcp::endpoint endpoint)
@@ -87,7 +83,7 @@ inline void TcpServer::AcceptStart()
 	// Create tcp socket
 	socket_ = std::make_unique<tcp::socket>(ios_pool_->PickIoService());
 	// Async accept
-	acceptor_->async_accept(*socket_, strand_->wrap([this](error_code error) mutable
+	acceptor_->async_accept(*socket_, strand_->wrap([this, self = shared_from_this() ](error_code error) mutable
 	{
 		if (state_ == State::Stop)
 		{
@@ -166,21 +162,9 @@ inline void TcpServer::HandleSessionClose(const WeakPtr<Session>& session, Close
 	if (session_closed_handler_)
 		session_closed_handler_(s, reason);
 
-	strand_->dispatch([this, id = s->ID()]
-	{
-		{
-			// 세션 리스트에서 지워준다.
-			std::lock_guard<std::mutex> guard(mutex_);
-			session_list_.erase(id);
-		}
-
-		// Accept 재개 조건 검사
-		//if (session_list_.size() < config_.max_session_count && !accept_op_)
-		//{
-			// Accept 재개
-			//AcceptStart();
-		//}
-	});
+	// 세션 리스트에서 지워준다.
+	std::lock_guard<std::mutex> guard(mutex_);
+	session_list_.erase(s->ID());
 }
 
 inline void TcpServer::HandleSessionReceive(const WeakPtr<Session>& session, const uint8_t* buf, size_t bytes)

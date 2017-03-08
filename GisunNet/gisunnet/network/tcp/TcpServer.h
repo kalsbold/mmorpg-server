@@ -8,7 +8,7 @@
 
 namespace gisunnet {
 
-class TcpServer : public NetServer
+class TcpServer : public NetServer, public std::enable_shared_from_this<TcpServer>
 {
 public:
 	using tcp = boost::asio::ip::tcp;

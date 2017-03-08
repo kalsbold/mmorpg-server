@@ -64,7 +64,7 @@ private:
 		
 	struct Header
 	{
-		uint16_t payload_len;
+		int32_t payload_len;
 	};
 
 	using SendMsg = std::tuple<Buffer, Ptr<Buffer>>;

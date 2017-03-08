@@ -11,103 +11,117 @@ namespace Protocol {
 
 struct Vec3;
 
-struct CS_LoginRequest;
+struct HeroInfoSimple;
 
-struct SC_LoginFailed;
+struct HeroInfo;
 
-struct SC_LoginSuccess;
+struct JoinRequest;
 
-struct CS_JoinRequest;
+struct JoinFailedReply;
 
-struct SC_JoinFailed;
+struct JoinSuccessReply;
 
-struct SC_JoinSuccess;
+struct LoginRequest;
+
+struct LoginFailedReply;
+
+struct LoginSuccessReply;
+
+struct HeroListRequest;
+
+struct HeroListReply;
+
+struct SelectHeroRequest;
+
+struct SelectHeroFailedReply;
+
+struct SelectHeroSuccessReply;
+
+struct CreateHeroRequest;
+
+struct CreateHeroFailedReply;
+
+struct CreateHeroSuccessReply;
+
+struct RemoveHeroRequest;
+
+struct RemoveHeroFailedReply;
+
+struct RemoveHeroSuccessReply;
 
 struct NetMessage;
 
 enum ErrorCode {
   ErrorCode_OK = 0,
   ErrorCode_FATAL_ERROR = 1,
-  ErrorCode_SQL_ERROR = 2,
+  ErrorCode_JOIN_ACC_NAME_ALREADY = 100,
+  ErrorCode_JOIN_CANNOT_ACC_CREATE = 101,
+  ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD = 200,
+  ErrorCode_LOGIN_ALREADY = 201,
   ErrorCode_MIN = ErrorCode_OK,
-  ErrorCode_MAX = ErrorCode_SQL_ERROR
+  ErrorCode_MAX = ErrorCode_LOGIN_ALREADY
 };
 
-inline const char **EnumNamesErrorCode() {
-  static const char *names[] = {
-    "OK",
-    "FATAL_ERROR",
-    "SQL_ERROR",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameErrorCode(ErrorCode e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesErrorCode()[index];
-}
-
-enum Message {
-  Message_NONE = 0,
-  Message_CS_LoginRequest = 1,
-  Message_SC_LoginFailed = 2,
-  Message_SC_LoginSuccess = 3,
-  Message_CS_JoinRequest = 4,
-  Message_SC_JoinFailed = 5,
-  Message_SC_JoinSuccess = 6,
-  Message_MIN = Message_NONE,
-  Message_MAX = Message_SC_JoinSuccess
+enum MessageT {
+  MessageT_NONE = 0,
+  MessageT_LoginRequest = 1,
+  MessageT_LoginFailedReply = 2,
+  MessageT_LoginSuccessReply = 3,
+  MessageT_JoinRequest = 4,
+  MessageT_JoinFailedReply = 5,
+  MessageT_JoinSuccessReply = 6,
+  MessageT_MIN = MessageT_NONE,
+  MessageT_MAX = MessageT_JoinSuccessReply
 };
 
-inline const char **EnumNamesMessage() {
+inline const char **EnumNamesMessageT() {
   static const char *names[] = {
     "NONE",
-    "CS_LoginRequest",
-    "SC_LoginFailed",
-    "SC_LoginSuccess",
-    "CS_JoinRequest",
-    "SC_JoinFailed",
-    "SC_JoinSuccess",
+    "LoginRequest",
+    "LoginFailedReply",
+    "LoginSuccessReply",
+    "JoinRequest",
+    "JoinFailedReply",
+    "JoinSuccessReply",
     nullptr
   };
   return names;
 }
 
-inline const char *EnumNameMessage(Message e) {
+inline const char *EnumNameMessageT(MessageT e) {
   const size_t index = static_cast<int>(e);
-  return EnumNamesMessage()[index];
+  return EnumNamesMessageT()[index];
 }
 
-template<typename T> struct MessageTraits {
-  static const Message enum_value = Message_NONE;
+template<typename T> struct MessageTTraits {
+  static const MessageT enum_value = MessageT_NONE;
 };
 
-template<> struct MessageTraits<CS_LoginRequest> {
-  static const Message enum_value = Message_CS_LoginRequest;
+template<> struct MessageTTraits<LoginRequest> {
+  static const MessageT enum_value = MessageT_LoginRequest;
 };
 
-template<> struct MessageTraits<SC_LoginFailed> {
-  static const Message enum_value = Message_SC_LoginFailed;
+template<> struct MessageTTraits<LoginFailedReply> {
+  static const MessageT enum_value = MessageT_LoginFailedReply;
 };
 
-template<> struct MessageTraits<SC_LoginSuccess> {
-  static const Message enum_value = Message_SC_LoginSuccess;
+template<> struct MessageTTraits<LoginSuccessReply> {
+  static const MessageT enum_value = MessageT_LoginSuccessReply;
 };
 
-template<> struct MessageTraits<CS_JoinRequest> {
-  static const Message enum_value = Message_CS_JoinRequest;
+template<> struct MessageTTraits<JoinRequest> {
+  static const MessageT enum_value = MessageT_JoinRequest;
 };
 
-template<> struct MessageTraits<SC_JoinFailed> {
-  static const Message enum_value = Message_SC_JoinFailed;
+template<> struct MessageTTraits<JoinFailedReply> {
+  static const MessageT enum_value = MessageT_JoinFailedReply;
 };
 
-template<> struct MessageTraits<SC_JoinSuccess> {
-  static const Message enum_value = Message_SC_JoinSuccess;
+template<> struct MessageTTraits<JoinSuccessReply> {
+  static const MessageT enum_value = MessageT_JoinSuccessReply;
 };
 
-bool VerifyMessage(flatbuffers::Verifier &verifier, const void *obj, Message type);
+bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, MessageT type);
 
 MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
  private:
@@ -139,7 +153,237 @@ MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
 };
 STRUCT_END(Vec3, 12);
 
-struct CS_LoginRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct HeroInfoSimple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ID = 4,
+    VT_NAME = 6,
+    VT_CLASS_TYPE = 8,
+    VT_LEVEL = 10
+  };
+  int32_t id() const {
+    return GetField<int32_t>(VT_ID, 0);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  int32_t class_type() const {
+    return GetField<int32_t>(VT_CLASS_TYPE, 0);
+  }
+  int32_t level() const {
+    return GetField<int32_t>(VT_LEVEL, 1);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           verifier.Verify(name()) &&
+           VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
+           VerifyField<int32_t>(verifier, VT_LEVEL) &&
+           verifier.EndTable();
+  }
+};
+
+struct HeroInfoSimpleBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_id(int32_t id) {
+    fbb_.AddElement<int32_t>(HeroInfoSimple::VT_ID, id, 0);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(HeroInfoSimple::VT_NAME, name);
+  }
+  void add_class_type(int32_t class_type) {
+    fbb_.AddElement<int32_t>(HeroInfoSimple::VT_CLASS_TYPE, class_type, 0);
+  }
+  void add_level(int32_t level) {
+    fbb_.AddElement<int32_t>(HeroInfoSimple::VT_LEVEL, level, 1);
+  }
+  HeroInfoSimpleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  HeroInfoSimpleBuilder &operator=(const HeroInfoSimpleBuilder &);
+  flatbuffers::Offset<HeroInfoSimple> Finish() {
+    const auto end = fbb_.EndTable(start_, 4);
+    auto o = flatbuffers::Offset<HeroInfoSimple>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<HeroInfoSimple> CreateHeroInfoSimple(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t id = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    int32_t class_type = 0,
+    int32_t level = 1) {
+  HeroInfoSimpleBuilder builder_(_fbb);
+  builder_.add_level(level);
+  builder_.add_class_type(class_type);
+  builder_.add_name(name);
+  builder_.add_id(id);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<HeroInfoSimple> CreateHeroInfoSimpleDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t id = 0,
+    const char *name = nullptr,
+    int32_t class_type = 0,
+    int32_t level = 1) {
+  return CreateHeroInfoSimple(
+      _fbb,
+      id,
+      name ? _fbb.CreateString(name) : 0,
+      class_type,
+      level);
+}
+
+struct HeroInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ID = 4,
+    VT_NAME = 6,
+    VT_CLASS_TYPE = 8,
+    VT_LEVEL = 10,
+    VT_EXP = 12,
+    VT_HP = 14,
+    VT_MP = 16,
+    VT_POS = 18,
+    VT_DIRECTION = 20
+  };
+  int32_t id() const {
+    return GetField<int32_t>(VT_ID, 0);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  int32_t class_type() const {
+    return GetField<int32_t>(VT_CLASS_TYPE, 0);
+  }
+  int32_t level() const {
+    return GetField<int32_t>(VT_LEVEL, 1);
+  }
+  int32_t exp() const {
+    return GetField<int32_t>(VT_EXP, 0);
+  }
+  int32_t hp() const {
+    return GetField<int32_t>(VT_HP, 0);
+  }
+  int32_t mp() const {
+    return GetField<int32_t>(VT_MP, 0);
+  }
+  const Vec3 *pos() const {
+    return GetStruct<const Vec3 *>(VT_POS);
+  }
+  const Vec3 *direction() const {
+    return GetStruct<const Vec3 *>(VT_DIRECTION);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           verifier.Verify(name()) &&
+           VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
+           VerifyField<int32_t>(verifier, VT_LEVEL) &&
+           VerifyField<int32_t>(verifier, VT_EXP) &&
+           VerifyField<int32_t>(verifier, VT_HP) &&
+           VerifyField<int32_t>(verifier, VT_MP) &&
+           VerifyField<Vec3>(verifier, VT_POS) &&
+           VerifyField<Vec3>(verifier, VT_DIRECTION) &&
+           verifier.EndTable();
+  }
+};
+
+struct HeroInfoBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_id(int32_t id) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_ID, id, 0);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(HeroInfo::VT_NAME, name);
+  }
+  void add_class_type(int32_t class_type) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_CLASS_TYPE, class_type, 0);
+  }
+  void add_level(int32_t level) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_LEVEL, level, 1);
+  }
+  void add_exp(int32_t exp) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_EXP, exp, 0);
+  }
+  void add_hp(int32_t hp) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_HP, hp, 0);
+  }
+  void add_mp(int32_t mp) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_MP, mp, 0);
+  }
+  void add_pos(const Vec3 *pos) {
+    fbb_.AddStruct(HeroInfo::VT_POS, pos);
+  }
+  void add_direction(const Vec3 *direction) {
+    fbb_.AddStruct(HeroInfo::VT_DIRECTION, direction);
+  }
+  HeroInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  HeroInfoBuilder &operator=(const HeroInfoBuilder &);
+  flatbuffers::Offset<HeroInfo> Finish() {
+    const auto end = fbb_.EndTable(start_, 9);
+    auto o = flatbuffers::Offset<HeroInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<HeroInfo> CreateHeroInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t id = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    int32_t class_type = 0,
+    int32_t level = 1,
+    int32_t exp = 0,
+    int32_t hp = 0,
+    int32_t mp = 0,
+    const Vec3 *pos = 0,
+    const Vec3 *direction = 0) {
+  HeroInfoBuilder builder_(_fbb);
+  builder_.add_direction(direction);
+  builder_.add_pos(pos);
+  builder_.add_mp(mp);
+  builder_.add_hp(hp);
+  builder_.add_exp(exp);
+  builder_.add_level(level);
+  builder_.add_class_type(class_type);
+  builder_.add_name(name);
+  builder_.add_id(id);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<HeroInfo> CreateHeroInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t id = 0,
+    const char *name = nullptr,
+    int32_t class_type = 0,
+    int32_t level = 1,
+    int32_t exp = 0,
+    int32_t hp = 0,
+    int32_t mp = 0,
+    const Vec3 *pos = 0,
+    const Vec3 *direction = 0) {
+  return CreateHeroInfo(
+      _fbb,
+      id,
+      name ? _fbb.CreateString(name) : 0,
+      class_type,
+      level,
+      exp,
+      hp,
+      mp,
+      pos,
+      direction);
+}
+
+struct JoinRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ACC_NAME = 4,
     VT_PASSWORD = 6
@@ -160,48 +404,48 @@ struct CS_LoginRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
 };
 
-struct CS_LoginRequestBuilder {
+struct JoinRequestBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_acc_name(flatbuffers::Offset<flatbuffers::String> acc_name) {
-    fbb_.AddOffset(CS_LoginRequest::VT_ACC_NAME, acc_name);
+    fbb_.AddOffset(JoinRequest::VT_ACC_NAME, acc_name);
   }
   void add_password(flatbuffers::Offset<flatbuffers::String> password) {
-    fbb_.AddOffset(CS_LoginRequest::VT_PASSWORD, password);
+    fbb_.AddOffset(JoinRequest::VT_PASSWORD, password);
   }
-  CS_LoginRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  JoinRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  CS_LoginRequestBuilder &operator=(const CS_LoginRequestBuilder &);
-  flatbuffers::Offset<CS_LoginRequest> Finish() {
+  JoinRequestBuilder &operator=(const JoinRequestBuilder &);
+  flatbuffers::Offset<JoinRequest> Finish() {
     const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<CS_LoginRequest>(end);
+    auto o = flatbuffers::Offset<JoinRequest>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CS_LoginRequest> CreateCS_LoginRequest(
+inline flatbuffers::Offset<JoinRequest> CreateJoinRequest(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> acc_name = 0,
     flatbuffers::Offset<flatbuffers::String> password = 0) {
-  CS_LoginRequestBuilder builder_(_fbb);
+  JoinRequestBuilder builder_(_fbb);
   builder_.add_password(password);
   builder_.add_acc_name(acc_name);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<CS_LoginRequest> CreateCS_LoginRequestDirect(
+inline flatbuffers::Offset<JoinRequest> CreateJoinRequestDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *acc_name = nullptr,
     const char *password = nullptr) {
-  return CreateCS_LoginRequest(
+  return CreateJoinRequest(
       _fbb,
       acc_name ? _fbb.CreateString(acc_name) : 0,
       password ? _fbb.CreateString(password) : 0);
 }
 
-struct SC_LoginFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct JoinFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ERROR_CODE = 4
   };
@@ -215,199 +459,644 @@ struct SC_LoginFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
 };
 
-struct SC_LoginFailedBuilder {
+struct JoinFailedReplyBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_error_code(ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(SC_LoginFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+    fbb_.AddElement<int32_t>(JoinFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
   }
-  SC_LoginFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  JoinFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  SC_LoginFailedBuilder &operator=(const SC_LoginFailedBuilder &);
-  flatbuffers::Offset<SC_LoginFailed> Finish() {
+  JoinFailedReplyBuilder &operator=(const JoinFailedReplyBuilder &);
+  flatbuffers::Offset<JoinFailedReply> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<SC_LoginFailed>(end);
+    auto o = flatbuffers::Offset<JoinFailedReply>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<SC_LoginFailed> CreateSC_LoginFailed(
+inline flatbuffers::Offset<JoinFailedReply> CreateJoinFailedReply(
     flatbuffers::FlatBufferBuilder &_fbb,
     ErrorCode error_code = ErrorCode_OK) {
-  SC_LoginFailedBuilder builder_(_fbb);
+  JoinFailedReplyBuilder builder_(_fbb);
   builder_.add_error_code(error_code);
   return builder_.Finish();
 }
 
-struct SC_LoginSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
-    VT_UID = 4
-  };
-  int32_t uid() const {
-    return GetField<int32_t>(VT_UID, 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_UID) &&
-           verifier.EndTable();
-  }
-};
-
-struct SC_LoginSuccessBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_uid(int32_t uid) {
-    fbb_.AddElement<int32_t>(SC_LoginSuccess::VT_UID, uid, 0);
-  }
-  SC_LoginSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  SC_LoginSuccessBuilder &operator=(const SC_LoginSuccessBuilder &);
-  flatbuffers::Offset<SC_LoginSuccess> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<SC_LoginSuccess>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<SC_LoginSuccess> CreateSC_LoginSuccess(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uid = 0) {
-  SC_LoginSuccessBuilder builder_(_fbb);
-  builder_.add_uid(uid);
-  return builder_.Finish();
-}
-
-struct CS_JoinRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
-    VT_ACC_NAME = 4,
-    VT_PASSWORD = 6
-  };
-  const flatbuffers::String *acc_name() const {
-    return GetPointer<const flatbuffers::String *>(VT_ACC_NAME);
-  }
-  const flatbuffers::String *password() const {
-    return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_ACC_NAME) &&
-           verifier.Verify(acc_name()) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_PASSWORD) &&
-           verifier.Verify(password()) &&
-           verifier.EndTable();
-  }
-};
-
-struct CS_JoinRequestBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_acc_name(flatbuffers::Offset<flatbuffers::String> acc_name) {
-    fbb_.AddOffset(CS_JoinRequest::VT_ACC_NAME, acc_name);
-  }
-  void add_password(flatbuffers::Offset<flatbuffers::String> password) {
-    fbb_.AddOffset(CS_JoinRequest::VT_PASSWORD, password);
-  }
-  CS_JoinRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  CS_JoinRequestBuilder &operator=(const CS_JoinRequestBuilder &);
-  flatbuffers::Offset<CS_JoinRequest> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<CS_JoinRequest>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<CS_JoinRequest> CreateCS_JoinRequest(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> acc_name = 0,
-    flatbuffers::Offset<flatbuffers::String> password = 0) {
-  CS_JoinRequestBuilder builder_(_fbb);
-  builder_.add_password(password);
-  builder_.add_acc_name(acc_name);
-  return builder_.Finish();
-}
-
-inline flatbuffers::Offset<CS_JoinRequest> CreateCS_JoinRequestDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const char *acc_name = nullptr,
-    const char *password = nullptr) {
-  return CreateCS_JoinRequest(
-      _fbb,
-      acc_name ? _fbb.CreateString(acc_name) : 0,
-      password ? _fbb.CreateString(password) : 0);
-}
-
-struct SC_JoinFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
-    VT_ERROR_CODE = 4
-  };
-  ErrorCode error_code() const {
-    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
-           verifier.EndTable();
-  }
-};
-
-struct SC_JoinFailedBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_error_code(ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(SC_JoinFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
-  }
-  SC_JoinFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  SC_JoinFailedBuilder &operator=(const SC_JoinFailedBuilder &);
-  flatbuffers::Offset<SC_JoinFailed> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<SC_JoinFailed>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<SC_JoinFailed> CreateSC_JoinFailed(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    ErrorCode error_code = ErrorCode_OK) {
-  SC_JoinFailedBuilder builder_(_fbb);
-  builder_.add_error_code(error_code);
-  return builder_.Finish();
-}
-
-struct SC_JoinSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct JoinSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            verifier.EndTable();
   }
 };
 
-struct SC_JoinSuccessBuilder {
+struct JoinSuccessReplyBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  SC_JoinSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  JoinSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  SC_JoinSuccessBuilder &operator=(const SC_JoinSuccessBuilder &);
-  flatbuffers::Offset<SC_JoinSuccess> Finish() {
+  JoinSuccessReplyBuilder &operator=(const JoinSuccessReplyBuilder &);
+  flatbuffers::Offset<JoinSuccessReply> Finish() {
     const auto end = fbb_.EndTable(start_, 0);
-    auto o = flatbuffers::Offset<SC_JoinSuccess>(end);
+    auto o = flatbuffers::Offset<JoinSuccessReply>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<SC_JoinSuccess> CreateSC_JoinSuccess(
+inline flatbuffers::Offset<JoinSuccessReply> CreateJoinSuccessReply(
     flatbuffers::FlatBufferBuilder &_fbb) {
-  SC_JoinSuccessBuilder builder_(_fbb);
+  JoinSuccessReplyBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+struct LoginRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ACC_NAME = 4,
+    VT_PASSWORD = 6
+  };
+  const flatbuffers::String *acc_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_ACC_NAME);
+  }
+  const flatbuffers::String *password() const {
+    return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_ACC_NAME) &&
+           verifier.Verify(acc_name()) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_PASSWORD) &&
+           verifier.Verify(password()) &&
+           verifier.EndTable();
+  }
+};
+
+struct LoginRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_acc_name(flatbuffers::Offset<flatbuffers::String> acc_name) {
+    fbb_.AddOffset(LoginRequest::VT_ACC_NAME, acc_name);
+  }
+  void add_password(flatbuffers::Offset<flatbuffers::String> password) {
+    fbb_.AddOffset(LoginRequest::VT_PASSWORD, password);
+  }
+  LoginRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LoginRequestBuilder &operator=(const LoginRequestBuilder &);
+  flatbuffers::Offset<LoginRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<LoginRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<LoginRequest> CreateLoginRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> acc_name = 0,
+    flatbuffers::Offset<flatbuffers::String> password = 0) {
+  LoginRequestBuilder builder_(_fbb);
+  builder_.add_password(password);
+  builder_.add_acc_name(acc_name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<LoginRequest> CreateLoginRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *acc_name = nullptr,
+    const char *password = nullptr) {
+  return CreateLoginRequest(
+      _fbb,
+      acc_name ? _fbb.CreateString(acc_name) : 0,
+      password ? _fbb.CreateString(password) : 0);
+}
+
+struct LoginFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ErrorCode error_code() const {
+    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+};
+
+struct LoginFailedReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(LoginFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  LoginFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LoginFailedReplyBuilder &operator=(const LoginFailedReplyBuilder &);
+  flatbuffers::Offset<LoginFailedReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<LoginFailedReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<LoginFailedReply> CreateLoginFailedReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ErrorCode error_code = ErrorCode_OK) {
+  LoginFailedReplyBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+struct LoginSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_SESSION_ID = 4
+  };
+  const flatbuffers::String *session_id() const {
+    return GetPointer<const flatbuffers::String *>(VT_SESSION_ID);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_SESSION_ID) &&
+           verifier.Verify(session_id()) &&
+           verifier.EndTable();
+  }
+};
+
+struct LoginSuccessReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_session_id(flatbuffers::Offset<flatbuffers::String> session_id) {
+    fbb_.AddOffset(LoginSuccessReply::VT_SESSION_ID, session_id);
+  }
+  LoginSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LoginSuccessReplyBuilder &operator=(const LoginSuccessReplyBuilder &);
+  flatbuffers::Offset<LoginSuccessReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<LoginSuccessReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<LoginSuccessReply> CreateLoginSuccessReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> session_id = 0) {
+  LoginSuccessReplyBuilder builder_(_fbb);
+  builder_.add_session_id(session_id);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<LoginSuccessReply> CreateLoginSuccessReplyDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *session_id = nullptr) {
+  return CreateLoginSuccessReply(
+      _fbb,
+      session_id ? _fbb.CreateString(session_id) : 0);
+}
+
+struct HeroListRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct HeroListRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  HeroListRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  HeroListRequestBuilder &operator=(const HeroListRequestBuilder &);
+  flatbuffers::Offset<HeroListRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<HeroListRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<HeroListRequest> CreateHeroListRequest(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  HeroListRequestBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+struct HeroListReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_HERO_LIST = 4
+  };
+  const flatbuffers::Vector<flatbuffers::Offset<HeroInfoSimple>> *hero_list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<HeroInfoSimple>> *>(VT_HERO_LIST);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_HERO_LIST) &&
+           verifier.Verify(hero_list()) &&
+           verifier.VerifyVectorOfTables(hero_list()) &&
+           verifier.EndTable();
+  }
+};
+
+struct HeroListReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_hero_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<HeroInfoSimple>>> hero_list) {
+    fbb_.AddOffset(HeroListReply::VT_HERO_LIST, hero_list);
+  }
+  HeroListReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  HeroListReplyBuilder &operator=(const HeroListReplyBuilder &);
+  flatbuffers::Offset<HeroListReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<HeroListReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<HeroListReply> CreateHeroListReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<HeroInfoSimple>>> hero_list = 0) {
+  HeroListReplyBuilder builder_(_fbb);
+  builder_.add_hero_list(hero_list);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<HeroListReply> CreateHeroListReplyDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<flatbuffers::Offset<HeroInfoSimple>> *hero_list = nullptr) {
+  return CreateHeroListReply(
+      _fbb,
+      hero_list ? _fbb.CreateVector<flatbuffers::Offset<HeroInfoSimple>>(*hero_list) : 0);
+}
+
+struct SelectHeroRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_HERO_ID = 4
+  };
+  int32_t hero_id() const {
+    return GetField<int32_t>(VT_HERO_ID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_HERO_ID) &&
+           verifier.EndTable();
+  }
+};
+
+struct SelectHeroRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_hero_id(int32_t hero_id) {
+    fbb_.AddElement<int32_t>(SelectHeroRequest::VT_HERO_ID, hero_id, 0);
+  }
+  SelectHeroRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SelectHeroRequestBuilder &operator=(const SelectHeroRequestBuilder &);
+  flatbuffers::Offset<SelectHeroRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SelectHeroRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SelectHeroRequest> CreateSelectHeroRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t hero_id = 0) {
+  SelectHeroRequestBuilder builder_(_fbb);
+  builder_.add_hero_id(hero_id);
+  return builder_.Finish();
+}
+
+struct SelectHeroFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ErrorCode error_code() const {
+    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+};
+
+struct SelectHeroFailedReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(SelectHeroFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  SelectHeroFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SelectHeroFailedReplyBuilder &operator=(const SelectHeroFailedReplyBuilder &);
+  flatbuffers::Offset<SelectHeroFailedReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SelectHeroFailedReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SelectHeroFailedReply> CreateSelectHeroFailedReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ErrorCode error_code = ErrorCode_OK) {
+  SelectHeroFailedReplyBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+struct SelectHeroSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct SelectHeroSuccessReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  SelectHeroSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SelectHeroSuccessReplyBuilder &operator=(const SelectHeroSuccessReplyBuilder &);
+  flatbuffers::Offset<SelectHeroSuccessReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<SelectHeroSuccessReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SelectHeroSuccessReply> CreateSelectHeroSuccessReply(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  SelectHeroSuccessReplyBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+struct CreateHeroRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_NAME = 4,
+    VT_CLASS_TYPE = 6
+  };
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  int32_t class_type() const {
+    return GetField<int32_t>(VT_CLASS_TYPE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           verifier.Verify(name()) &&
+           VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
+           verifier.EndTable();
+  }
+};
+
+struct CreateHeroRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(CreateHeroRequest::VT_NAME, name);
+  }
+  void add_class_type(int32_t class_type) {
+    fbb_.AddElement<int32_t>(CreateHeroRequest::VT_CLASS_TYPE, class_type, 0);
+  }
+  CreateHeroRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CreateHeroRequestBuilder &operator=(const CreateHeroRequestBuilder &);
+  flatbuffers::Offset<CreateHeroRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<CreateHeroRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CreateHeroRequest> CreateCreateHeroRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    int32_t class_type = 0) {
+  CreateHeroRequestBuilder builder_(_fbb);
+  builder_.add_class_type(class_type);
+  builder_.add_name(name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<CreateHeroRequest> CreateCreateHeroRequestDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *name = nullptr,
+    int32_t class_type = 0) {
+  return CreateCreateHeroRequest(
+      _fbb,
+      name ? _fbb.CreateString(name) : 0,
+      class_type);
+}
+
+struct CreateHeroFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ErrorCode error_code() const {
+    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+};
+
+struct CreateHeroFailedReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(CreateHeroFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  CreateHeroFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CreateHeroFailedReplyBuilder &operator=(const CreateHeroFailedReplyBuilder &);
+  flatbuffers::Offset<CreateHeroFailedReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CreateHeroFailedReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CreateHeroFailedReply> CreateCreateHeroFailedReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ErrorCode error_code = ErrorCode_OK) {
+  CreateHeroFailedReplyBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+struct CreateHeroSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_HERO = 4
+  };
+  const HeroInfoSimple *hero() const {
+    return GetPointer<const HeroInfoSimple *>(VT_HERO);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_HERO) &&
+           verifier.VerifyTable(hero()) &&
+           verifier.EndTable();
+  }
+};
+
+struct CreateHeroSuccessReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_hero(flatbuffers::Offset<HeroInfoSimple> hero) {
+    fbb_.AddOffset(CreateHeroSuccessReply::VT_HERO, hero);
+  }
+  CreateHeroSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CreateHeroSuccessReplyBuilder &operator=(const CreateHeroSuccessReplyBuilder &);
+  flatbuffers::Offset<CreateHeroSuccessReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CreateHeroSuccessReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CreateHeroSuccessReply> CreateCreateHeroSuccessReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<HeroInfoSimple> hero = 0) {
+  CreateHeroSuccessReplyBuilder builder_(_fbb);
+  builder_.add_hero(hero);
+  return builder_.Finish();
+}
+
+struct RemoveHeroRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_HERO_ID = 4
+  };
+  int32_t hero_id() const {
+    return GetField<int32_t>(VT_HERO_ID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_HERO_ID) &&
+           verifier.EndTable();
+  }
+};
+
+struct RemoveHeroRequestBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_hero_id(int32_t hero_id) {
+    fbb_.AddElement<int32_t>(RemoveHeroRequest::VT_HERO_ID, hero_id, 0);
+  }
+  RemoveHeroRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  RemoveHeroRequestBuilder &operator=(const RemoveHeroRequestBuilder &);
+  flatbuffers::Offset<RemoveHeroRequest> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<RemoveHeroRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<RemoveHeroRequest> CreateRemoveHeroRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t hero_id = 0) {
+  RemoveHeroRequestBuilder builder_(_fbb);
+  builder_.add_hero_id(hero_id);
+  return builder_.Finish();
+}
+
+struct RemoveHeroFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ErrorCode error_code() const {
+    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+};
+
+struct RemoveHeroFailedReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(RemoveHeroFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  RemoveHeroFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  RemoveHeroFailedReplyBuilder &operator=(const RemoveHeroFailedReplyBuilder &);
+  flatbuffers::Offset<RemoveHeroFailedReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<RemoveHeroFailedReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<RemoveHeroFailedReply> CreateRemoveHeroFailedReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ErrorCode error_code = ErrorCode_OK) {
+  RemoveHeroFailedReplyBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+struct RemoveHeroSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct RemoveHeroSuccessReplyBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  RemoveHeroSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  RemoveHeroSuccessReplyBuilder &operator=(const RemoveHeroSuccessReplyBuilder &);
+  flatbuffers::Offset<RemoveHeroSuccessReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<RemoveHeroSuccessReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<RemoveHeroSuccessReply> CreateRemoveHeroSuccessReply(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  RemoveHeroSuccessReplyBuilder builder_(_fbb);
   return builder_.Finish();
 }
 
@@ -416,8 +1105,8 @@ struct NetMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_MESSAGE_TYPE = 4,
     VT_MESSAGE = 6
   };
-  Message message_type() const {
-    return static_cast<Message>(GetField<uint8_t>(VT_MESSAGE_TYPE, 0));
+  MessageT message_type() const {
+    return static_cast<MessageT>(GetField<uint8_t>(VT_MESSAGE_TYPE, 0));
   }
   const void *message() const {
     return GetPointer<const void *>(VT_MESSAGE);
@@ -426,7 +1115,7 @@ struct NetMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_MESSAGE_TYPE) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_MESSAGE) &&
-           VerifyMessage(verifier, message(), message_type()) &&
+           VerifyMessageT(verifier, message(), message_type()) &&
            verifier.EndTable();
   }
 };
@@ -434,7 +1123,7 @@ struct NetMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct NetMessageBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_message_type(Message message_type) {
+  void add_message_type(MessageT message_type) {
     fbb_.AddElement<uint8_t>(NetMessage::VT_MESSAGE_TYPE, static_cast<uint8_t>(message_type), 0);
   }
   void add_message(flatbuffers::Offset<void> message) {
@@ -454,7 +1143,7 @@ struct NetMessageBuilder {
 
 inline flatbuffers::Offset<NetMessage> CreateNetMessage(
     flatbuffers::FlatBufferBuilder &_fbb,
-    Message message_type = Message_NONE,
+    MessageT message_type = MessageT_NONE,
     flatbuffers::Offset<void> message = 0) {
   NetMessageBuilder builder_(_fbb);
   builder_.add_message(message);
@@ -462,33 +1151,33 @@ inline flatbuffers::Offset<NetMessage> CreateNetMessage(
   return builder_.Finish();
 }
 
-inline bool VerifyMessage(flatbuffers::Verifier &verifier, const void *obj, Message type) {
+inline bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, MessageT type) {
   switch (type) {
-    case Message_NONE: {
+    case MessageT_NONE: {
       return true;
     }
-    case Message_CS_LoginRequest: {
-      auto ptr = reinterpret_cast<const CS_LoginRequest *>(obj);
+    case MessageT_LoginRequest: {
+      auto ptr = reinterpret_cast<const LoginRequest *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Message_SC_LoginFailed: {
-      auto ptr = reinterpret_cast<const SC_LoginFailed *>(obj);
+    case MessageT_LoginFailedReply: {
+      auto ptr = reinterpret_cast<const LoginFailedReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Message_SC_LoginSuccess: {
-      auto ptr = reinterpret_cast<const SC_LoginSuccess *>(obj);
+    case MessageT_LoginSuccessReply: {
+      auto ptr = reinterpret_cast<const LoginSuccessReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Message_CS_JoinRequest: {
-      auto ptr = reinterpret_cast<const CS_JoinRequest *>(obj);
+    case MessageT_JoinRequest: {
+      auto ptr = reinterpret_cast<const JoinRequest *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Message_SC_JoinFailed: {
-      auto ptr = reinterpret_cast<const SC_JoinFailed *>(obj);
+    case MessageT_JoinFailedReply: {
+      auto ptr = reinterpret_cast<const JoinFailedReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Message_SC_JoinSuccess: {
-      auto ptr = reinterpret_cast<const SC_JoinSuccess *>(obj);
+    case MessageT_JoinSuccessReply: {
+      auto ptr = reinterpret_cast<const JoinSuccessReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
