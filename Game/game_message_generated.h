@@ -9,6 +9,8 @@
 namespace Game {
 namespace Protocol {
 
+struct Vec2;
+
 struct Vec3;
 
 struct HeroInfoSimple;
@@ -123,6 +125,31 @@ template<> struct MessageTTraits<JoinSuccessReply> {
 
 bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, MessageT type);
 
+MANUALLY_ALIGNED_STRUCT(4) Vec2 FLATBUFFERS_FINAL_CLASS {
+ private:
+  float x_;
+  float y_;
+
+ public:
+  Vec2() {
+    memset(this, 0, sizeof(Vec2));
+  }
+  Vec2(const Vec2 &_o) {
+    memcpy(this, &_o, sizeof(Vec2));
+  }
+  Vec2(float _x, float _y)
+      : x_(flatbuffers::EndianScalar(_x)),
+        y_(flatbuffers::EndianScalar(_y)) {
+  }
+  float x() const {
+    return flatbuffers::EndianScalar(x_);
+  }
+  float y() const {
+    return flatbuffers::EndianScalar(y_);
+  }
+};
+STRUCT_END(Vec2, 8);
+
 MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
  private:
   float x_;
@@ -170,7 +197,7 @@ struct HeroInfoSimple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetField<int32_t>(VT_CLASS_TYPE, 0);
   }
   int32_t level() const {
-    return GetField<int32_t>(VT_LEVEL, 1);
+    return GetField<int32_t>(VT_LEVEL, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -196,7 +223,7 @@ struct HeroInfoSimpleBuilder {
     fbb_.AddElement<int32_t>(HeroInfoSimple::VT_CLASS_TYPE, class_type, 0);
   }
   void add_level(int32_t level) {
-    fbb_.AddElement<int32_t>(HeroInfoSimple::VT_LEVEL, level, 1);
+    fbb_.AddElement<int32_t>(HeroInfoSimple::VT_LEVEL, level, 0);
   }
   HeroInfoSimpleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -215,7 +242,7 @@ inline flatbuffers::Offset<HeroInfoSimple> CreateHeroInfoSimple(
     int32_t id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     int32_t class_type = 0,
-    int32_t level = 1) {
+    int32_t level = 0) {
   HeroInfoSimpleBuilder builder_(_fbb);
   builder_.add_level(level);
   builder_.add_class_type(class_type);
@@ -229,7 +256,7 @@ inline flatbuffers::Offset<HeroInfoSimple> CreateHeroInfoSimpleDirect(
     int32_t id = 0,
     const char *name = nullptr,
     int32_t class_type = 0,
-    int32_t level = 1) {
+    int32_t level = 0) {
   return CreateHeroInfoSimple(
       _fbb,
       id,
@@ -243,12 +270,15 @@ struct HeroInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_ID = 4,
     VT_NAME = 6,
     VT_CLASS_TYPE = 8,
-    VT_LEVEL = 10,
-    VT_EXP = 12,
+    VT_EXP = 10,
+    VT_LEVEL = 12,
     VT_HP = 14,
     VT_MP = 16,
-    VT_POS = 18,
-    VT_DIRECTION = 20
+    VT_ATT = 18,
+    VT_DEF = 20,
+    VT_ZONE_ID = 22,
+    VT_POS = 24,
+    VT_DIRECTION = 26
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -259,11 +289,11 @@ struct HeroInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t class_type() const {
     return GetField<int32_t>(VT_CLASS_TYPE, 0);
   }
-  int32_t level() const {
-    return GetField<int32_t>(VT_LEVEL, 1);
-  }
   int32_t exp() const {
     return GetField<int32_t>(VT_EXP, 0);
+  }
+  int32_t level() const {
+    return GetField<int32_t>(VT_LEVEL, 0);
   }
   int32_t hp() const {
     return GetField<int32_t>(VT_HP, 0);
@@ -271,11 +301,20 @@ struct HeroInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t mp() const {
     return GetField<int32_t>(VT_MP, 0);
   }
-  const Vec3 *pos() const {
-    return GetStruct<const Vec3 *>(VT_POS);
+  int32_t att() const {
+    return GetField<int32_t>(VT_ATT, 0);
   }
-  const Vec3 *direction() const {
-    return GetStruct<const Vec3 *>(VT_DIRECTION);
+  int32_t def() const {
+    return GetField<int32_t>(VT_DEF, 0);
+  }
+  int32_t zone_id() const {
+    return GetField<int32_t>(VT_ZONE_ID, 0);
+  }
+  const Vec2 *pos() const {
+    return GetStruct<const Vec2 *>(VT_POS);
+  }
+  const Vec2 *direction() const {
+    return GetStruct<const Vec2 *>(VT_DIRECTION);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -283,12 +322,15 @@ struct HeroInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
            VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
-           VerifyField<int32_t>(verifier, VT_LEVEL) &&
            VerifyField<int32_t>(verifier, VT_EXP) &&
+           VerifyField<int32_t>(verifier, VT_LEVEL) &&
            VerifyField<int32_t>(verifier, VT_HP) &&
            VerifyField<int32_t>(verifier, VT_MP) &&
-           VerifyField<Vec3>(verifier, VT_POS) &&
-           VerifyField<Vec3>(verifier, VT_DIRECTION) &&
+           VerifyField<int32_t>(verifier, VT_ATT) &&
+           VerifyField<int32_t>(verifier, VT_DEF) &&
+           VerifyField<int32_t>(verifier, VT_ZONE_ID) &&
+           VerifyField<Vec2>(verifier, VT_POS) &&
+           VerifyField<Vec2>(verifier, VT_DIRECTION) &&
            verifier.EndTable();
   }
 };
@@ -305,11 +347,11 @@ struct HeroInfoBuilder {
   void add_class_type(int32_t class_type) {
     fbb_.AddElement<int32_t>(HeroInfo::VT_CLASS_TYPE, class_type, 0);
   }
-  void add_level(int32_t level) {
-    fbb_.AddElement<int32_t>(HeroInfo::VT_LEVEL, level, 1);
-  }
   void add_exp(int32_t exp) {
     fbb_.AddElement<int32_t>(HeroInfo::VT_EXP, exp, 0);
+  }
+  void add_level(int32_t level) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_LEVEL, level, 0);
   }
   void add_hp(int32_t hp) {
     fbb_.AddElement<int32_t>(HeroInfo::VT_HP, hp, 0);
@@ -317,10 +359,19 @@ struct HeroInfoBuilder {
   void add_mp(int32_t mp) {
     fbb_.AddElement<int32_t>(HeroInfo::VT_MP, mp, 0);
   }
-  void add_pos(const Vec3 *pos) {
+  void add_att(int32_t att) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_ATT, att, 0);
+  }
+  void add_def(int32_t def) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_DEF, def, 0);
+  }
+  void add_zone_id(int32_t zone_id) {
+    fbb_.AddElement<int32_t>(HeroInfo::VT_ZONE_ID, zone_id, 0);
+  }
+  void add_pos(const Vec2 *pos) {
     fbb_.AddStruct(HeroInfo::VT_POS, pos);
   }
-  void add_direction(const Vec3 *direction) {
+  void add_direction(const Vec2 *direction) {
     fbb_.AddStruct(HeroInfo::VT_DIRECTION, direction);
   }
   HeroInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -329,7 +380,7 @@ struct HeroInfoBuilder {
   }
   HeroInfoBuilder &operator=(const HeroInfoBuilder &);
   flatbuffers::Offset<HeroInfo> Finish() {
-    const auto end = fbb_.EndTable(start_, 9);
+    const auto end = fbb_.EndTable(start_, 12);
     auto o = flatbuffers::Offset<HeroInfo>(end);
     return o;
   }
@@ -340,19 +391,25 @@ inline flatbuffers::Offset<HeroInfo> CreateHeroInfo(
     int32_t id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     int32_t class_type = 0,
-    int32_t level = 1,
     int32_t exp = 0,
+    int32_t level = 0,
     int32_t hp = 0,
     int32_t mp = 0,
-    const Vec3 *pos = 0,
-    const Vec3 *direction = 0) {
+    int32_t att = 0,
+    int32_t def = 0,
+    int32_t zone_id = 0,
+    const Vec2 *pos = 0,
+    const Vec2 *direction = 0) {
   HeroInfoBuilder builder_(_fbb);
   builder_.add_direction(direction);
   builder_.add_pos(pos);
+  builder_.add_zone_id(zone_id);
+  builder_.add_def(def);
+  builder_.add_att(att);
   builder_.add_mp(mp);
   builder_.add_hp(hp);
-  builder_.add_exp(exp);
   builder_.add_level(level);
+  builder_.add_exp(exp);
   builder_.add_class_type(class_type);
   builder_.add_name(name);
   builder_.add_id(id);
@@ -364,21 +421,27 @@ inline flatbuffers::Offset<HeroInfo> CreateHeroInfoDirect(
     int32_t id = 0,
     const char *name = nullptr,
     int32_t class_type = 0,
-    int32_t level = 1,
     int32_t exp = 0,
+    int32_t level = 0,
     int32_t hp = 0,
     int32_t mp = 0,
-    const Vec3 *pos = 0,
-    const Vec3 *direction = 0) {
+    int32_t att = 0,
+    int32_t def = 0,
+    int32_t zone_id = 0,
+    const Vec2 *pos = 0,
+    const Vec2 *direction = 0) {
   return CreateHeroInfo(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
       class_type,
-      level,
       exp,
+      level,
       hp,
       mp,
+      att,
+      def,
+      zone_id,
       pos,
       direction);
 }

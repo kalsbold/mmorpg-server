@@ -74,16 +74,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(BOOST_ROOT);C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;C:\Program Files\MySQL\MySQL Connector C 6.1\lib;C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\lib\opt;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BOOST_ROOT);C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;C:\Program Files\MySQL\MySQL Connector C 6.1\lib;C:\Program Files\MySQL\MySQL Connector C++ 1.1.8\lib\opt;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(BOOST_ROOT);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_ROOT)lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -105,13 +105,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet;..\3rd party\flatbuffers\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet;..\3rd Party\flatbuffers\include;..\3rd Party\MySQL Connector C++ 1.1.8\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\x64\Debug;..\3rd Party\MySQL Connector C 6.1\lib;..\3rd Party\MySQL Connector C++ 1.1.8\lib\opt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>GisunNet.lib;libmysql.lib;mysqlcppconn.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -141,7 +141,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet;..\3rd party\flatbuffers\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet;..\3rd Party\flatbuffers\include;..\3rd Party\MySQL Connector C++ 1.1.8\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -149,7 +149,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\x64\Release;..\3rd Party\MySQL Connector C 6.1\lib;..\3rd Party\MySQL Connector C++ 1.1.8\lib\opt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>GisunNet.lib;libmysql.lib;mysqlcppconn.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

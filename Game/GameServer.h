@@ -18,6 +18,11 @@ public:
 	int bind_port;
 	size_t thread_count = 1;
 	size_t max_session_count = 1000;
+	string db_host;
+	string db_user;
+	string db_password;
+	string db_schema;
+	size_t db_connection_pool = 1;
 };
 
 // 게임 서버.
@@ -29,7 +34,7 @@ public:
 	using MessageHandler = std::function<void(const Ptr<Session>&, const Game::Protocol::NetMessage* net_message)>;
 
 	GameServer(const ServerConfig& config)
-		: config_(config)
+		: server_config_(config)
 	{
 	}
 	~GameServer()
@@ -84,7 +89,7 @@ private:
 	Ptr<MySQLPool> db_;
 
 	std::mutex mutex_;
-	ServerConfig config_;
+	ServerConfig server_config_;
 	SessionOpenedHandler session_opened_handler_;
 	SessionClosedHandler session_closed_handler_;
 	std::map<Game::Protocol::MessageT, MessageHandler> message_handler_map_;

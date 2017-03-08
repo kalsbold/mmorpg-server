@@ -5,13 +5,13 @@ using namespace Game::Protocol;
 
 void GameServer::Initialize()
 {
-	size_t thread_count = config_.thread_count;
+	size_t thread_count = server_config_.thread_count;
 	ios_pool_ = std::make_shared<IoServicePool>(thread_count);
 
 	// Initialize NetServer
 	Configuration config;
 	config.io_service_pool = ios_pool_;
-	config.max_session_count = config_.max_session_count;
+	config.max_session_count = server_config_.max_session_count;
 	config.max_receive_buffer_size = 4 * 1024;
 	config.min_receive_size = 256;
 	config.no_delay = true;
@@ -65,7 +65,9 @@ void GameServer::Initialize()
 	});
 
 	// Initialize DB
-	db_ = std::make_shared<MySQLPool>("127.0.0.1:8413", "nusigmik", "56561163", "Project_MMOG", 4);
+	db_ = std::make_shared<MySQLPool>(server_config_.db_host,
+		server_config_.db_user, server_config_.db_password,
+		server_config_.db_schema, server_config_.db_connection_pool);
 }
 
 void GameServer::Run()
@@ -73,8 +75,8 @@ void GameServer::Run()
 	Initialize();
 	InitializeHandlers();
 
-	std::string bind_address = config_.bind_address;
-	uint16_t bind_port = config_.bind_port;
+	std::string bind_address = server_config_.bind_address;
+	uint16_t bind_port = server_config_.bind_port;
 	net_server_->Start(bind_address, bind_port);
 
 	BOOST_LOG_TRIVIAL(info) << "Run Game Server";
