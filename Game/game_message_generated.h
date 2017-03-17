@@ -56,12 +56,16 @@ struct NetMessage;
 enum ErrorCode {
   ErrorCode_OK = 0,
   ErrorCode_FATAL_ERROR = 1,
+  ErrorCode_INVALID_SESSION = 10,
+  ErrorCode_INVALID_STRING = 20,
   ErrorCode_JOIN_ACC_NAME_ALREADY = 100,
   ErrorCode_JOIN_CANNOT_ACC_CREATE = 101,
   ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD = 200,
   ErrorCode_LOGIN_ALREADY = 201,
+  ErrorCode_CREATE_HERO_NAME_ALREADY = 301,
+  ErrorCode_CREATE_HERO_CANNOT_CREATE = 302,
   ErrorCode_MIN = ErrorCode_OK,
-  ErrorCode_MAX = ErrorCode_LOGIN_ALREADY
+  ErrorCode_MAX = ErrorCode_CREATE_HERO_CANNOT_CREATE
 };
 
 enum MessageT {
@@ -72,8 +76,16 @@ enum MessageT {
   MessageT_JoinRequest = 4,
   MessageT_JoinFailedReply = 5,
   MessageT_JoinSuccessReply = 6,
+  MessageT_HeroListRequest = 7,
+  MessageT_HeroListReply = 8,
+  MessageT_CreateHeroRequest = 9,
+  MessageT_CreateHeroFailedReply = 10,
+  MessageT_CreateHeroSuccessReply = 11,
+  MessageT_RemoveHeroRequest = 12,
+  MessageT_RemoveHeroFailedReply = 13,
+  MessageT_RemoveHeroSuccessReply = 14,
   MessageT_MIN = MessageT_NONE,
-  MessageT_MAX = MessageT_JoinSuccessReply
+  MessageT_MAX = MessageT_RemoveHeroSuccessReply
 };
 
 inline const char **EnumNamesMessageT() {
@@ -85,6 +97,14 @@ inline const char **EnumNamesMessageT() {
     "JoinRequest",
     "JoinFailedReply",
     "JoinSuccessReply",
+    "HeroListRequest",
+    "HeroListReply",
+    "CreateHeroRequest",
+    "CreateHeroFailedReply",
+    "CreateHeroSuccessReply",
+    "RemoveHeroRequest",
+    "RemoveHeroFailedReply",
+    "RemoveHeroSuccessReply",
     nullptr
   };
   return names;
@@ -121,6 +141,38 @@ template<> struct MessageTTraits<JoinFailedReply> {
 
 template<> struct MessageTTraits<JoinSuccessReply> {
   static const MessageT enum_value = MessageT_JoinSuccessReply;
+};
+
+template<> struct MessageTTraits<HeroListRequest> {
+  static const MessageT enum_value = MessageT_HeroListRequest;
+};
+
+template<> struct MessageTTraits<HeroListReply> {
+  static const MessageT enum_value = MessageT_HeroListReply;
+};
+
+template<> struct MessageTTraits<CreateHeroRequest> {
+  static const MessageT enum_value = MessageT_CreateHeroRequest;
+};
+
+template<> struct MessageTTraits<CreateHeroFailedReply> {
+  static const MessageT enum_value = MessageT_CreateHeroFailedReply;
+};
+
+template<> struct MessageTTraits<CreateHeroSuccessReply> {
+  static const MessageT enum_value = MessageT_CreateHeroSuccessReply;
+};
+
+template<> struct MessageTTraits<RemoveHeroRequest> {
+  static const MessageT enum_value = MessageT_RemoveHeroRequest;
+};
+
+template<> struct MessageTTraits<RemoveHeroFailedReply> {
+  static const MessageT enum_value = MessageT_RemoveHeroFailedReply;
+};
+
+template<> struct MessageTTraits<RemoveHeroSuccessReply> {
+  static const MessageT enum_value = MessageT_RemoveHeroSuccessReply;
 };
 
 bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, MessageT type);
@@ -1241,6 +1293,38 @@ inline bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, Mes
     }
     case MessageT_JoinSuccessReply: {
       auto ptr = reinterpret_cast<const JoinSuccessReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_HeroListRequest: {
+      auto ptr = reinterpret_cast<const HeroListRequest *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_HeroListReply: {
+      auto ptr = reinterpret_cast<const HeroListReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_CreateHeroRequest: {
+      auto ptr = reinterpret_cast<const CreateHeroRequest *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_CreateHeroFailedReply: {
+      auto ptr = reinterpret_cast<const CreateHeroFailedReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_CreateHeroSuccessReply: {
+      auto ptr = reinterpret_cast<const CreateHeroSuccessReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_RemoveHeroRequest: {
+      auto ptr = reinterpret_cast<const RemoveHeroRequest *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_RemoveHeroFailedReply: {
+      auto ptr = reinterpret_cast<const RemoveHeroFailedReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageT_RemoveHeroSuccessReply: {
+      auto ptr = reinterpret_cast<const RemoveHeroSuccessReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;

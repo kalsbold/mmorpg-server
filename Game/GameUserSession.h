@@ -10,21 +10,21 @@ public:
 	std::string acc_name;
 };
 
-class GameSession
+class GameUserSession
 {
 public:
-	GameSession(WeakPtr<Session> net_session, const AccountInfo& acc)
-		: net_session_(net_session), acc_(acc)
+	GameUserSession(WeakPtr<Session> net_session, const AccountInfo& account_info)
+		: net_session_(net_session), account_info_(account_info)
 	{}
-	~GameSession() {}
+	~GameUserSession() {}
 
 	AccountInfo& GetAccountInfo()
 	{
-		return acc_;
+		return account_info_;
 	}
 
 private:
 	WeakPtr<Session> net_session_;
-	AccountInfo acc_;
+	AccountInfo account_info_;
 	
 };

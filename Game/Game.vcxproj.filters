@@ -16,11 +16,14 @@
     <Filter Include="Database">
       <UniqueIdentifier>{bf5cb8f8-91ab-46cb-b39c-f136293a83ad}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Message">
-      <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
-    </Filter>
     <Filter Include="test">
       <UniqueIdentifier>{5e56521b-c6e5-46c5-b3f3-7c170e20bdce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Protocol">
+      <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Actor">
+      <UniqueIdentifier>{638008b2-58e8-46b8-9331-85c2518ed6ae}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,12 +48,12 @@
       <Filter>Database</Filter>
     </ClInclude>
     <ClInclude Include="game_message_generated.h">
-      <Filter>Message</Filter>
+      <Filter>Protocol</Filter>
     </ClInclude>
     <ClInclude Include="TestMySQL.h">
       <Filter>test</Filter>
     </ClInclude>
-    <ClInclude Include="GameSession.h">
+    <ClInclude Include="GameUserSession.h">
       <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
