@@ -101,10 +101,11 @@ void GameServer::InitializeHandlers()
 	this->RegisterSessionOpenHandler([this](const Ptr<Session>& session) { OnSessionOpen(session); });
 	this->RegisterSessionCloseHandler([this](const Ptr<Session>& session) { OnSessionClose(session); });
 
-	this->RegisterMessageHandler(MessageT_JoinRequest, std::bind(&GameServer::OnJoinRequest, this, std::placeholders::_1, std::placeholders::_2));
-	this->RegisterMessageHandler(MessageT_LoginRequest, std::bind(&GameServer::OnLoginRequest, this, std::placeholders::_1, std::placeholders::_2));
+	this->RegisterMessageHandler(MessageT_JoinRequest,       std::bind(&GameServer::OnJoinRequest, this, std::placeholders::_1, std::placeholders::_2));
+	this->RegisterMessageHandler(MessageT_LoginRequest,      std::bind(&GameServer::OnLoginRequest, this, std::placeholders::_1, std::placeholders::_2));
 	this->RegisterMessageHandler(MessageT_CreateHeroRequest, std::bind(&GameServer::OnCreateHeroRequest, this, std::placeholders::_1, std::placeholders::_2));
-	this->RegisterMessageHandler(MessageT_HeroListRequest, std::bind(&GameServer::OnHeroListRequest, this, std::placeholders::_1, std::placeholders::_2));
+	this->RegisterMessageHandler(MessageT_HeroListRequest,   std::bind(&GameServer::OnHeroListRequest, this, std::placeholders::_1, std::placeholders::_2));
+	this->RegisterMessageHandler(MessageT_DeleteHeroRequest, std::bind(&GameServer::OnDeleteHeroRequest, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void GameServer::OnSessionOpen(const Ptr<Session>& session)
@@ -413,7 +414,8 @@ void GameServer::OnHeroListRequest(const Ptr<Session>& session, const Game::Prot
 	{
 		std::stringstream ss;
 		ss << "SELECT id, name, class_type, level FROM user_hero_tb "
-			<< "WHERE acc_id=" << game_session->GetAccountInfo().id;
+			<< "WHERE acc_id=" << game_session->GetAccountInfo().id
+			<< " AND del_type='F'";
 		
 		std::vector<HeroSimpleData> hero_list;
 
@@ -470,6 +472,73 @@ void GameServer::HeroListReply(const Ptr<Session>& session, const std::vector<He
 	auto reply = CreateHeroListReply(builder, builder.CreateVector(hero_vector));
 
 	auto net_message = CreateNetMessage(builder, MessageT_HeroListReply, reply.Union());
+	builder.Finish(net_message);
+
+	session->Send(builder.GetBufferPointer(), builder.GetSize());
+}
+
+// Delete Hero ==========================================================================================================
+void GameServer::OnDeleteHeroRequest(const Ptr<Session>& session, const Game::Protocol::NetMessage * net_message)
+{
+	auto msg = static_cast<const DeleteHeroRequest*>(net_message->message());
+
+	auto game_session = FindGameUserSession(session->ID());
+	if (!game_session)
+	{
+		CreateHeroFailedReply(session, ErrorCode_INVALID_SESSION);
+		return;
+	}
+
+	try
+	{
+		const int hero_id = msg->hero_id();
+		auto acc_info = game_session->GetAccountInfo();
+
+		std::stringstream ss;
+		// del_type 을 'T' 로 업데이트. 실제로 지우지는 않는다.
+		ss << "UPDATE user_hero_tb SET "
+			<< "del_type='T' "
+			<< "WHERE id=" << hero_id <<" AND acc_id=" << acc_info.id;
+
+		db_->Excute(ss.str());
+
+		// 성공
+		DeleteHeroSuccessReply(session, hero_id);
+		BOOST_LOG_TRIVIAL(info) << "Delete Hero success. Hero Id:" << hero_id;
+	}
+	catch (sql::SQLException& e)
+	{
+		BOOST_LOG_TRIVIAL(info) << "SQL Exception: " << e.what()
+			<< ", (MySQL error code : " << e.getErrorCode()
+			<< ", SQLState: " << e.getSQLState() << " )";
+
+		DeleteHeroFailedReply(session, ErrorCode_FATAL_ERROR);
+	}
+	catch (std::exception& e)
+	{
+		BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
+		DeleteHeroFailedReply(session, ErrorCode_FATAL_ERROR);
+	}
+}
+
+void GameServer::DeleteHeroSuccessReply(const Ptr<Session>& session, int hero_id)
+{
+	flatbuffers::FlatBufferBuilder builder;
+	auto reply = CreateDeleteHeroSuccessReply(builder, hero_id);
+
+	auto net_message = CreateNetMessage(builder, MessageT_DeleteHeroSuccessReply, reply.Union());
+	builder.Finish(net_message);
+
+	session->Send(builder.GetBufferPointer(), builder.GetSize());
+}
+
+void GameServer::DeleteHeroFailedReply(const Ptr<Session>& session, Game::Protocol::ErrorCode error_code)
+{
+	flatbuffers::FlatBufferBuilder builder;
+	auto reply = CreateDeleteHeroFailedReply(builder,
+		error_code);
+
+	auto net_message = CreateNetMessage(builder, MessageT_DeleteHeroFailedReply, reply.Union());
 	builder.Finish(net_message);
 
 	session->Send(builder.GetBufferPointer(), builder.GetSize());

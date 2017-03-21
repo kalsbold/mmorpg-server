@@ -45,11 +45,11 @@ struct CreateHeroFailedReply;
 
 struct CreateHeroSuccessReply;
 
-struct RemoveHeroRequest;
+struct DeleteHeroRequest;
 
-struct RemoveHeroFailedReply;
+struct DeleteHeroFailedReply;
 
-struct RemoveHeroSuccessReply;
+struct DeleteHeroSuccessReply;
 
 struct NetMessage;
 
@@ -81,11 +81,11 @@ enum MessageT {
   MessageT_CreateHeroRequest = 9,
   MessageT_CreateHeroFailedReply = 10,
   MessageT_CreateHeroSuccessReply = 11,
-  MessageT_RemoveHeroRequest = 12,
-  MessageT_RemoveHeroFailedReply = 13,
-  MessageT_RemoveHeroSuccessReply = 14,
+  MessageT_DeleteHeroRequest = 12,
+  MessageT_DeleteHeroFailedReply = 13,
+  MessageT_DeleteHeroSuccessReply = 14,
   MessageT_MIN = MessageT_NONE,
-  MessageT_MAX = MessageT_RemoveHeroSuccessReply
+  MessageT_MAX = MessageT_DeleteHeroSuccessReply
 };
 
 inline const char **EnumNamesMessageT() {
@@ -102,9 +102,9 @@ inline const char **EnumNamesMessageT() {
     "CreateHeroRequest",
     "CreateHeroFailedReply",
     "CreateHeroSuccessReply",
-    "RemoveHeroRequest",
-    "RemoveHeroFailedReply",
-    "RemoveHeroSuccessReply",
+    "DeleteHeroRequest",
+    "DeleteHeroFailedReply",
+    "DeleteHeroSuccessReply",
     nullptr
   };
   return names;
@@ -163,16 +163,16 @@ template<> struct MessageTTraits<CreateHeroSuccessReply> {
   static const MessageT enum_value = MessageT_CreateHeroSuccessReply;
 };
 
-template<> struct MessageTTraits<RemoveHeroRequest> {
-  static const MessageT enum_value = MessageT_RemoveHeroRequest;
+template<> struct MessageTTraits<DeleteHeroRequest> {
+  static const MessageT enum_value = MessageT_DeleteHeroRequest;
 };
 
-template<> struct MessageTTraits<RemoveHeroFailedReply> {
-  static const MessageT enum_value = MessageT_RemoveHeroFailedReply;
+template<> struct MessageTTraits<DeleteHeroFailedReply> {
+  static const MessageT enum_value = MessageT_DeleteHeroFailedReply;
 };
 
-template<> struct MessageTTraits<RemoveHeroSuccessReply> {
-  static const MessageT enum_value = MessageT_RemoveHeroSuccessReply;
+template<> struct MessageTTraits<DeleteHeroSuccessReply> {
+  static const MessageT enum_value = MessageT_DeleteHeroSuccessReply;
 };
 
 bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, MessageT type);
@@ -1107,7 +1107,7 @@ inline flatbuffers::Offset<CreateHeroSuccessReply> CreateCreateHeroSuccessReply(
   return builder_.Finish();
 }
 
-struct RemoveHeroRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct DeleteHeroRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_HERO_ID = 4
   };
@@ -1121,33 +1121,33 @@ struct RemoveHeroRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
 };
 
-struct RemoveHeroRequestBuilder {
+struct DeleteHeroRequestBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_hero_id(int32_t hero_id) {
-    fbb_.AddElement<int32_t>(RemoveHeroRequest::VT_HERO_ID, hero_id, 0);
+    fbb_.AddElement<int32_t>(DeleteHeroRequest::VT_HERO_ID, hero_id, 0);
   }
-  RemoveHeroRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  DeleteHeroRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  RemoveHeroRequestBuilder &operator=(const RemoveHeroRequestBuilder &);
-  flatbuffers::Offset<RemoveHeroRequest> Finish() {
+  DeleteHeroRequestBuilder &operator=(const DeleteHeroRequestBuilder &);
+  flatbuffers::Offset<DeleteHeroRequest> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<RemoveHeroRequest>(end);
+    auto o = flatbuffers::Offset<DeleteHeroRequest>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<RemoveHeroRequest> CreateRemoveHeroRequest(
+inline flatbuffers::Offset<DeleteHeroRequest> CreateDeleteHeroRequest(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t hero_id = 0) {
-  RemoveHeroRequestBuilder builder_(_fbb);
+  DeleteHeroRequestBuilder builder_(_fbb);
   builder_.add_hero_id(hero_id);
   return builder_.Finish();
 }
 
-struct RemoveHeroFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct DeleteHeroFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ERROR_CODE = 4
   };
@@ -1161,57 +1161,69 @@ struct RemoveHeroFailedReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   }
 };
 
-struct RemoveHeroFailedReplyBuilder {
+struct DeleteHeroFailedReplyBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_error_code(ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(RemoveHeroFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+    fbb_.AddElement<int32_t>(DeleteHeroFailedReply::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
   }
-  RemoveHeroFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  DeleteHeroFailedReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  RemoveHeroFailedReplyBuilder &operator=(const RemoveHeroFailedReplyBuilder &);
-  flatbuffers::Offset<RemoveHeroFailedReply> Finish() {
+  DeleteHeroFailedReplyBuilder &operator=(const DeleteHeroFailedReplyBuilder &);
+  flatbuffers::Offset<DeleteHeroFailedReply> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<RemoveHeroFailedReply>(end);
+    auto o = flatbuffers::Offset<DeleteHeroFailedReply>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<RemoveHeroFailedReply> CreateRemoveHeroFailedReply(
+inline flatbuffers::Offset<DeleteHeroFailedReply> CreateDeleteHeroFailedReply(
     flatbuffers::FlatBufferBuilder &_fbb,
     ErrorCode error_code = ErrorCode_OK) {
-  RemoveHeroFailedReplyBuilder builder_(_fbb);
+  DeleteHeroFailedReplyBuilder builder_(_fbb);
   builder_.add_error_code(error_code);
   return builder_.Finish();
 }
 
-struct RemoveHeroSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct DeleteHeroSuccessReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_HERO_ID = 4
+  };
+  int32_t hero_id() const {
+    return GetField<int32_t>(VT_HERO_ID, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_HERO_ID) &&
            verifier.EndTable();
   }
 };
 
-struct RemoveHeroSuccessReplyBuilder {
+struct DeleteHeroSuccessReplyBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  RemoveHeroSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  void add_hero_id(int32_t hero_id) {
+    fbb_.AddElement<int32_t>(DeleteHeroSuccessReply::VT_HERO_ID, hero_id, 0);
+  }
+  DeleteHeroSuccessReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  RemoveHeroSuccessReplyBuilder &operator=(const RemoveHeroSuccessReplyBuilder &);
-  flatbuffers::Offset<RemoveHeroSuccessReply> Finish() {
-    const auto end = fbb_.EndTable(start_, 0);
-    auto o = flatbuffers::Offset<RemoveHeroSuccessReply>(end);
+  DeleteHeroSuccessReplyBuilder &operator=(const DeleteHeroSuccessReplyBuilder &);
+  flatbuffers::Offset<DeleteHeroSuccessReply> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<DeleteHeroSuccessReply>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<RemoveHeroSuccessReply> CreateRemoveHeroSuccessReply(
-    flatbuffers::FlatBufferBuilder &_fbb) {
-  RemoveHeroSuccessReplyBuilder builder_(_fbb);
+inline flatbuffers::Offset<DeleteHeroSuccessReply> CreateDeleteHeroSuccessReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t hero_id = 0) {
+  DeleteHeroSuccessReplyBuilder builder_(_fbb);
+  builder_.add_hero_id(hero_id);
   return builder_.Finish();
 }
 
@@ -1315,16 +1327,16 @@ inline bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, Mes
       auto ptr = reinterpret_cast<const CreateHeroSuccessReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageT_RemoveHeroRequest: {
-      auto ptr = reinterpret_cast<const RemoveHeroRequest *>(obj);
+    case MessageT_DeleteHeroRequest: {
+      auto ptr = reinterpret_cast<const DeleteHeroRequest *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageT_RemoveHeroFailedReply: {
-      auto ptr = reinterpret_cast<const RemoveHeroFailedReply *>(obj);
+    case MessageT_DeleteHeroFailedReply: {
+      auto ptr = reinterpret_cast<const DeleteHeroFailedReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageT_RemoveHeroSuccessReply: {
-      auto ptr = reinterpret_cast<const RemoveHeroSuccessReply *>(obj);
+    case MessageT_DeleteHeroSuccessReply: {
+      auto ptr = reinterpret_cast<const DeleteHeroSuccessReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;

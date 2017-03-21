@@ -105,6 +105,10 @@ private:
 	// Hero List
 	void OnHeroListRequest(const Ptr<Session>& session, const Game::Protocol::NetMessage* net_message);
 	void HeroListReply(const Ptr<Session>& session, const std::vector<HeroSimpleData>& hero_list);
+	// Delete Hero
+	void OnDeleteHeroRequest(const Ptr<Session>& session, const Game::Protocol::NetMessage* net_message);
+	void DeleteHeroSuccessReply(const Ptr<Session>& session, int hero_id);
+	void DeleteHeroFailedReply(const Ptr<Session>& session, Game::Protocol::ErrorCode error_code);
 
 private:
 	const Ptr<GameUserSession> FindGameUserSession(const uuid& session_id)
