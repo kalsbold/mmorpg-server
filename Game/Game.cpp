@@ -2,11 +2,13 @@
 //
 
 #include "stdafx.h"
+#include "ServerConfig.h"
 #include "GameServer.h"
 
 void RunServer()
 {
-	ServerConfig config;
+	// 게임서버 설정
+	ServerConfig& config = ServerConfig::GetInstance();
 	config.bind_port = 8088;
 	config.thread_count = 4;
 	config.db_host = "127.0.0.1:3306";
@@ -17,12 +19,12 @@ void RunServer()
 
 	try
 	{
-		auto server = std::make_shared<GameServer>(config);
+		auto server = std::make_shared<GameServer>();
 		server->Run();
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << e.what();
+		BOOST_LOG_TRIVIAL(fatal) << e.what();
 	}
 }
 

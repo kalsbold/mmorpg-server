@@ -50,11 +50,14 @@
     <ClInclude Include="TestMySQL.h">
       <Filter>test</Filter>
     </ClInclude>
-    <ClInclude Include="GameUserSession.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="game_message_generated.h">
       <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerConfig.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUser.h">
+      <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

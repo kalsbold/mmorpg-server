@@ -12,7 +12,18 @@ IoServicePool::IoServicePool(size_t thread_count)
 	{
 		io_services_.emplace_back(std::make_unique<boost::asio::io_service>());
 		works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*io_services_[i]));
-		threads_.emplace_back(std::thread([this, i]() { (*io_services_[i]).run(); }));
+		threads_.emplace_back(std::thread([this, i]()
+			{
+				try
+				{
+					io_services_[i]->run();
+				}
+				catch (const std::exception& e)
+				{
+
+					BOOST_LOG_TRIVIAL(error) << "io_service run exception! : " << e.what();
+				}
+			}));
 	}
 
 	BOOST_LOG_TRIVIAL(info) << "Run IoServicePool. thread_count:" << thread_count;

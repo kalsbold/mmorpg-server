@@ -7,7 +7,7 @@
 #include "MySQL.h"
 #include "game_message_generated.h"
 
-#include "GameUserSession.h"
+#include "GameUser.h"
 
 using namespace gisunnet;
 
@@ -26,20 +26,6 @@ struct HeroSimpleData
 	int level;
 };
 
-class ServerConfig
-{
-public:
-	string bind_address = "0.0.0.0";
-	int bind_port;
-	size_t thread_count = 1;
-	size_t max_session_count = 1000;
-	string db_host;
-	string db_user;
-	string db_password;
-	string db_schema;
-	size_t db_connection_pool = 1;
-};
-
 // 게임 서버.
 class GameServer
 {
@@ -48,8 +34,7 @@ public:
 	using SessionClosedHandler = std::function<void(const Ptr<Session>&)>;
 	using MessageHandler = std::function<void(const Ptr<Session>&, const Game::Protocol::NetMessage* net_message)>;
 
-	GameServer(const ServerConfig& config)
-		: server_config_(config)
+	GameServer()
 	{
 	}
 	~GameServer()
@@ -82,9 +67,8 @@ private:
 		message_handler_map_.insert(std::make_pair(message_type, message_handler));
 	}
 
-	void Initialize();
 	void InitializeHandlers();
-
+	
 	// Handler ===============================================================
 	void OnSessionOpen(const Ptr<Session>& session);
 	void OnSessionClose(const Ptr<Session>& session);
@@ -111,7 +95,7 @@ private:
 	void DeleteHeroFailedReply(const Ptr<Session>& session, Game::Protocol::ErrorCode error_code);
 
 private:
-	const Ptr<GameUserSession> FindGameUserSession(const uuid& session_id)
+	const Ptr<GameUser> FindGameUserSession(const uuid& session_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 		auto iter = game_user_session_map_.find(session_id);
@@ -124,11 +108,11 @@ private:
 	}
 
 	// Account ID로 찾는다
-	const Ptr<GameUserSession> FindGameUserSession(int account_id)
+	const Ptr<GameUser> FindGameUserSession(int account_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 
-		auto iter = std::find_if(game_user_session_map_.begin(), game_user_session_map_.end(), [account_id](const std::pair<uuid, Ptr<GameUserSession>>& pair)
+		auto iter = std::find_if(game_user_session_map_.begin(), game_user_session_map_.end(), [account_id](const std::pair<uuid, Ptr<GameUser>>& pair)
 		{
 			auto info = pair.second->GetAccountInfo();
 			return info.id == account_id;
@@ -141,13 +125,13 @@ private:
 		return iter->second;
 	}
 
-	void InsertGameUserSession(uuid session_id, Ptr<GameUserSession> user)
+	void AddGameUserSession(uuid session_id, Ptr<GameUser> user)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 		game_user_session_map_.insert(std::make_pair(session_id, user));
 	}
 
-	void EraseGameUserSession(const uuid& session_id)
+	void RemoveGameUserSession(const uuid& session_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 		game_user_session_map_.erase(session_id);
@@ -159,11 +143,10 @@ private:
 	Ptr<MySQLPool> db_;
 
 	std::mutex mutex_;
-	ServerConfig server_config_;
 	SessionOpenedHandler session_opened_handler_;
 	SessionClosedHandler session_closed_handler_;
 	std::map<Game::Protocol::MessageT, MessageHandler> message_handler_map_;
 
 	// 유저 관리
-	std::map<uuid,Ptr<GameUserSession>> game_user_session_map_;
+	std::map<uuid,Ptr<GameUser>> game_user_session_map_;
 };

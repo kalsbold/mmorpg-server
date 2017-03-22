@@ -40,9 +40,23 @@ public:
 
 	//void SetPingTimeout();
 
+	virtual asio::strand& GetStrand() = 0;
+
 protected:
 	Session() {};
 };
+
+template <typename Func>
+void Post(Session& session, Func&& f)
+{
+	session.GetStrand().post(std::forward<Func>(f));
+}
+
+template <typename Func>
+void Dispatch(Session& session, Func&& f)
+{
+	session.GetStrand().dispatch(std::forward<Func>(f));
+}
 
 } // namespace gisunnet
 

@@ -1,21 +1,26 @@
 #include "stdafx.h"
 #include "GameServer.h"
+#include "ServerConfig.h"
 
 using namespace Game::Protocol;
 
-void GameServer::Initialize()
+void GameServer::Run()
 {
-	size_t thread_count = server_config_.thread_count;
+	ServerConfig& server_config = ServerConfig::GetInstance();
+
+	// ios pool 생성
+	size_t thread_count = server_config.thread_count;
 	ios_pool_ = std::make_shared<IoServicePool>(thread_count);
 
-	// Initialize NetServer
+	// NetServer Config
 	Configuration config;
 	config.io_service_pool = ios_pool_;
-	config.max_session_count = server_config_.max_session_count;
+	config.max_session_count = server_config.max_session_count;
 	config.max_receive_buffer_size = 4 * 1024;
 	config.min_receive_size = 256;
 	config.no_delay = true;
 
+	// Initialize NetServer
 	net_server_ = NetServer::Create(config);
 	net_server_->RegisterMessageHandler([this](const Ptr<Session>& session, const uint8_t* buf, size_t bytes)
 	{
@@ -29,7 +34,7 @@ void GameServer::Initialize()
 
 		auto message_type = net_message->message_type();
 		auto it = message_handler_map_.find(message_type);
-		
+
 		if (it != message_handler_map_.end())
 		{
 			// 메시지 핸들러를 실행
@@ -65,21 +70,24 @@ void GameServer::Initialize()
 	});
 
 	// Initialize DB
-	db_ = std::make_shared<MySQLPool>(server_config_.db_host,
-		server_config_.db_user, server_config_.db_password,
-		server_config_.db_schema, server_config_.db_connection_pool);
-}
+	db_ = std::make_shared<MySQLPool>(
+		server_config.db_host,
+		server_config.db_user,
+		server_config.db_password,
+		server_config.db_schema,
+		server_config.db_connection_pool);
 
-void GameServer::Run()
-{
-	Initialize();
+	// 네트워크 이벤트 핸들러들 등록
 	InitializeHandlers();
 
-	std::string bind_address = server_config_.bind_address;
-	uint16_t bind_port = server_config_.bind_port;
+	// NetServer 를 시작시킨다.
+	std::string bind_address = server_config.bind_address;
+	uint16_t bind_port = server_config.bind_port;
 	net_server_->Start(bind_address, bind_port);
 
 	BOOST_LOG_TRIVIAL(info) << "Run Game Server";
+
+	// 종료될때 까지 대기
 	ios_pool_->Wait();
 }
 
@@ -115,7 +123,7 @@ void GameServer::OnSessionOpen(const Ptr<Session>& session)
 
 void GameServer::OnSessionClose(const Ptr<Session>& session)
 {
-	// 로그인된 GameUserSession 을 찾는다.
+	// 로그인된 GameUser 을 찾는다.
 	auto user = FindGameUserSession(session->ID());
 	if (!user)
 		return;
@@ -124,7 +132,7 @@ void GameServer::OnSessionClose(const Ptr<Session>& session)
 	BOOST_LOG_TRIVIAL(info) << "Logout " << info.acc_name << " Session ID : " << session->ID();
 
 	// 삭제
-	EraseGameUserSession(session->ID());
+	RemoveGameUserSession(session->ID());
 }
 
 // Join ================================================================================================================
@@ -210,6 +218,7 @@ void GameServer::OnLoginRequest(const Ptr<Session>& session, const Game::Protoco
 	if (user)
 	{
 		// 이미 로그인 되있으면 성공으로 친다.
+		// TO DO : 실패로 해야 하나?
 		LoginSuccessReply(session, boost::uuids::to_string(session->ID()));
 		return;
 	}
@@ -218,24 +227,30 @@ void GameServer::OnLoginRequest(const Ptr<Session>& session, const Game::Protoco
 	string password = msg->password()->str();
 
 	std::stringstream ss;
-	ss << "SELECT id, acc_name FROM account_tb "
-		<< "WHERE acc_name='" << acc_name << "' AND "
-		<< "password='" << password << "'";
+	ss << "SELECT id, acc_name, password FROM account_tb "
+		<< "WHERE acc_name='" << acc_name << "' AND password='" << password << "'";
 	
 	try
 	{
 		auto result_set = db_->Excute(ss.str());
 		
 		// 결과가 없다. 실패
-		if (result_set->rowsCount() == 0)
+		if (!result_set->next())
 		{
 			LoginFailedReply(session, ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
 			return;
 		}
-		result_set->next();
+		
+		std::string password2 = result_set->getString("password").c_str();
+		// 패스워드가 다르다. 실패
+		if (password != password2)
+		{
+			LoginFailedReply(session, ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
+			return;
+		}
 
-		int acc_id = result_set->getInt(1);
-		// 다른 곳에서 이미 로그인된 계정인지 검사.
+		int acc_id = result_set->getInt("id");
+		// 다른 세션에서 이미 로그인된 계정인지 검사.
 		auto user = FindGameUserSession(acc_id);
 		// 이미 로그인됨. 실패
 		if (user)
@@ -245,13 +260,13 @@ void GameServer::OnLoginRequest(const Ptr<Session>& session, const Game::Protoco
 		}
 
 		// 로그인 성공
-		// GameUserSession 객체를 만들고 맵에 추가
+		// GameUser 객체를 만들고 맵에 추가
 		AccountInfo acc_info;
-		acc_info.id = result_set->getInt(1);
-		acc_info.acc_name = result_set->getString(2).c_str();
+		acc_info.id = acc_id;
+		acc_info.acc_name = result_set->getString("acc_name").c_str();
 		uuid session_id = session->ID();
-		auto game_user = std::make_shared<GameUserSession>(session, acc_info);
-		InsertGameUserSession(session_id, game_user);
+		auto game_user = std::make_shared<GameUser>(session, acc_info);
+		AddGameUserSession(session_id, game_user);
 		BOOST_LOG_TRIVIAL(info) << "Login success " << acc_info.acc_name << " Session ID : " << session->ID();
 
 		LoginSuccessReply(session, boost::uuids::to_string(session->ID()));

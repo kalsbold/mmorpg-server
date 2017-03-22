@@ -45,6 +45,10 @@ public:
 	{
 		PendWrite(std::move(message));
 	}
+	virtual asio::strand& GetStrand() override
+	{
+		return *strand_;
+	}
 
 	// 세션을 시작한다.
 	void Start();
@@ -68,7 +72,6 @@ private:
 	};
 
 	using SendMsg = std::tuple<Buffer, Ptr<Buffer>>;
-	using strand = boost::asio::io_service::strand;
 
 	void Read(size_t min_read_bytes);
 	void HandleRead(const error_code & error, std::size_t bytes_transferred);
@@ -131,7 +134,7 @@ private:
 	}
 
 	std::unique_ptr<tcp::socket> socket_;
-	std::unique_ptr<strand> strand_;
+	std::unique_ptr<asio::strand> strand_;
 	tcp::endpoint remote_endpoint_;
 		
 	uuid id_;
