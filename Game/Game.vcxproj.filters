@@ -10,9 +10,6 @@
     <Filter Include="World">
       <UniqueIdentifier>{2f816b43-d5ec-46fa-aec5-4b91a8fd15b9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Account">
-      <UniqueIdentifier>{a4a5b7ec-f88d-487c-8c47-4d125f2aea64}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Database">
       <UniqueIdentifier>{bf5cb8f8-91ab-46cb-b39c-f136293a83ad}</UniqueIdentifier>
     </Filter>
@@ -25,19 +22,19 @@
     <Filter Include="Actor">
       <UniqueIdentifier>{638008b2-58e8-46b8-9331-85c2518ed6ae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject">
+      <UniqueIdentifier>{e3dd6145-6d70-45c7-9fb6-494ebde77b6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="User">
+      <UniqueIdentifier>{2643ef9f-df87-4c1a-9008-0eb47a183a01}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="World.h">
-      <Filter>World</Filter>
-    </ClInclude>
     <ClInclude Include="GameServer.h">
       <Filter>Server</Filter>
-    </ClInclude>
-    <ClInclude Include="AccountManager.h">
-      <Filter>Account</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -50,13 +47,31 @@
     <ClInclude Include="TestMySQL.h">
       <Filter>test</Filter>
     </ClInclude>
-    <ClInclude Include="game_message_generated.h">
-      <Filter>Protocol</Filter>
-    </ClInclude>
     <ClInclude Include="ServerConfig.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="GameWorld.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="game_message_generated.h">
+      <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="GameMessageHelper.h">
+      <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
     <ClInclude Include="GameUser.h">
+      <Filter>User</Filter>
+    </ClInclude>
+    <ClInclude Include="Hero.h">
+      <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeDef.h">
       <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
@@ -65,6 +80,12 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="GameServer.cpp">
       <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Hero.cpp">
+      <Filter>Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector3.cpp">
+      <Filter>Utils</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

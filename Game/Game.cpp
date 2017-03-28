@@ -5,6 +5,8 @@
 #include "ServerConfig.h"
 #include "GameServer.h"
 
+using namespace mmog;
+
 void RunServer()
 {
 	// 게임서버 설정

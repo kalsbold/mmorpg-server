@@ -10,7 +10,7 @@ TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, cons
 	assert(socket_.get() != nullptr);
 	assert(socket_->is_open());
 
-	strand_ = std::make_unique<strand>(socket_->get_io_service());
+	strand_ = std::make_unique<asio::strand>(socket_->get_io_service());
 	remote_endpoint_ = socket_->remote_endpoint();
 
 	// Set config
