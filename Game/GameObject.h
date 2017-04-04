@@ -3,8 +3,10 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/random_generator.hpp>
+#include "Vector3.h"
 
 using entity_id = boost::uuids::uuid;
+using Vector3 = AO::Vector3::Vector3;
 /*
 class ComponentBase;
 class GameObject

@@ -9,21 +9,21 @@ using namespace gisunnet;
 using namespace flatbuffers;
 using namespace protocol;
 
-template <typename Message>
-void Send(const Ptr<Session>& session, FlatBufferBuilder& fbb, Offset<Message>& message)
+template <typename T>
+void Send(const Ptr<Session>& session, FlatBufferBuilder& fbb, Offset<T>& message)
 {
-	auto net_message = CreateNetMessage(fbb, MessageTTraits<Message>::enum_value, message.Union());
+	auto net_message = CreateNetMessage(fbb, MessageTTraits<T>::enum_value, message.Union());
 	fbb.Finish(net_message);
 
 	session->Send(fbb.GetBufferPointer(), fbb.GetSize());
 }
 
-template <typename MessageType>
-void Send(const Ptr<Session>& session, const MessageType& message)
+template <typename MessageT>
+void Send(const Ptr<Session>& session, const MessageT& message)
 {
 	flatbuffers::FlatBufferBuilder fbb;
-	auto offset = MessageType::TableType::Pack(fbb, &message);
-	auto net_message = CreateNetMessage(fbb, MessageTTraits<MessageType::TableType>::enum_value, offset.Union());
+	auto offset = MessageT::TableType::Pack(fbb, &message);
+	auto net_message = CreateNetMessage(fbb, MessageTTraits<MessageT::TableType>::enum_value, offset.Union());
 	fbb.Finish(net_message);
 
 	session->Send(fbb.GetBufferPointer(), fbb.GetSize());

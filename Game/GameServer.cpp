@@ -552,6 +552,7 @@ namespace mmog {
 		}
 	}
 
+	// Enter Game
 	void GameServer::OnEnterGameRequest(const Ptr<Session>& session, const NetMessage * net_message)
 	{
 		auto msg = static_cast<const EnterGameRequest*>(net_message->message());
@@ -568,7 +569,7 @@ namespace mmog {
 			}
 
 			// 플레이어 상태 검사
-			if (user->GetState() != GameUser::State::Login)
+			if (user->GetState() != GameUser::State::Entry)
 			{
 				EnterGameFailedReplyT reply;
 				reply.error_code = ErrorCode_ENTER_GAME_INVALID_STATE;
@@ -577,25 +578,7 @@ namespace mmog {
 			}
 
 			const int hero_id = msg->hero_id();
-			auto acc_info = user->GetAccountInfo();
-
-			std::stringstream ss;
-			ss << "SELECT id FROM user_hero_tb "
-				<< "WHERE id=" << hero_id << " AND acc_id=" << user->GetAccountInfo().id << " AND del_type='F'";
-			auto result_set = db_->Excute(ss.str());
-
-			if (result_set->rowsCount() == 0)
-			{
-				// 케릭터가 존재하지 않는다. 실패
-				EnterGameFailedReplyT reply;
-				reply.error_code = ErrorCode_ENTER_GAME_INVALID_HERO;
-				Send(session, reply);
-				return;
-			}
-
-			// 성공
-			BeginEnterGameReplyT reply;
-			Send(session, reply);
+			user->BeginEnterGame(hero_id);
 		}
 		catch (sql::SQLException& e)
 		{

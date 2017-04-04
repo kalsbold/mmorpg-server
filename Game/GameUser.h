@@ -13,24 +13,24 @@ namespace mmog {
 		std::string acc_name;
 	};
 
-	class GameUser
+	class GameUser : public std::enable_shared_from_this<GameUser>
 	{
 	public:
 		enum class State
 		{
 			None = 0,
-			Login,			// 로그인 후
+			Entry,			// 로그인 후
 			GamePreparing,  // 입장 하기위해 준비중(데이터 로딩등)
 			GameReady,		// 입장 준비 완료
 			GamePlay,	    // 입장됨
-			Logout,			// 로그아웃 함
+			Exit,			// 로그아웃 함
 		};
 
 		GameUser(GameServer* server, const Ptr<Session>& net_session, const AccountInfo& account_info)
 			: server_(server)
 			, net_session_(net_session)
 			, account_info_(account_info)
-			, state_(State::Login)
+			, state_(State::Entry)
 		{}
 		~GameUser() {}
 
@@ -77,28 +77,36 @@ namespace mmog {
 		// 게임 입장 시퀀스를 시작한다.
 		void BeginEnterGame(int hero_id)
 		{
-			auto strand = net_session_->GetStrand();
-			strand.post([this, hero_id]()
+			std::lock_guard<std::mutex> lock(mutex_);
+			if (state_ != State::Entry)
+				return;
+
+			state_ = State::GamePreparing;
+
+			auto db = server_->GetDB();
+			// 영웅 데이터를 불러온다.
+			std::stringstream ss;
+			ss << "SELECT * FROM user_hero_tb "
+				<< "WHERE id=" << hero_id << " acc_id=" << account_info_.id << " AND del_type='F'";
+			auto result_set = db->Excute(ss.str());
+
+			if (!result_set->next())
 			{
-				state_ = State::GamePreparing;
+				// 케릭터가 존재하지 않는다. 실패
+				EnterGameFailedReplyT reply;
+				reply.error_code = ErrorCode_ENTER_GAME_INVALID_HERO;
+				Send(net_session_, reply);
+				// 연결을 끊는다.
+				Close();
+				// 로그인된 유저 목록에서 제거
+				server_->RemoveGameUser(GetSessionID());
+				return;
+			}
 
-				auto db = server_->GetDB();
-				// 영웅 데이터를 불러온다.
-				std::stringstream ss;
-				ss << "SELECT * FROM user_hero_tb "
-					<< "WHERE id=" << hero_id << " acc_id=" << account_info_.id << " AND del_type='F'";
-				auto result_set = db->Excute(ss.str());
+			// 필요한 데이터 로딩
 
-				if (!result_set->next())
-				{
-					// 케릭터가 존재하지 않는다. 실패
-					EnterGameFailedReplyT reply;
-					reply.error_code = ErrorCode_ENTER_GAME_INVALID_HERO;
-					Send(net_session_, reply);
-					return;
-				}
 
-			});
+
 		}
 
 	private:

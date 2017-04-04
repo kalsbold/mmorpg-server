@@ -71,9 +71,7 @@
     <ClInclude Include="Vector3.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="TypeDef.h">
-      <Filter>Server</Filter>
-    </ClInclude>
+    <ClInclude Include="TypeDef.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
