@@ -7,9 +7,6 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{99ab8221-5f2a-49b9-b0ac-d745b48e1669}</UniqueIdentifier>
     </Filter>
-    <Filter Include="World">
-      <UniqueIdentifier>{2f816b43-d5ec-46fa-aec5-4b91a8fd15b9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Database">
       <UniqueIdentifier>{bf5cb8f8-91ab-46cb-b39c-f136293a83ad}</UniqueIdentifier>
     </Filter>
@@ -25,8 +22,8 @@
     <Filter Include="GameObject">
       <UniqueIdentifier>{e3dd6145-6d70-45c7-9fb6-494ebde77b6c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="User">
-      <UniqueIdentifier>{2643ef9f-df87-4c1a-9008-0eb47a183a01}</UniqueIdentifier>
+    <Filter Include="World">
+      <UniqueIdentifier>{70476592-46d7-45ad-9480-06b616b315af}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -50,40 +47,46 @@
     <ClInclude Include="ServerConfig.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="GameWorld.h">
-      <Filter>World</Filter>
-    </ClInclude>
     <ClInclude Include="game_message_generated.h">
       <Filter>Protocol</Filter>
     </ClInclude>
     <ClInclude Include="GameMessageHelper.h">
       <Filter>Protocol</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
-    <ClInclude Include="GameUser.h">
-      <Filter>User</Filter>
-    </ClInclude>
-    <ClInclude Include="Hero.h">
-      <Filter>Actor</Filter>
-    </ClInclude>
     <ClInclude Include="Vector3.h">
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="TypeDef.h" />
+    <ClInclude Include="Character.h">
+      <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerBase.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUser.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="EventHandlers.h">
+      <Filter>Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Game.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="GameServer.cpp">
       <Filter>Server</Filter>
     </ClCompile>
-    <ClCompile Include="Hero.cpp">
-      <Filter>Actor</Filter>
-    </ClCompile>
     <ClCompile Include="Vector3.cpp">
       <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="EventHandlers.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

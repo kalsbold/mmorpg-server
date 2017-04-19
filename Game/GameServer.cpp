@@ -6,11 +6,15 @@
 
 namespace mmog {
 
+	using namespace flatbuffers;
+	using namespace protocol;
+	using namespace helper;
+
 	void GameServer::Run()
 	{
 		ServerConfig& server_config = ServerConfig::GetInstance();
 
-		// ios pool 생성
+		// io_service pool 생성
 		size_t thread_count = server_config.thread_count;
 		ios_pool_ = std::make_shared<IoServicePool>(thread_count);
 
@@ -80,7 +84,7 @@ namespace mmog {
 			server_config.db_connection_pool);
 
 		// 네트워크 이벤트 핸들러들 등록
-		InitializeHandlers();
+		RegisterHandlers();
 
 		// NetServer 를 시작시킨다.
 		std::string bind_address = server_config.bind_address;
@@ -105,7 +109,7 @@ namespace mmog {
 		BOOST_LOG_TRIVIAL(info) << "Stop Game Server";
 	}
 
-	inline const Ptr<GameUser> GameServer::FindGameUser(const uuid & session_id)
+	inline const Ptr<GameUser> GameServer::GetGameUser(const SessionID & session_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 		auto iter = user_map_.find(session_id);
@@ -117,48 +121,61 @@ namespace mmog {
 		return iter->second;
 	}
 
-	// Account ID로 찾는다
-	inline const Ptr<GameUser> GameServer::FindGameUser(int account_id)
+	// User UUID로 찾는다.
+	inline const Ptr<GameUser> GameServer::GetGameUserByUserID(const uuid& user_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 
-		auto iter = std::find_if(user_map_.begin(), user_map_.end(), [account_id](const std::pair<uuid, Ptr<GameUser>>& pair)
-		{
-			auto info = pair.second->GetAccountInfo();
-			return info.id == account_id;
-		});
+		auto iter = std::find_if(user_map_.begin(), user_map_.end(), [&user_id](const std::pair<uuid, Ptr<GameUser>>& pair)
+			{
+				return user_id == pair.second->GetUUID();
+			});
 		if (iter == user_map_.end())
-		{
 			return nullptr;
-		}
 
 		return iter->second;
 	}
 
-	inline void GameServer::AddGameUser(uuid session_id, Ptr<GameUser> user)
+	// Account ID로 찾는다
+	inline const Ptr<GameUser> GameServer::GetGameUserByAccountID(int account_id)
+	{
+		std::lock_guard<std::mutex> lock_guard(mutex_);
+
+		auto iter = std::find_if(user_map_.begin(), user_map_.end(), [account_id](const std::pair<uuid, Ptr<GameUser>>& pair)
+			{
+				auto info = pair.second->GetAccountInfo();
+				return info.id == account_id;
+			});
+		if (iter == user_map_.end())
+			return nullptr;
+
+		return iter->second;
+	}
+
+	inline void GameServer::AddGameUser(SessionID session_id, Ptr<GameUser> user)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 		user_map_.insert(std::make_pair(session_id, user));
 	}
 
-	inline void GameServer::RemoveGameUser(const uuid & session_id)
+	inline void GameServer::RemoveGameUser(const SessionID & session_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
 		user_map_.erase(session_id);
 	}
 
-	// Handlers ======================================================================================================
-	void GameServer::InitializeHandlers()
+	// 이벤트 핸들러들을 등록한다 ======================================================================================================
+	void GameServer::RegisterHandlers()
 	{
 		this->RegisterSessionOpenHandler([this](const Ptr<Session>& session) { OnSessionOpen(session); });
 		this->RegisterSessionCloseHandler([this](const Ptr<Session>& session, CloseReason reason) { OnSessionClose(session, reason); });
 
-		this->RegisterMessageHandler(MessageT_JoinRequest, std::bind(&GameServer::OnJoinRequest, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_LoginRequest, std::bind(&GameServer::OnLoginRequest, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_CreateHeroRequest, std::bind(&GameServer::OnCreateHeroRequest, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_HeroListRequest, std::bind(&GameServer::OnHeroListRequest, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_DeleteHeroRequest, std::bind(&GameServer::OnDeleteHeroRequest, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_EnterGameRequest, std::bind(&GameServer::OnEnterGameRequest, this, std::placeholders::_1, std::placeholders::_2));
+		this->RegisterMessageHandler(MessageT_RequestJoin, std::bind(&GameServer::OnRequestJoin, this, std::placeholders::_1, std::placeholders::_2));
+		this->RegisterMessageHandler(MessageT_RequestLogin, std::bind(&GameServer::OnRequestLogin, this, std::placeholders::_1, std::placeholders::_2));
+		this->RegisterMessageHandler(MessageT_RequestCreateCharacter, std::bind(&GameServer::OnRequestCreateCharacter, this, std::placeholders::_1, std::placeholders::_2));
+		this->RegisterMessageHandler(MessageT_RequestCharacterList, std::bind(&GameServer::OnRequestCharacterList, this, std::placeholders::_1, std::placeholders::_2));
+		this->RegisterMessageHandler(MessageT_RequestDeleteCharacter, std::bind(&GameServer::OnRequestDeleteCharacter, this, std::placeholders::_1, std::placeholders::_2));
+		this->RegisterMessageHandler(MessageT_RequestEnterGame, std::bind(&GameServer::OnRequestEnterGame, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 	void GameServer::OnSessionOpen(const Ptr<Session>& session)
@@ -168,26 +185,26 @@ namespace mmog {
 
 	void GameServer::OnSessionClose(const Ptr<Session>& session, CloseReason reason)
 	{
-		// 로그인된 GameUser 을 찾는다.
-		auto user = FindGameUser(session->ID());
+		// 로그인된 GameUserSession 을 찾는다.
+		auto user = GetGameUser(session->GetID());
 		if (!user)
 			return;
 
 		auto info = user->GetAccountInfo();
-		BOOST_LOG_TRIVIAL(info) << "Logout " << info.acc_name << " Session ID : " << session->ID();
+		BOOST_LOG_TRIVIAL(info) << "Logout " << info.acc_name << " Session ID : " << session->GetID();
 		if (CloseReason::Disconnected == reason)
 		{
 			user->OnDisconnected();
 		}
 
 		// 삭제
-		RemoveGameUser(session->ID());
+		RemoveGameUser(session->GetID());
 	}
 
 	// Join ================================================================================================================
-	void GameServer::OnJoinRequest(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnRequestJoin(const Ptr<Session>& session, const NetMessage * net_message)
 	{
-		auto msg = static_cast<const JoinRequest*>(net_message->message());
+		auto msg = static_cast<const RequestJoin*>(net_message->message());
 
 		FlatBufferBuilder builder;
 
@@ -199,8 +216,8 @@ namespace mmog {
 			std::cmatch m;
 			if (std::regex_search(acc_name, m, pattern))
 			{
-				auto reply = CreateJoinFailedReply(builder, ErrorCode_INVALID_STRING);
-				Send(session, builder, reply);
+				auto response = CreateJoinFailed(builder, ErrorCode_INVALID_STRING);
+				Send(session, builder, response);
 				return;
 			}
 
@@ -212,8 +229,8 @@ namespace mmog {
 			// 이미 있는 계정명. 실패
 			if (result_set->rowsCount() > 0)
 			{
-				auto reply = CreateJoinFailedReply(builder, ErrorCode_JOIN_ACC_NAME_ALREADY);
-				Send(session, builder, reply);
+				auto response = CreateJoinFailed(builder, ErrorCode_JOIN_ACC_NAME_ALREADY);
+				Send(session, builder, response);
 				return;
 			}
 
@@ -225,8 +242,8 @@ namespace mmog {
 
 			BOOST_LOG_TRIVIAL(info) << "Join success " << msg->acc_name()->c_str();
 			// 성공
-			auto reply = CreateJoinSuccessReply(builder);
-			Send(session, builder, reply);
+			auto response = CreateJoinSuccess(builder);
+			Send(session, builder, response);
 		}
 		catch (sql::SQLException& e)
 		{
@@ -234,35 +251,35 @@ namespace mmog {
 				<< ", (MySQL error code : " << e.getErrorCode()
 				<< ", SQLState: " << e.getSQLState() << " )";
 
-			auto reply = CreateJoinFailedReply(builder, ErrorCode_FATAL_ERROR);
-			Send(session, builder, reply);
+			auto response = CreateJoinFailed(builder, ErrorCode_FATAL_ERROR);
+			Send(session, builder, response);
 		}
 		catch (std::exception& e)
 		{
 			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
 			
-			auto reply = CreateJoinFailedReply(builder, ErrorCode_FATAL_ERROR);
-			Send(session, builder, reply);
+			auto response = CreateJoinFailed(builder, ErrorCode_FATAL_ERROR);
+			Send(session, builder, response);
 		}
 	}
 
 	// Login ================================================================================================================
-	void GameServer::OnLoginRequest(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnRequestLogin(const Ptr<Session>& session, const NetMessage * net_message)
 	{
-		auto msg = static_cast<const LoginRequest*>(net_message->message());
+		auto msg = static_cast<const RequestLogin*>(net_message->message());
 
 		FlatBufferBuilder builder;
 
 		try
 		{
 			// 세션이 이미 로그인 되있는지 찾는다.
-			auto user = FindGameUser(session->ID());
+			auto user = GetGameUser(session->GetID());
 			if (user)
 			{
 				// 이미 로그인 되있으면 성공으로 친다.
-				auto reply = CreateLoginSuccessReply(builder,
-					builder.CreateString(boost::uuids::to_string(session->ID())));
-				Send(session, builder, reply);
+				auto response = CreateLoginSuccess(builder,
+					builder.CreateString(boost::uuids::to_string(session->GetID())));
+				Send(session, builder, response);
 				return;
 			}
 
@@ -278,9 +295,9 @@ namespace mmog {
 			// 결과가 없다. 실패
 			if (!result_set->next())
 			{
-				auto reply = CreateLoginFailedReply(builder,
+				auto response = CreateLoginFailed(builder,
 					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
-				Send(session, builder, reply);
+				Send(session, builder, response);
 				return;
 			}
 
@@ -288,36 +305,36 @@ namespace mmog {
 			// 패스워드가 다르다. 실패
 			if (password != password2)
 			{
-				auto reply = CreateLoginFailedReply(builder,
+				auto response = CreateLoginFailed(builder,
 					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
-				Send(session, builder, reply);
+				Send(session, builder, response);
 				return;
 			}
 
 			int acc_id = result_set->getInt("id");
 			// 다른 유저 세션에서 이미 로그인된 계정인지 검사.
-			auto user2 = FindGameUser(acc_id);
+			auto user2 = GetGameUserByAccountID(acc_id);
 			if (user2)
 			{
 				// 다른 유저 세션 연결을 끊는다.
 				user2->Close();
 				// 로그인된 유저 목록에서 제거
-				RemoveGameUser(user2->GetSessionID());
+				RemoveGameUser(user2->GetUUID());
 			}
 
 			// 로그인 성공
-			// GameUser 객체를 만들고 맵에 추가
+			// GameUserSession 객체를 만들고 맵에 추가
 			AccountInfo acc_info;
 			acc_info.id = acc_id;
 			acc_info.acc_name = result_set->getString("acc_name").c_str();
-			uuid session_id = session->ID();
+			uuid session_id = session->GetID();
 			auto game_user = std::make_shared<GameUser>(this, session, acc_info);
 			AddGameUser(session_id, game_user);
 			BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
 			// 성공
-			auto reply = CreateLoginSuccessReply(builder,
-				builder.CreateString(boost::uuids::to_string(session->ID())));
-			Send(session, builder, reply);
+			auto response = CreateLoginSuccess(builder,
+				builder.CreateString(boost::uuids::to_string(session->GetID())));
+			Send(session, builder, response);
 		}
 		catch (sql::SQLException& e)
 		{
@@ -325,62 +342,62 @@ namespace mmog {
 				<< ", (MySQL error code : " << e.getErrorCode()
 				<< ", SQLState: " << e.getSQLState() << " )";
 
-			auto reply = CreateLoginFailedReply(builder,
+			auto response = CreateLoginFailed(builder,
 				ErrorCode_FATAL_ERROR);
-			Send(session, builder, reply);
+			Send(session, builder, response);
 		}
 		catch (std::exception& e)
 		{
 			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
 
-			auto reply = CreateLoginFailedReply(builder,
+			auto response = CreateLoginFailed(builder,
 				ErrorCode_FATAL_ERROR);
-			Send(session, builder, reply);
+			Send(session, builder, response);
 		}
 	}
 
-	// Create Hero ================================================================================================================
-	void GameServer::OnCreateHeroRequest(const Ptr<Session>& session, const NetMessage * net_message)
+	// Create Character ================================================================================================================
+	void GameServer::OnRequestCreateCharacter(const Ptr<Session>& session, const NetMessage * net_message)
 	{
-		auto msg = static_cast<const CreateHeroRequest*>(net_message->message());
+		auto msg = static_cast<const RequestCreateCharacter*>(net_message->message());
 
 		try
 		{
-			auto user = FindGameUser(session->ID());
+			auto user = GetGameUser(session->GetID());
 			if (!user)
 			{
-				CreateHeroFailedReplyT reply;
-				reply.error_code = ErrorCode_INVALID_SESSION;
-				Send(session, reply);
+				CreateCharacterFailedT response;
+				response.error_code = ErrorCode_INVALID_SESSION;
+				Send(session, response);
 				return;
 			}
 
-			const char* hero_name = msg->name()->c_str();
+			const char* Character_name = msg->name()->c_str();
 			int class_type = msg->class_type();
 
 			// 문자열 검사
 			std::regex pattern(R"([^A-Za-z0-9_]+)");
 			std::cmatch m;
-			if (std::regex_search(hero_name, m, pattern))
+			if (std::regex_search(Character_name, m, pattern))
 			{
-				CreateHeroFailedReplyT reply;
-				reply.error_code = ErrorCode_INVALID_STRING;
-				Send(session, reply);
+				CreateCharacterFailedT response;
+				response.error_code = ErrorCode_INVALID_STRING;
+				Send(session, response);
 				return;
 			}
 
 			std::stringstream ss;
 			// 이름 중복 쿼리
-			ss << "SELECT name FROM user_hero_tb "
-				<< "WHERE name='" << hero_name << "'";
+			ss << "SELECT name FROM user_Character_tb "
+				<< "WHERE name='" << Character_name << "'";
 
 			auto result_set = db_->Excute(ss.str());
 			// 이미 있는 이름. 실패
 			if (result_set->rowsCount() > 0)
 			{
-				CreateHeroFailedReplyT reply;
-				reply.error_code = ErrorCode_CREATE_HERO_NAME_ALREADY;
-				Send(session, reply);
+				CreateCharacterFailedT response;
+				response.error_code = ErrorCode_CREATE_CHARACTER_NAME_ALREADY;
+				Send(session, response);
 				return;
 			}
 
@@ -388,22 +405,22 @@ namespace mmog {
 
 			ss.str(""); // 비우기
 			// Insert
-			ss << "INSERT INTO user_hero_tb (acc_id, name, class_type) "
-				<< "VALUES (" << acc_info.id << ",'" << hero_name << "','" << class_type << "')";
+			ss << "INSERT INTO user_Character_tb (acc_id, name, class_type) "
+				<< "VALUES (" << acc_info.id << ",'" << Character_name << "','" << class_type << "')";
 			db_->Excute(ss.str());
 
 			ss.str(""); // 비우기
 			// Insert 후 생성된 row 조회 (다른 방법이 있을거다?)
-			ss << "SELECT id, name, class_type, level FROM user_hero_tb "
-				<< "WHERE acc_id=" << acc_info.id << " and name='" << hero_name << "'";
+			ss << "SELECT id, name, class_type, level FROM user_Character_tb "
+				<< "WHERE acc_id=" << acc_info.id << " and name='" << Character_name << "'";
 
 			result_set = db_->Excute(ss.str());
 			if (!result_set->next())
 			{
 				// 생성 된게 없으면 실패
-				CreateHeroFailedReplyT reply;
-				reply.error_code = ErrorCode_CREATE_HERO_CANNOT_CREATE;
-				Send(session, reply);
+				CreateCharacterFailedT response;
+				response.error_code = ErrorCode_CREATE_CHARACTER_CANNOT_CREATE;
+				Send(session, response);
 				return;
 			}
 
@@ -411,18 +428,18 @@ namespace mmog {
 			int id = result_set->getInt(1);
 			int level = result_set->getInt(4);
 			
-			auto hero = std::make_unique<HeroSimpleT>();
-			hero->id = id;
-			hero->name = hero_name;
-			hero->class_type = class_type;
-			hero->level = level;
+			auto character = std::make_unique<CharacterSimpleT>();
+			character->id = id;
+			character->name = Character_name;
+			character->class_type = class_type;
+			character->level = level;
 
-			CreateHeroSuccessReplyT reply;
-			reply.hero = std::move(hero);
+			CreateCharacterSuccessT response;
+			response.character = std::move(character);
 			
 			// 생성 성공
-			BOOST_LOG_TRIVIAL(info) << "Create Hero success : " << hero_name;
-			Send(session, reply);
+			BOOST_LOG_TRIVIAL(info) << "Create Character success : " << Character_name;
+			Send(session, response);
 		}
 		catch (sql::SQLException& e)
 		{
@@ -430,54 +447,54 @@ namespace mmog {
 				<< ", (MySQL error code : " << e.getErrorCode()
 				<< ", SQLState: " << e.getSQLState() << " )";
 
-			CreateHeroFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			CreateCharacterFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 		catch (std::exception& e)
 		{
 			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
 
-			CreateHeroFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			CreateCharacterFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 	}
 
-	// Hero List ================================================================================================================
-	void GameServer::OnHeroListRequest(const Ptr<Session>& session, const NetMessage * net_message)
+	// Character List ================================================================================================================
+	void GameServer::OnRequestCharacterList(const Ptr<Session>& session, const NetMessage * net_message)
 	{
-		auto msg = static_cast<const CreateHeroRequest*>(net_message->message());
+		auto msg = static_cast<const RequestCreateCharacter*>(net_message->message());
 		
 		try
 		{
-			auto user = FindGameUser(session->ID());
+			auto user = GetGameUser(session->GetID());
 			if (!user)
 			{
-				HeroListFailedReplyT reply;
-				reply.error_code = ErrorCode_INVALID_SESSION;
-				Send(session, reply);
+				CharacterListFailedT response;
+				response.error_code = ErrorCode_INVALID_SESSION;
+				Send(session, response);
 				return;
 			}
 
 			std::stringstream ss;
-			ss << "SELECT id, name, class_type, level FROM user_hero_tb "
+			ss << "SELECT id, name, class_type, level FROM user_Character_tb "
 				<< "WHERE acc_id=" << user->GetAccountInfo().id << " AND del_type='F'";
 
-			HeroListReplyT reply;
+			CharacterListT response;
 
 			auto result_set = db_->Excute(ss.str());
 			while (result_set->next())
 			{
-				auto hero = std::make_unique<HeroSimpleT>();
-				hero->id         = result_set->getInt("id");
-				hero->name       = result_set->getString("name").c_str();
-				hero->class_type = result_set->getInt("class_type");
-				hero->level      = result_set->getInt("level");
-				reply.hero_list.emplace_back(std::move(hero));
+				auto Character = std::make_unique<CharacterSimpleT>();
+				Character->id         = result_set->getInt("id");
+				Character->name       = result_set->getString("name").c_str();
+				Character->class_type = result_set->getInt("class_type");
+				Character->level      = result_set->getInt("level");
+				response.character_list.emplace_back(std::move(Character));
 			}
 
-			Send(session, reply);
+			Send(session, response);
 		}
 		catch (sql::SQLException& e)
 		{
@@ -485,52 +502,52 @@ namespace mmog {
 				<< ", (MySQL error code : " << e.getErrorCode()
 				<< ", SQLState: " << e.getSQLState() << " )";
 
-			HeroListFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			CharacterListFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 		catch (std::exception& e)
 		{
 			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
 
-			HeroListFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			CharacterListFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 	}
 
-	// Delete Hero ==========================================================================================================
-	void GameServer::OnDeleteHeroRequest(const Ptr<Session>& session, const NetMessage * net_message)
+	// Delete Character ==========================================================================================================
+	void GameServer::OnRequestDeleteCharacter(const Ptr<Session>& session, const NetMessage * net_message)
 	{
-		auto msg = static_cast<const DeleteHeroRequest*>(net_message->message());
+		auto msg = static_cast<const RequestDeleteCharacter*>(net_message->message());
 
 		try
 		{
-			auto user = FindGameUser(session->ID());
+			auto user = GetGameUser(session->GetID());
 			if (!user)
 			{
-				DeleteHeroFailedReplyT reply;
-				reply.error_code = ErrorCode_INVALID_SESSION;
-				Send(session, reply);
+				DeleteCharacterFailedT response;
+				response.error_code = ErrorCode_INVALID_SESSION;
+				Send(session, response);
 				return;
 			}
 
-			const int hero_id = msg->hero_id();
+			const int Character_id = msg->character_id();
 			auto acc_info = user->GetAccountInfo();
 
 			std::stringstream ss;
 			// del_type 을 'T' 로 업데이트. 실제로 지우지는 않는다.
-			ss << "UPDATE user_hero_tb SET "
+			ss << "UPDATE user_Character_tb SET "
 				<< "del_type='T' "
-				<< "WHERE id=" << hero_id << " AND acc_id=" << acc_info.id;
+				<< "WHERE id=" << Character_id << " AND acc_id=" << acc_info.id;
 
 			db_->Excute(ss.str());
 
 			// 성공
-			DeleteHeroSuccessReplyT reply;
-			reply.hero_id = hero_id;
-			BOOST_LOG_TRIVIAL(info) << "Delete Hero success. Hero Id:" << hero_id;
-			Send(session, reply);
+			DeleteCharacterSuccessT response;
+			response.character_id = Character_id;
+			BOOST_LOG_TRIVIAL(info) << "Delete Character success. Character Id:" << Character_id;
+			Send(session, response);
 		}
 		catch (sql::SQLException& e)
 		{
@@ -538,47 +555,37 @@ namespace mmog {
 				<< ", (MySQL error code : " << e.getErrorCode()
 				<< ", SQLState: " << e.getSQLState() << " )";
 
-			DeleteHeroFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			DeleteCharacterFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 		catch (std::exception& e)
 		{
 			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
 
-			DeleteHeroFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			DeleteCharacterFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 	}
 
 	// Enter Game
-	void GameServer::OnEnterGameRequest(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnRequestEnterGame(const Ptr<Session>& session, const NetMessage * net_message)
 	{
-		auto msg = static_cast<const EnterGameRequest*>(net_message->message());
+		auto msg = static_cast<const RequestEnterGame*>(net_message->message());
 
 		try
 		{
-			auto user = FindGameUser(session->ID());
+			auto user = GetGameUser(session->GetID());
 			if (!user)
 			{
-				EnterGameFailedReplyT reply;
-				reply.error_code = ErrorCode_INVALID_SESSION;
-				Send(session, reply);
+				EnterGameFailedT response;
+				response.error_code = ErrorCode_INVALID_SESSION;
+				Send(session, response);
 				return;
 			}
 
-			// 플레이어 상태 검사
-			if (user->GetState() != GameUser::State::Entry)
-			{
-				EnterGameFailedReplyT reply;
-				reply.error_code = ErrorCode_ENTER_GAME_INVALID_STATE;
-				Send(session, reply);
-				return;
-			}
-
-			const int hero_id = msg->hero_id();
-			user->BeginEnterGame(hero_id);
+			user->EnterGame(msg->character_id());
 		}
 		catch (sql::SQLException& e)
 		{
@@ -586,16 +593,16 @@ namespace mmog {
 				<< ", (MySQL error code : " << e.getErrorCode()
 				<< ", SQLState: " << e.getSQLState() << " )";
 
-			EnterGameFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			EnterGameFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 		catch (std::exception& e)
 		{
 			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
-			EnterGameFailedReplyT reply;
-			reply.error_code = ErrorCode_FATAL_ERROR;
-			Send(session, reply);
+			EnterGameFailedT response;
+			response.error_code = ErrorCode_FATAL_ERROR;
+			Send(session, response);
 		}
 	}
 

@@ -34,7 +34,7 @@ void TcpServer::Start(string address, uint16_t port)
 	std::lock_guard<std::mutex> guard(mutex_);
 	if (!(state_ == State::Ready))
 	{
-		BOOST_LOG_TRIVIAL(info) << "NetServer can't start : State is not Ready\n";
+		BOOST_LOG_TRIVIAL(info) << "TcpServer can't start : State is not Ready\n";
 		return;
 	}
 
@@ -42,7 +42,7 @@ void TcpServer::Start(string address, uint16_t port)
 	AcceptStart();
 	state_ = State::Start;
 		
-	BOOST_LOG_TRIVIAL(info) << "NetServer start " << endpoint;
+	BOOST_LOG_TRIVIAL(info) << "TcpServer start " << endpoint;
 }
 
 void TcpServer::Stop()
@@ -63,7 +63,7 @@ void TcpServer::Stop()
 	session_list_.clear();
 	state_ = State::Stop;
 
-	BOOST_LOG_TRIVIAL(info) << "NetServer stop";
+	BOOST_LOG_TRIVIAL(info) << "TcpServer stop";
 }
 
 void TcpServer::Listen(tcp::endpoint endpoint)
@@ -93,7 +93,7 @@ inline void TcpServer::AcceptStart()
 				socket_->shutdown(tcp::socket::shutdown_both, ec);
 				socket_->close();
 			//}
-			socket_.release();
+			socket_.reset();
 			return;
 		}
 
@@ -103,7 +103,7 @@ inline void TcpServer::AcceptStart()
 			error_code ec;
 			socket_->shutdown(tcp::socket::shutdown_both, ec);
 			socket_->close();
-			socket_.release();
+			socket_.reset();
 			//accept_op_ = false;
 			//return;
 			BOOST_LOG_TRIVIAL(info) << "Session is full. max_session_count:" << config_.max_session_count;
@@ -111,7 +111,7 @@ inline void TcpServer::AcceptStart()
 		else if (!error)
 		{
 			// Session ID 발급.
-			uuid id = boost::uuids::random_generator()();
+			auto id = boost::uuids::random_generator()();
 			// 세션 객체 생성.
 			auto session = std::make_shared<TcpSession>(std::move(socket_), id, config_);
 			// 핸들러 등록
@@ -164,7 +164,7 @@ inline void TcpServer::HandleSessionClose(const WeakPtr<Session>& session, Close
 
 	// 세션 리스트에서 지워준다.
 	std::lock_guard<std::mutex> guard(mutex_);
-	session_list_.erase(s->ID());
+	session_list_.erase(s->GetID());
 }
 
 inline void TcpServer::HandleSessionReceive(const WeakPtr<Session>& session, const uint8_t* buf, size_t bytes)

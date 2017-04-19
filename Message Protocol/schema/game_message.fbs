@@ -1,0 +1,202 @@
+namespace mmog.protocol;
+
+// 데이터 스키마 정의===================================================================
+// Vector2
+struct Vec2 {
+  x:float;
+  y:float;
+}
+// Vector3
+struct Vec3 {
+  x:float;
+  y:float;
+  z:float;
+}
+
+// 간단한 플레이어 캐릭터 정보
+table CharacterSimple{
+    id:int;
+    name:string;
+    class_type:int;
+    level:int;
+}
+
+// 로컬 플레이어 캐릭터 정보
+table PlayerCharacter{
+    uid:int;
+    name:string;
+    class_type:int;
+    exp:int;
+    level:int;
+    hp:int;
+    mp:int;
+    att:int;
+    def:int;
+    zone_id:int;
+    pos:Vec3;
+    rotation_y:float;
+    direction:Vec3;
+    speed:float;
+}
+
+// 리모트 플레이어 캐릭터 정보
+table RemoteCharacter{
+    uid:int;
+    name:string;
+    class_type:int;
+    level:int;
+    hp:int;
+    mp:int;
+    pos:Vec3;
+    rotation_y:float;
+    direction:Vec3;
+    speed:float;
+}
+
+// 에러 코드
+enum ErrorCode : int {
+    SUCCESS = 0,
+    FATAL_ERROR = 1,
+    INVALID_SESSION = 10,   // 잘못된 세션
+    INVALID_STRING = 20,    // 잘못된 문자
+    // JOIN
+    JOIN_ACC_NAME_ALREADY = 100,    // 계정명 중복
+    JOIN_CANNOT_ACC_CREATE = 101,   // 계정 생성 실패
+    // Login
+    LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD = 200, // 계정명이나 패스워드가 잘못됨
+    LOGIN_ALREADY = 201,    // 이미 로그인됨
+    // Create Character
+    CREATE_CHARACTER_NAME_ALREADY = 301,
+    CREATE_CHARACTER_CANNOT_CREATE = 302,
+    // Enter Game
+    ENTER_GAME_INVALID_CHARACTER = 401, // 영웅이 존재하지 않음
+    ENTER_GAME_INVALID_STATE = 402, // 잘못된 상태
+}
+
+// 메시지 스키마 정의 =================================================================
+// Login =====================================
+// 로그인을 요청
+table RequestLogin {
+    acc_name:string;
+    password:string;
+}
+// 로그인 실패
+table LoginFailed {
+    error_code:ErrorCode;
+}
+// 로그인 성공
+table LoginSuccess {
+    session_id:string;
+}
+
+// Join =====================================
+// 가입을 요청
+table RequestJoin {
+    acc_name:string;
+    password:string;
+}
+// 가입 실패
+table JoinFailed {
+    error_code:ErrorCode;
+}
+// 가입 성공
+table JoinSuccess {
+}
+
+// Character List =====================
+// 플레이어 캐릭터 리스트를 요청
+table RequestCharacterList{
+}
+// 실패
+table CharacterListFailed{
+    error_code:ErrorCode;
+}
+// 캐릭터 리스트 응답
+table CharacterList{
+    character_list:[CharacterSimple]; // Vector of tables.
+}
+
+// Create Character ==========================
+// 새 캐릭터 생성을 요청
+table RequestCreateCharacter{
+    name:string;
+    class_type:int;
+}
+// 새 캐릭터 생성 실패
+table CreateCharacterFailed{
+    error_code:ErrorCode;
+}
+// 새 캐릭터 생성 성공
+table CreateCharacterSuccess{
+    character:CharacterSimple; // 생성된 캐릭터 정보
+}
+
+// Delete Character ==========================
+// 캐릭터 제거를 요청
+table RequestDeleteCharacter{
+    character_id:int;
+}
+// 캐릭터 제거 실패
+table DeleteCharacterFailed{
+    error_code:ErrorCode;
+}
+// 캐릭터 제거 성공
+table DeleteCharacterSuccess{
+    character_id:int;
+}
+
+// Enter Game ============================
+// 게임 입장 요청
+table RequestEnterGame{
+    character_id:int;
+}
+// 게임 입장 실패
+table EnterGameFailed{
+    error_code:ErrorCode;
+}
+// 게임 입장 성공
+table EnterGameSuccess{
+    character:PlayerCharacter;
+}
+// 리모트 케릭터 스폰
+table SpawnRemoteCharacter{
+    character:RemoteCharacter;
+}
+// 케릭터 이동
+table MoveCharacter{
+    uid:int;
+    pos:Vec3;
+    rotation_y:float;
+    velocity:Vec3;
+}
+
+// 메시지 타입을 정의 한다 ================================================
+union MessageT {
+    RequestLogin,
+    LoginFailed,
+    LoginSuccess,
+    RequestJoin,
+    JoinFailed,
+    JoinSuccess,
+    RequestCharacterList,
+    CharacterListFailed,
+    CharacterList,
+    RequestCreateCharacter,
+    CreateCharacterFailed,
+    CreateCharacterSuccess,
+    RequestDeleteCharacter,
+    DeleteCharacterFailed,
+    DeleteCharacterSuccess,
+    RequestEnterGame,
+    EnterGameFailed,
+    EnterGameSuccess,
+    SpawnRemoteCharacter,
+    MoveCharacter,
+}
+
+// 기본 네트워크 메시지 =================================================================
+table NetMessage {
+    message:MessageT; // Union
+}
+
+root_type NetMessage;

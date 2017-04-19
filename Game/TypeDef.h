@@ -1,15 +1,13 @@
 #pragma once
 #include <iostream>
+#include <gisunnet/gisunnet.h>
 #include "Vector3.h"
 
 namespace mmog {
 
-	using Vector3 = AO::Vector3::Vector3;
+	using namespace gisunnet;
 
-	enum class ClassType : int
-	{
-		Knight = 0,
-		Archer = 1,
-		Mage = 2,
-	};
+	using AO::Vector3::Vector3;
+
+
 }

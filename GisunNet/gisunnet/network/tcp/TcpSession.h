@@ -16,11 +16,11 @@ public:
 	TcpSession(const TcpSession&) = delete;
 	TcpSession& operator=(const TcpSession&) = delete;
 
-	TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, const Configuration& config);
+	TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id, const Configuration& config);
 
 	virtual ~TcpSession();
 
-	virtual const uuid& ID() const override;
+	virtual const SessionID& GetID() const override;
 
 	virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const override;
 
@@ -137,7 +137,7 @@ private:
 	std::unique_ptr<asio::strand> strand_;
 	tcp::endpoint remote_endpoint_;
 		
-	uuid id_;
+	SessionID id_;
 	State state_;
 
 	Ptr<Buffer> read_buf_;

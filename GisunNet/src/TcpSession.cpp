@@ -2,7 +2,7 @@
 
 namespace gisunnet {
 
-TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const uuid& id, const Configuration & config)
+TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id, const Configuration & config)
 	: socket_(std::move(socket))
 	, id_(id)
 	, state_(State::Ready)
@@ -24,7 +24,7 @@ TcpSession::~TcpSession()
 {
 }
 
-const uuid& TcpSession::ID() const
+const uuid& TcpSession::GetID() const
 {
 	return id_;
 }
@@ -70,14 +70,14 @@ void TcpSession::Start()
 		}
 		catch (const std::exception& e)
 		{
-			BOOST_LOG_TRIVIAL(info) << "Session socket set option exception : " << e.what();
+			BOOST_LOG_TRIVIAL(info) << "TcpSession socket set option exception : " << e.what();
 			_Close(CloseReason::ActiveClose);
 			return;
 		}
 
 		state_ = State::Opened;
 		Read(min_receive_size_);
-		BOOST_LOG_TRIVIAL(info) << "Session start";
+		BOOST_LOG_TRIVIAL(info) << "TcpSession start";
 
 		openHandler();
 	});
@@ -147,7 +147,7 @@ inline bool TcpSession::PrepareRead(size_t min_prepare_bytes)
 	}
 	catch (const std::exception& e)
 	{
-		BOOST_LOG_TRIVIAL(warning) << "Session prepare read exception : " << e.what() << "\n";
+		BOOST_LOG_TRIVIAL(warning) << "TcpSession prepare read exception : " << e.what() << "\n";
 		read_buf_->Clear();
 		return false;
 	}
@@ -226,7 +226,7 @@ void TcpSession::HandleError(const error_code & error)
 		return;
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "Session socket error : " << error.message();
+	BOOST_LOG_TRIVIAL(info) << "TcpSession socket error : " << error.message();
 }
 
 void TcpSession::_Close(CloseReason reason)
@@ -239,7 +239,7 @@ void TcpSession::_Close(CloseReason reason)
 	socket_->close();
 	state_ = State::Closed;
 
-	BOOST_LOG_TRIVIAL(info) << "Session Close";
+	BOOST_LOG_TRIVIAL(info) << "TcpSession Close";
 
 	if (closeHandler)
 		closeHandler(reason);

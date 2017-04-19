@@ -10,6 +10,8 @@ enum CloseReason {
 	Timeout,			//
 };
 
+using SessionID = uuid;
+
 class Session
 {
 public:
@@ -20,7 +22,7 @@ public:
 
 	virtual ~Session() {};
 
-	virtual const uuid& ID() const = 0;
+	virtual const SessionID& GetID() const = 0;
 
 	virtual bool GetRemoteEndpoint(string& ip, uint16_t& port) const = 0;
 

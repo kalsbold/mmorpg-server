@@ -4,6 +4,7 @@
 #include "game_message_generated.h"
 
 namespace mmog {
+namespace helper{
 
 using namespace gisunnet;
 using namespace flatbuffers;
@@ -29,4 +30,5 @@ void Send(const Ptr<Session>& session, const MessageT& message)
 	session->Send(fbb.GetBufferPointer(), fbb.GetSize());
 }
 
+}
 }

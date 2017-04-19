@@ -71,6 +71,7 @@ int main()
 
 		flatbuffers::FlatBufferBuilder builder;
 
+
 		auto weapon_one_name = builder.CreateString("Sword");
 		short weapon_one_damage = 3;
 		auto weapon_two_name = builder.CreateString("Axe");
