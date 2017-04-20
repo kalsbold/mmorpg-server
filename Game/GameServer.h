@@ -30,21 +30,6 @@ namespace mmog {
 
 		const Ptr<MySQLPool>& GetDB() { return db_; }
 
-		void RegisterSessionOpenHandler(const SessionOpenedHandler& handler)
-		{
-			session_opened_handler_ = handler;
-		}
-
-		void RegisterSessionCloseHandler(const SessionClosedHandler& handler)
-		{
-			session_closed_handler_ = handler;
-		}
-
-		void RegisterMessageHandler(const protocol::MessageT& message_type, const MessageHandler& message_handler)
-		{
-			message_handler_map_.insert(std::make_pair(message_type, message_handler));
-		}
-
 		// Network Session ID 로 찾는다.
 		const Ptr<GameUser> GetGameUser(const SessionID& session_id);
 		// User UUID로 찾는다.
@@ -57,24 +42,18 @@ namespace mmog {
 		void RemoveGameUser(const SessionID& session_id);
 
 	private:
-		void RegisterHandlers();
-		// Session Open & Close Handler ===============================================================
-		void OnSessionOpen(const Ptr<Session>& session);
-		void OnSessionClose(const Ptr<Session>& session, CloseReason reason);
+		void RegisterMessageHandlers();
 
-		// Message Handler =======================================================
-		// Join
-		void OnRequestJoin(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		// Login
-		void OnRequestLogin(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		// Create Character
-		void OnRequestCreateCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		// Character List
-		void OnRequestCharacterList(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		// Delete Character
-		void OnRequestDeleteCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		// Enter Game
-		void OnRequestEnterGame(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void HandleMessage(const Ptr<Session>& session, const uint8_t* buf, size_t bytes);
+		void HandleSessionOpened(const Ptr<Session>& session);
+		void HandleSessionClosed(const Ptr<Session>& session, CloseReason reason);
+
+		void OnLogin(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void OnJoin(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void OnCreateCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void OnCharacterList(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void OnDeleteCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void OnEnterGame(const Ptr<Session>& session, const protocol::NetMessage* net_message);
 
 		Ptr<IoServicePool> ios_pool_;
 		Ptr<NetServer> net_server_;
@@ -83,7 +62,7 @@ namespace mmog {
 		std::mutex mutex_;
 		SessionOpenedHandler session_opened_handler_;
 		SessionClosedHandler session_closed_handler_;
-		std::map<protocol::MessageT, MessageHandler> message_handler_map_;
+		std::map<protocol::MessageT, MessageHandler> message_handlers_;
 
 		// 유저 관리
 		std::map<SessionID, Ptr<GameUser>> user_map_;

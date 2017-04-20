@@ -7,12 +7,7 @@ namespace mmog {
 
 	using namespace gisunnet;
 
-	struct AccountInfo
-	{
-	public:
-		int id = 0;
-		std::string acc_name;
-	};
+	
 
 	class GameUser : public std::enable_shared_from_this<GameUser>
 	{
@@ -24,7 +19,7 @@ namespace mmog {
 			Disconnected,	// 접속 종료
 		};
 
-		GameUser(GameServer* server, Session* net_session, uuid user_uuid, const AccountInfo& account_info)
+		GameUser(GameServer* server, Session* net_session, uuid user_uuid, const AccountData& account_info)
 			: server_(server)
 			, net_session_(net_session)
 			, user_uuid_(user_uuid)
@@ -42,7 +37,7 @@ namespace mmog {
 			return user_uuid_;
 		}
 
-		const AccountInfo& GetAccountInfo() const
+		const AccountData& GetAccountInfo() const
 		{
 			return account_info_;
 		}
@@ -145,7 +140,7 @@ namespace mmog {
 
 		std::mutex mutex_;
 		uuid user_uuid_;
-		AccountInfo account_info_;
+		AccountData account_info_;
 		State state_;
 
 		//Ptr<PlayerCharacter> character_;

@@ -158,9 +158,10 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EventHandlers.h" />
+    <ClInclude Include="AccountManager.h" />
+    <ClInclude Include="DatabaseEntity.h" />
     <ClInclude Include="GameManager.h" />
-    <ClInclude Include="GameMessageHelper.h" />
+    <ClInclude Include="MessageHelper.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="ServerBase.h" />
     <ClInclude Include="TypeDef.h" />

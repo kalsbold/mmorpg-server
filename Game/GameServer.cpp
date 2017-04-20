@@ -1,11 +1,14 @@
 #include "stdafx.h"
 #include "GameServer.h"
 #include "ServerConfig.h"
-#include "GameMessageHelper.h"
 #include "GameUser.h"
+#include "DatabaseEntity.h"
+#include "AccountManager.h"
+#include "MessageHelper.h"
 
 namespace mmog {
 
+	using namespace std;
 	using namespace flatbuffers;
 	using namespace protocol;
 	using namespace helper;
@@ -14,7 +17,7 @@ namespace mmog {
 	{
 		ServerConfig& server_config = ServerConfig::GetInstance();
 
-		// io_service pool 생성
+		// create io_service pool
 		size_t thread_count = server_config.thread_count;
 		ios_pool_ = std::make_shared<IoServicePool>(thread_count);
 
@@ -22,58 +25,29 @@ namespace mmog {
 		Configuration config;
 		config.io_service_pool = ios_pool_;
 		config.max_session_count = server_config.max_session_count;
-		config.max_receive_buffer_size = 4 * 1024;
-		config.min_receive_size = 256;
-		config.no_delay = true;
+		config.max_receive_buffer_size = server_config.max_receive_buffer_size;
+		config.min_receive_size = server_config.min_receive_size;
+		config.no_delay = server_config.no_delay;
 
 		// Initialize NetServer
 		net_server_ = NetServer::Create(config);
-		net_server_->RegisterMessageHandler([this](const Ptr<Session>& session, const uint8_t* buf, size_t bytes)
-		{
-			// flatbuffer 메시지로 디시리얼라이즈
-			const NetMessage* net_message = GetNetMessage(buf);
-			if (net_message == nullptr)
+		net_server_->RegisterMessageHandler(
+			[this](const Ptr<Session>& session, const uint8_t* buf, size_t bytes)
 			{
-				BOOST_LOG_TRIVIAL(info) << "Invalid NetMessage";
-				return;
-			}
+				HandleMessage(session, buf, bytes);
+			});
 
-			auto message_type = net_message->message_type();
-			auto it = message_handler_map_.find(message_type);
-
-			if (it != message_handler_map_.end())
+		net_server_->RegisterSessionOpenedHandler(
+			[this](const Ptr<Session>& session)
 			{
-				// 메시지 핸들러를 실행
-				it->second(session, net_message);
-			}
-			else
+				HandleSessionOpened(session);
+			});
+
+		net_server_->RegisterSessionClosedHandler(
+			[this](const Ptr<Session>& session, const CloseReason& reason)
 			{
-				BOOST_LOG_TRIVIAL(info) << "Can not find the message handler message_type " << message_type;
-			}
-		});
-
-		net_server_->RegisterSessionOpenedHandler([this](const Ptr<Session>& session)
-		{
-			BOOST_LOG_TRIVIAL(info) << "On session open";
-
-			if (session_opened_handler_)
-				session_opened_handler_(session);
-		});
-
-		net_server_->RegisterSessionClosedHandler([this](const Ptr<Session>& session, const CloseReason& reason)
-		{
-			if (reason == CloseReason::ActiveClose)
-			{
-				BOOST_LOG_TRIVIAL(info) << "On session active close";
-			}
-			else if (reason == CloseReason::Disconnected)
-			{
-				BOOST_LOG_TRIVIAL(info) << "On session disconnected";
-			}
-
-			if (session_closed_handler_)
-				session_closed_handler_(session, reason);
-		});
+				HandleSessionClosed(session, reason);
+			});
 
 		// Initialize DB
 		db_ = std::make_shared<MySQLPool>(
@@ -82,9 +56,6 @@ namespace mmog {
 			server_config.db_password,
 			server_config.db_schema,
 			server_config.db_connection_pool);
-
-		// 네트워크 이벤트 핸들러들 등록
-		RegisterHandlers();
 
 		// NetServer 를 시작시킨다.
 		std::string bind_address = server_config.bind_address;
@@ -164,26 +135,36 @@ namespace mmog {
 		user_map_.erase(session_id);
 	}
 
-	// 이벤트 핸들러들을 등록한다 ======================================================================================================
-	void GameServer::RegisterHandlers()
+	void GameServer::HandleMessage(const Ptr<Session>& session, const uint8_t* buf, size_t bytes)
 	{
-		this->RegisterSessionOpenHandler([this](const Ptr<Session>& session) { OnSessionOpen(session); });
-		this->RegisterSessionCloseHandler([this](const Ptr<Session>& session, CloseReason reason) { OnSessionClose(session, reason); });
+		// flatbuffer 메시지로 디시리얼라이즈
+		const NetMessage* net_message = GetNetMessage(buf);
+		if (net_message == nullptr)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Invalid NetMessage";
+			return;
+		}
 
-		this->RegisterMessageHandler(MessageT_RequestJoin, std::bind(&GameServer::OnRequestJoin, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_RequestLogin, std::bind(&GameServer::OnRequestLogin, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_RequestCreateCharacter, std::bind(&GameServer::OnRequestCreateCharacter, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_RequestCharacterList, std::bind(&GameServer::OnRequestCharacterList, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_RequestDeleteCharacter, std::bind(&GameServer::OnRequestDeleteCharacter, this, std::placeholders::_1, std::placeholders::_2));
-		this->RegisterMessageHandler(MessageT_RequestEnterGame, std::bind(&GameServer::OnRequestEnterGame, this, std::placeholders::_1, std::placeholders::_2));
+		auto message_type = net_message->message_type();
+		auto it = message_handlers_.find(message_type);
+
+		if (it != message_handlers_.end())
+		{
+			// 메시지 핸들러를 실행
+			it->second(session, net_message);
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(info) << "Can not find the message handler message_type " << message_type;
+		}
 	}
 
-	void GameServer::OnSessionOpen(const Ptr<Session>& session)
+	void GameServer::HandleSessionOpened(const Ptr<Session>& session)
 	{
 
 	}
 
-	void GameServer::OnSessionClose(const Ptr<Session>& session, CloseReason reason)
+	void GameServer::HandleSessionClosed(const Ptr<Session>& session, CloseReason reason)
 	{
 		// 로그인된 GameUserSession 을 찾는다.
 		auto user = GetGameUser(session->GetID());
@@ -201,8 +182,101 @@ namespace mmog {
 		RemoveGameUser(session->GetID());
 	}
 
+	// Login ================================================================================================================
+	void GameServer::OnLogin(const Ptr<Session>& session, const NetMessage * net_message)
+	{
+		auto msg = static_cast<const RequestLogin*>(net_message->message());
+
+		FlatBufferBuilder builder;
+
+		try
+		{
+			// 세션이 이미 로그인 되있는지 찾는다.
+			auto user = GetGameUser(session->GetID());
+			if (user)
+			{
+				// 이미 로그인 되있으면 성공으로 친다.
+				auto response = CreateLoginSuccess(builder,
+					builder.CreateString(boost::uuids::to_string(session->GetID())));
+				Send(session, builder, response);
+				return;
+			}
+
+			string acc_name = msg->acc_name()->str();
+			string password = msg->password()->str();
+
+			std::stringstream ss;
+			ss << "SELECT id, acc_name, password FROM account_tb "
+				<< "WHERE acc_name='" << acc_name << "' AND password='" << password << "'";
+
+			auto result_set = db_->Excute(ss.str());
+
+			// 결과가 없다. 실패
+			if (!result_set->next())
+			{
+				auto response = CreateLoginFailed(builder,
+					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
+				Send(session, builder, response);
+				return;
+			}
+
+			std::string password2 = result_set->getString("password").c_str();
+			// 패스워드가 다르다. 실패
+			if (password != password2)
+			{
+				auto response = CreateLoginFailed(builder,
+					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
+				Send(session, builder, response);
+				return;
+			}
+
+			int acc_id = result_set->getInt("id");
+			// 다른 유저 세션에서 이미 로그인된 계정인지 검사.
+			auto user2 = GetGameUserByAccountID(acc_id);
+			if (user2)
+			{
+				// 다른 유저 세션 연결을 끊는다.
+				user2->Close();
+				// 로그인된 유저 목록에서 제거
+				RemoveGameUser(user2->GetUUID());
+			}
+
+			// 로그인 성공
+			// GameUserSession 객체를 만들고 맵에 추가
+			AccountData acc_info;
+			acc_info.id = acc_id;
+			acc_info.acc_name = result_set->getString("acc_name").c_str();
+			uuid session_id = session->GetID();
+			auto game_user = std::make_shared<GameUser>(this, session, acc_info);
+			AddGameUser(session_id, game_user);
+			BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
+			// 성공
+			auto response = CreateLoginSuccess(builder,
+				builder.CreateString(boost::uuids::to_string(session->GetID())));
+			Send(session, builder, response);
+		}
+		catch (sql::SQLException& e)
+		{
+			BOOST_LOG_TRIVIAL(info) << "SQL Exception: " << e.what()
+				<< ", (MySQL error code : " << e.getErrorCode()
+				<< ", SQLState: " << e.getSQLState() << " )";
+
+			auto response = CreateLoginFailed(builder,
+				ErrorCode_FATAL_ERROR);
+			Send(session, builder, response);
+		}
+		catch (std::exception& e)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
+
+			auto response = CreateLoginFailed(builder,
+				ErrorCode_FATAL_ERROR);
+			Send(session, builder, response);
+		}
+	}
+
 	// Join ================================================================================================================
-	void GameServer::OnRequestJoin(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnJoin(const Ptr<Session>& session, const NetMessage * net_message)
 	{
 		auto msg = static_cast<const RequestJoin*>(net_message->message());
 
@@ -263,101 +337,10 @@ namespace mmog {
 		}
 	}
 
-	// Login ================================================================================================================
-	void GameServer::OnRequestLogin(const Ptr<Session>& session, const NetMessage * net_message)
-	{
-		auto msg = static_cast<const RequestLogin*>(net_message->message());
-
-		FlatBufferBuilder builder;
-
-		try
-		{
-			// 세션이 이미 로그인 되있는지 찾는다.
-			auto user = GetGameUser(session->GetID());
-			if (user)
-			{
-				// 이미 로그인 되있으면 성공으로 친다.
-				auto response = CreateLoginSuccess(builder,
-					builder.CreateString(boost::uuids::to_string(session->GetID())));
-				Send(session, builder, response);
-				return;
-			}
-
-			string acc_name = msg->acc_name()->str();
-			string password = msg->password()->str();
-
-			std::stringstream ss;
-			ss << "SELECT id, acc_name, password FROM account_tb "
-				<< "WHERE acc_name='" << acc_name << "' AND password='" << password << "'";
-
-			auto result_set = db_->Excute(ss.str());
-
-			// 결과가 없다. 실패
-			if (!result_set->next())
-			{
-				auto response = CreateLoginFailed(builder,
-					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
-				Send(session, builder, response);
-				return;
-			}
-
-			std::string password2 = result_set->getString("password").c_str();
-			// 패스워드가 다르다. 실패
-			if (password != password2)
-			{
-				auto response = CreateLoginFailed(builder,
-					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
-				Send(session, builder, response);
-				return;
-			}
-
-			int acc_id = result_set->getInt("id");
-			// 다른 유저 세션에서 이미 로그인된 계정인지 검사.
-			auto user2 = GetGameUserByAccountID(acc_id);
-			if (user2)
-			{
-				// 다른 유저 세션 연결을 끊는다.
-				user2->Close();
-				// 로그인된 유저 목록에서 제거
-				RemoveGameUser(user2->GetUUID());
-			}
-
-			// 로그인 성공
-			// GameUserSession 객체를 만들고 맵에 추가
-			AccountInfo acc_info;
-			acc_info.id = acc_id;
-			acc_info.acc_name = result_set->getString("acc_name").c_str();
-			uuid session_id = session->GetID();
-			auto game_user = std::make_shared<GameUser>(this, session, acc_info);
-			AddGameUser(session_id, game_user);
-			BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
-			// 성공
-			auto response = CreateLoginSuccess(builder,
-				builder.CreateString(boost::uuids::to_string(session->GetID())));
-			Send(session, builder, response);
-		}
-		catch (sql::SQLException& e)
-		{
-			BOOST_LOG_TRIVIAL(info) << "SQL Exception: " << e.what()
-				<< ", (MySQL error code : " << e.getErrorCode()
-				<< ", SQLState: " << e.getSQLState() << " )";
-
-			auto response = CreateLoginFailed(builder,
-				ErrorCode_FATAL_ERROR);
-			Send(session, builder, response);
-		}
-		catch (std::exception& e)
-		{
-			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
-
-			auto response = CreateLoginFailed(builder,
-				ErrorCode_FATAL_ERROR);
-			Send(session, builder, response);
-		}
-	}
+	
 
 	// Create Character ================================================================================================================
-	void GameServer::OnRequestCreateCharacter(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnCreateCharacter(const Ptr<Session>& session, const NetMessage * net_message)
 	{
 		auto msg = static_cast<const RequestCreateCharacter*>(net_message->message());
 
@@ -462,7 +445,7 @@ namespace mmog {
 	}
 
 	// Character List ================================================================================================================
-	void GameServer::OnRequestCharacterList(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnCharacterList(const Ptr<Session>& session, const NetMessage * net_message)
 	{
 		auto msg = static_cast<const RequestCreateCharacter*>(net_message->message());
 		
@@ -517,7 +500,7 @@ namespace mmog {
 	}
 
 	// Delete Character ==========================================================================================================
-	void GameServer::OnRequestDeleteCharacter(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnDeleteCharacter(const Ptr<Session>& session, const NetMessage * net_message)
 	{
 		auto msg = static_cast<const RequestDeleteCharacter*>(net_message->message());
 
@@ -570,7 +553,7 @@ namespace mmog {
 	}
 
 	// Enter Game
-	void GameServer::OnRequestEnterGame(const Ptr<Session>& session, const NetMessage * net_message)
+	void GameServer::OnEnterGame(const Ptr<Session>& session, const NetMessage * net_message)
 	{
 		auto msg = static_cast<const RequestEnterGame*>(net_message->message());
 
@@ -606,5 +589,20 @@ namespace mmog {
 		}
 	}
 
+	void GameServer::RegisterMessageHandlers()
+	{
+		message_handlers_.insert(make_pair(MessageT_RequestLogin, [this](auto& session, auto* msg) { OnLogin(session, msg); }));
+		message_handlers_.insert(make_pair(MessageT_RequestJoin, [this](auto& session, auto* msg) { OnJoin(session, msg); }));
+		message_handlers_.insert(make_pair(MessageT_RequestCreateCharacter, [this](auto& session, auto* msg) { OnCreateCharacter(session, msg); }));
+		message_handlers_.insert(make_pair(MessageT_RequestCharacterList, [this](auto& session, auto* msg) { OnCharacterList(session, msg); }));
+		message_handlers_.insert(make_pair(MessageT_RequestDeleteCharacter, [this](auto& session, auto* msg) {OnDeleteCharacter(session, msg); }));
+		message_handlers_.insert(make_pair(MessageT_RequestEnterGame, [this](auto& session, auto* msg) { OnEnterGame(session, msg); }));
 
+		/*message_handlers_.insert(make_pair(MessageT_RequestLogin, std::bind(&GameServer::OnLogin, this, placeholders::_1, placeholders::_2)));
+		message_handlers_.insert(make_pair(MessageT_RequestJoin, std::bind(&GameServer::OnJoin, this, placeholders::_1, placeholders::_2)));
+		message_handlers_.insert(make_pair(MessageT_RequestCreateCharacter, std::bind(&GameServer::OnCreateCharacter, this, placeholders::_1, placeholders::_2)));
+		message_handlers_.insert(make_pair(MessageT_RequestCharacterList, std::bind(&GameServer::OnCharacterList, this, std::placeholders::_1, std::placeholders::_2)));
+		message_handlers_.insert(make_pair(MessageT_RequestDeleteCharacter, std::bind(&GameServer::OnDeleteCharacter, this, std::placeholders::_1, std::placeholders::_2)));
+		message_handlers_.insert(make_pair(MessageT_RequestEnterGame, std::bind(&GameServer::OnEnterGame, this, std::placeholders::_1, std::placeholders::_2)));*/
+	}
 }

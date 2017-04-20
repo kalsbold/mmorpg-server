@@ -19,11 +19,14 @@
     <Filter Include="Actor">
       <UniqueIdentifier>{638008b2-58e8-46b8-9331-85c2518ed6ae}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject">
-      <UniqueIdentifier>{e3dd6145-6d70-45c7-9fb6-494ebde77b6c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="World">
       <UniqueIdentifier>{70476592-46d7-45ad-9480-06b616b315af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DatabaseEntity">
+      <UniqueIdentifier>{837d0517-62cb-4a9f-9039-8ea0f1442f78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helper">
+      <UniqueIdentifier>{44e65e11-88f8-4266-9689-8ed9e68c3429}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -50,9 +53,6 @@
     <ClInclude Include="game_message_generated.h">
       <Filter>Protocol</Filter>
     </ClInclude>
-    <ClInclude Include="GameMessageHelper.h">
-      <Filter>Protocol</Filter>
-    </ClInclude>
     <ClInclude Include="Vector3.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -72,8 +72,14 @@
     <ClInclude Include="World.h">
       <Filter>World</Filter>
     </ClInclude>
-    <ClInclude Include="EventHandlers.h">
+    <ClInclude Include="DatabaseEntity.h">
+      <Filter>DatabaseEntity</Filter>
+    </ClInclude>
+    <ClInclude Include="AccountManager.h">
       <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageHelper.h">
+      <Filter>Helper</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
