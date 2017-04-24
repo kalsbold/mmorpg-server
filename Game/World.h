@@ -3,27 +3,12 @@
 
 namespace mmog {
 	
-	enum MapType
-	{
-		FIELD = 0,
-		DUNGEON = 1,
-	};
+	
 
-	struct MapInfo
-	{
-	public:
-		int id;
-		string name;
-		int width;
-		int height;
-		MapType type;
-	};
+	
 
-	class GameUser;
-
-	class GameZone
+	class Player
 	{
-	public:
 
 	};
 
@@ -53,30 +38,23 @@ namespace mmog {
 		uuid uuid_;
 		MapInfo map_info_;
 
-		// 지역에 들어와 있는 게임 유저
-		std::map<SessionID, GameUser*> game_users_;
+		// 지역에 들어와 있는 게임 플레이어
+		std::map<SessionID, Player*> game_users_;
 	};
 
 
-	class GameWorld
+	class World
 	{
 	public:
-		GameWorld();
-		~GameWorld();
+		World() {}
+		~World() {}
 
-		void Start();
-		void Stop();
+		void Start() {}
+		void Stop() {}
 
 	private:
 		IoServicePool ios_pool_;
 	};
 
-	GameWorld::GameWorld()
-	{
-	}
-
-	GameWorld::~GameWorld()
-	{
-	}
 }
 

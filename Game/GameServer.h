@@ -42,7 +42,7 @@ namespace mmog {
 		void RemoveGameUser(const SessionID& session_id);
 
 	private:
-		void RegisterMessageHandlers();
+		void RegisterHandlers();
 
 		void HandleMessage(const Ptr<Session>& session, const uint8_t* buf, size_t bytes);
 		void HandleSessionOpened(const Ptr<Session>& session);

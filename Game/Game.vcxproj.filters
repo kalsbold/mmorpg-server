@@ -7,9 +7,6 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{99ab8221-5f2a-49b9-b0ac-d745b48e1669}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Database">
-      <UniqueIdentifier>{bf5cb8f8-91ab-46cb-b39c-f136293a83ad}</UniqueIdentifier>
-    </Filter>
     <Filter Include="test">
       <UniqueIdentifier>{5e56521b-c6e5-46c5-b3f3-7c170e20bdce}</UniqueIdentifier>
     </Filter>
@@ -22,11 +19,11 @@
     <Filter Include="World">
       <UniqueIdentifier>{70476592-46d7-45ad-9480-06b616b315af}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DatabaseEntity">
-      <UniqueIdentifier>{837d0517-62cb-4a9f-9039-8ea0f1442f78}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Helper">
       <UniqueIdentifier>{44e65e11-88f8-4266-9689-8ed9e68c3429}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DB Entity">
+      <UniqueIdentifier>{837d0517-62cb-4a9f-9039-8ea0f1442f78}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -40,9 +37,6 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Singleton.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="MySQL.h">
-      <Filter>Database</Filter>
     </ClInclude>
     <ClInclude Include="TestMySQL.h">
       <Filter>test</Filter>
@@ -73,13 +67,19 @@
       <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="DatabaseEntity.h">
-      <Filter>DatabaseEntity</Filter>
+      <Filter>DB Entity</Filter>
     </ClInclude>
     <ClInclude Include="AccountManager.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="MessageHelper.h">
       <Filter>Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticCachedData.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="MySQL.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

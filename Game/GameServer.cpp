@@ -589,7 +589,7 @@ namespace mmog {
 		}
 	}
 
-	void GameServer::RegisterMessageHandlers()
+	void GameServer::RegisterHandlers()
 	{
 		message_handlers_.insert(make_pair(MessageT_RequestLogin, [this](auto& session, auto* msg) { OnLogin(session, msg); }));
 		message_handlers_.insert(make_pair(MessageT_RequestJoin, [this](auto& session, auto* msg) { OnJoin(session, msg); }));

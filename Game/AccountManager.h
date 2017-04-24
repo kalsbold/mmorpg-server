@@ -6,6 +6,7 @@
 
 namespace mmog {
 
+	// 로그인 유저 관리
 	class AccountManager : public Singleton<AccountManager>
 	{
 	public:

@@ -164,6 +164,7 @@
     <ClInclude Include="MessageHelper.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="ServerBase.h" />
+    <ClInclude Include="StaticCachedData.h" />
     <ClInclude Include="TypeDef.h" />
     <ClInclude Include="game_message_generated.h" />
     <ClInclude Include="Character.h" />

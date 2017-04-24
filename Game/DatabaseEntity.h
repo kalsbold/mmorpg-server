@@ -2,7 +2,8 @@
 #include "TypeDef.h"
 #include "MySQL.h"
 
-namespace mmog { namespace entity {
+namespace mmog
+{
 
 struct Account
 {
@@ -39,9 +40,23 @@ public:
 
 		return account;
 	}
-
 };
 
-}
+enum MapType
+{
+	FIELD = 1,
+	DUNGEON = 2,
+};
+
+struct Map
+{
+public:
+	int id;
+	string name;
+	int width;
+	int height;
+	MapType type;
+};
+
 }
 
