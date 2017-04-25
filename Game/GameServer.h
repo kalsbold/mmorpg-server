@@ -9,7 +9,7 @@
 
 namespace mmog {
 
-	class GameUser;
+	class GamePlayer;
 
 	// 게임 서버.
 	class GameServer : public ServerBase
@@ -22,24 +22,19 @@ namespace mmog {
 		GameServer(){}
 		~GameServer(){}
 
+		// 서버 시작
 		void Run() override;
-
+		// 서버 종료
 		void Stop() override;
 
 		const Ptr<IoServicePool>& GetIoServicePool() { return ios_pool_; }
-
 		const Ptr<MySQLPool>& GetDB() { return db_; }
 
 		// Network Session ID 로 찾는다.
-		const Ptr<GameUser> GetGameUser(const SessionID& session_id);
-		// User UUID로 찾는다.
-		const Ptr<GameUser> GetGameUserByUserID(const uuid& user_id);
-		// Account ID로 찾는다.
-		const Ptr<GameUser> GetGameUserByAccountID(int account_id);
-		// GameUser 추가
-		void AddGameUser(SessionID session_id, Ptr<GameUser> user);
-		// GameUser 삭제
-		void RemoveGameUser(const SessionID& session_id);
+		const Ptr<GamePlayer> GetGamePlayer(const SessionID& session_id);
+		
+		void AddGamePlayer(SessionID session_id, Ptr<GamePlayer> player);
+		void RemoveGamePlayer(const SessionID& session_id);
 
 	private:
 		void RegisterHandlers();
@@ -65,7 +60,7 @@ namespace mmog {
 		std::map<protocol::MessageT, MessageHandler> message_handlers_;
 
 		// 유저 관리
-		std::map<SessionID, Ptr<GameUser>> user_map_;
+		std::map<SessionID, Ptr<GamePlayer>> players_;
 	};
 };
 

@@ -54,13 +54,7 @@
     <ClInclude Include="Character.h">
       <Filter>Actor</Filter>
     </ClInclude>
-    <ClInclude Include="GameManager.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="ServerBase.h">
-      <Filter>Server</Filter>
-    </ClInclude>
-    <ClInclude Include="GameUser.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="World.h">
@@ -81,6 +75,9 @@
     <ClInclude Include="MySQL.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="GamePlayer.h">
+      <Filter>Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -91,8 +88,5 @@
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="EventHandlers.cpp">
-      <Filter>Server</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

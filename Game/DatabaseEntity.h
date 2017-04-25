@@ -42,8 +42,9 @@ public:
 	}
 };
 
-enum MapType
+enum MapType : int
 {
+	NONE = 0,
 	FIELD = 1,
 	DUNGEON = 2,
 };
@@ -58,5 +59,42 @@ public:
 	MapType type;
 };
 
-}
+enum class ClassType : int
+{
+	Knight = 1,
+	Archer = 2,
+	Mage = 3,
+};
 
+struct HeroClass
+{
+public:
+	ClassType class_type;
+	string name;
+	int hp;
+	int mp;
+	int att;
+	int def;
+	int map_id;
+	Vector3 pos;
+};
+
+struct HeroCharacter
+{
+public:
+	int id; // database id
+	std::string name;
+	ClassType class_type;
+	int exp;
+	int level;
+	int hp;
+	int mp;
+	int att;
+	int def;
+	int map_id;
+	Vector3 pos;
+	float rotation_y;
+	bool first_play;
+};
+
+}

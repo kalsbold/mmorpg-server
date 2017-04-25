@@ -2,15 +2,6 @@
 #include "TypeDef.h"
 
 namespace mmog {
-	
-	
-
-	
-
-	class Player
-	{
-
-	};
 
 	class Field
 	{

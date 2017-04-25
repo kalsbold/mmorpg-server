@@ -1,8 +1,6 @@
 #pragma once
 #include "Singleton.h"
 #include "TypeDef.h"
-#include "MySQL.h"
-#include "DatabaseEntity.h"
 
 namespace mmog {
 
@@ -10,19 +8,18 @@ namespace mmog {
 	class AccountManager : public Singleton<AccountManager>
 	{
 	public:
-		using AccountId = int;
-		using LogoutCallback = function<void(AccountId, const Ptr<Session>&)>;
+		using LogoutCallback = function<void(int, const Ptr<Session>&)>;
 
 		AccountManager() {};
 		~AccountManager() {};
 
-		bool CheckAndSetLogin(AccountId account_id, Ptr<Session>& session)
+		bool CheckAndSetLogin(int account_id, const Ptr<Session>& session)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
 			return logged_in_accounts_.insert(std::make_pair(account_id, session)).second;
 		}
 
-		bool SetLogout(AccountId account_id)
+		bool SetLogout(int account_id)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
 			auto iter = logged_in_accounts_.find(account_id);
@@ -35,11 +32,11 @@ namespace mmog {
 			return false;
 		}
 
-		AccountId FindAccount(Ptr<Session>& session)
+		int FindAccount(const Ptr<Session>& session)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
 			auto iter = std::find_if(logged_in_accounts_.begin(), logged_in_accounts_.end(),
-				[&session](const std::pair<AccountId, Ptr<Session>>& pair)
+				[&session](const std::pair<int, Ptr<Session>>& pair)
 				{
 					return session == pair.second;
 				});
@@ -52,7 +49,7 @@ namespace mmog {
 			return 0;
 		}
 
-		const Ptr<Session> FindSession(AccountId account_id)
+		const Ptr<Session> FindSession(int account_id)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
 			auto iter = logged_in_accounts_.find(account_id);
@@ -72,7 +69,6 @@ namespace mmog {
 
 	private:
 		std::mutex mutex_;
-		//Ptr<MySQLPool> db_;
 		std::map<int, Ptr<Session>> logged_in_accounts_;
 		LogoutCallback logout_callback_;
 	};

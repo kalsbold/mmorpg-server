@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GameServer.h"
 #include "ServerConfig.h"
-#include "GameUser.h"
+#include "GamePlayer.h"
 #include "DatabaseEntity.h"
 #include "AccountManager.h"
 #include "MessageHelper.h"
@@ -17,20 +17,20 @@ namespace mmog {
 	{
 		ServerConfig& server_config = ServerConfig::GetInstance();
 
-		// create io_service pool
+		// Create io_service pool
 		size_t thread_count = server_config.thread_count;
 		ios_pool_ = std::make_shared<IoServicePool>(thread_count);
 
 		// NetServer Config
-		Configuration config;
-		config.io_service_pool = ios_pool_;
-		config.max_session_count = server_config.max_session_count;
-		config.max_receive_buffer_size = server_config.max_receive_buffer_size;
-		config.min_receive_size = server_config.min_receive_size;
-		config.no_delay = server_config.no_delay;
+		Configuration net_config;
+		net_config.io_service_pool = ios_pool_;
+		net_config.max_session_count = server_config.max_session_count;
+		net_config.max_receive_buffer_size = server_config.max_receive_buffer_size;
+		net_config.min_receive_size = server_config.min_receive_size;
+		net_config.no_delay = server_config.no_delay;
 
-		// Initialize NetServer
-		net_server_ = NetServer::Create(config);
+		// Create NetServer
+		net_server_ = NetServer::Create(net_config);
 		net_server_->RegisterMessageHandler(
 			[this](const Ptr<Session>& session, const uint8_t* buf, size_t bytes)
 			{
@@ -49,7 +49,7 @@ namespace mmog {
 				HandleSessionClosed(session, reason);
 			});
 
-		// Initialize DB
+		// Create DB connection Pool
 		db_ = std::make_shared<MySQLPool>(
 			server_config.db_host,
 			server_config.db_user,
@@ -62,7 +62,8 @@ namespace mmog {
 		uint16_t bind_port = server_config.bind_port;
 		net_server_->Start(bind_address, bind_port);
 
-		BOOST_LOG_TRIVIAL(info) << "Run Game Server";
+		SetName(server_config.name);
+		BOOST_LOG_TRIVIAL(info) << "Run Game Server : " << GetName();
 
 		// 종료될때 까지 대기
 		ios_pool_->Wait();
@@ -77,14 +78,14 @@ namespace mmog {
 
 		ios_pool_->Stop();
 
-		BOOST_LOG_TRIVIAL(info) << "Stop Game Server";
+		BOOST_LOG_TRIVIAL(info) << "Stop Game Server : " << GetName();
 	}
 
-	inline const Ptr<GameUser> GameServer::GetGameUser(const SessionID & session_id)
+	inline const Ptr<GamePlayer> GameServer::GetGamePlayer(const SessionID & session_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
-		auto iter = user_map_.find(session_id);
-		if (iter == user_map_.end())
+		auto iter = players_.find(session_id);
+		if (iter == players_.end())
 		{
 			return nullptr;
 		}
@@ -92,47 +93,16 @@ namespace mmog {
 		return iter->second;
 	}
 
-	// User UUID로 찾는다.
-	inline const Ptr<GameUser> GameServer::GetGameUserByUserID(const uuid& user_id)
+	inline void GameServer::AddGamePlayer(SessionID session_id, Ptr<GamePlayer> user)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
-
-		auto iter = std::find_if(user_map_.begin(), user_map_.end(), [&user_id](const std::pair<uuid, Ptr<GameUser>>& pair)
-			{
-				return user_id == pair.second->GetUUID();
-			});
-		if (iter == user_map_.end())
-			return nullptr;
-
-		return iter->second;
+		players_.insert(std::make_pair(session_id, user));
 	}
 
-	// Account ID로 찾는다
-	inline const Ptr<GameUser> GameServer::GetGameUserByAccountID(int account_id)
+	inline void GameServer::RemoveGamePlayer(const SessionID & session_id)
 	{
 		std::lock_guard<std::mutex> lock_guard(mutex_);
-
-		auto iter = std::find_if(user_map_.begin(), user_map_.end(), [account_id](const std::pair<uuid, Ptr<GameUser>>& pair)
-			{
-				auto info = pair.second->GetAccountInfo();
-				return info.id == account_id;
-			});
-		if (iter == user_map_.end())
-			return nullptr;
-
-		return iter->second;
-	}
-
-	inline void GameServer::AddGameUser(SessionID session_id, Ptr<GameUser> user)
-	{
-		std::lock_guard<std::mutex> lock_guard(mutex_);
-		user_map_.insert(std::make_pair(session_id, user));
-	}
-
-	inline void GameServer::RemoveGameUser(const SessionID & session_id)
-	{
-		std::lock_guard<std::mutex> lock_guard(mutex_);
-		user_map_.erase(session_id);
+		players_.erase(session_id);
 	}
 
 	void GameServer::HandleMessage(const Ptr<Session>& session, const uint8_t* buf, size_t bytes)
@@ -148,14 +118,26 @@ namespace mmog {
 		auto message_type = net_message->message_type();
 		auto it = message_handlers_.find(message_type);
 
-		if (it != message_handlers_.end())
+		if (it == message_handlers_.end())
+		{
+			BOOST_LOG_TRIVIAL(info) << "Can not find the message handler message_type " << message_type;
+			return;
+		}
+
+		try
 		{
 			// 메시지 핸들러를 실행
 			it->second(session, net_message);
 		}
-		else
+		catch (sql::SQLException& e)
 		{
-			BOOST_LOG_TRIVIAL(info) << "Can not find the message handler message_type " << message_type;
+			BOOST_LOG_TRIVIAL(info) << "SQL Exception: " << e.what()
+				<< ", (MySQL error code : " << e.getErrorCode()
+				<< ", SQLState: " << e.getSQLState() << " )";
+		}
+		catch (std::exception& e)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
 		}
 	}
 
@@ -166,20 +148,23 @@ namespace mmog {
 
 	void GameServer::HandleSessionClosed(const Ptr<Session>& session, CloseReason reason)
 	{
-		// 로그인된 GameUserSession 을 찾는다.
-		auto user = GetGameUser(session->GetID());
-		if (!user)
+		// 로그아웃 처리
+		int id = AccountManager::GetInstance().FindAccount(session);
+		AccountManager::GetInstance().SetLogout(id);
+
+		// 게임중인 플레이어
+		auto player = GetGamePlayer(session->GetID());
+		if (!player)
 			return;
 
-		auto info = user->GetAccountInfo();
-		BOOST_LOG_TRIVIAL(info) << "Logout " << info.acc_name << " Session ID : " << session->GetID();
+		// 클라이언트 측에서 끊었을 경우 종료 처리
 		if (CloseReason::Disconnected == reason)
 		{
-			user->OnDisconnected();
+			player->OnDisconnected();
 		}
 
 		// 삭제
-		RemoveGameUser(session->GetID());
+		RemoveGamePlayer(session->GetID());
 	}
 
 	// Login ================================================================================================================
@@ -189,90 +174,62 @@ namespace mmog {
 
 		FlatBufferBuilder builder;
 
-		try
+		string acc_name = msg->acc_name()->str();
+		string password = msg->password()->str();
+
+		auto account = Account::Fetch(*db_, acc_name);
+		if (!account)
 		{
-			// 세션이 이미 로그인 되있는지 찾는다.
-			auto user = GetGameUser(session->GetID());
-			if (user)
-			{
-				// 이미 로그인 되있으면 성공으로 친다.
-				auto response = CreateLoginSuccess(builder,
-					builder.CreateString(boost::uuids::to_string(session->GetID())));
-				Send(session, builder, response);
-				return;
-			}
-
-			string acc_name = msg->acc_name()->str();
-			string password = msg->password()->str();
-
-			std::stringstream ss;
-			ss << "SELECT id, acc_name, password FROM account_tb "
-				<< "WHERE acc_name='" << acc_name << "' AND password='" << password << "'";
-
-			auto result_set = db_->Excute(ss.str());
-
-			// 결과가 없다. 실패
-			if (!result_set->next())
-			{
-				auto response = CreateLoginFailed(builder,
-					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
-				Send(session, builder, response);
-				return;
-			}
-
-			std::string password2 = result_set->getString("password").c_str();
-			// 패스워드가 다르다. 실패
-			if (password != password2)
-			{
-				auto response = CreateLoginFailed(builder,
-					ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD);
-				Send(session, builder, response);
-				return;
-			}
-
-			int acc_id = result_set->getInt("id");
-			// 다른 유저 세션에서 이미 로그인된 계정인지 검사.
-			auto user2 = GetGameUserByAccountID(acc_id);
-			if (user2)
-			{
-				// 다른 유저 세션 연결을 끊는다.
-				user2->Close();
-				// 로그인된 유저 목록에서 제거
-				RemoveGameUser(user2->GetUUID());
-			}
-
-			// 로그인 성공
-			// GameUserSession 객체를 만들고 맵에 추가
-			AccountData acc_info;
-			acc_info.id = acc_id;
-			acc_info.acc_name = result_set->getString("acc_name").c_str();
-			uuid session_id = session->GetID();
-			auto game_user = std::make_shared<GameUser>(this, session, acc_info);
-			AddGameUser(session_id, game_user);
-			BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
-			// 성공
-			auto response = CreateLoginSuccess(builder,
-				builder.CreateString(boost::uuids::to_string(session->GetID())));
-			Send(session, builder, response);
-		}
-		catch (sql::SQLException& e)
-		{
-			BOOST_LOG_TRIVIAL(info) << "SQL Exception: " << e.what()
-				<< ", (MySQL error code : " << e.getErrorCode()
-				<< ", SQLState: " << e.getSQLState() << " )";
-
 			auto response = CreateLoginFailed(builder,
-				ErrorCode_FATAL_ERROR);
+				ErrorCode_LOGIN_INCORRECT_ACC_NAME);
 			Send(session, builder, response);
+			return;
 		}
-		catch (std::exception& e)
+			
+		if (account->password != password)
 		{
-			BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
-
 			auto response = CreateLoginFailed(builder,
-				ErrorCode_FATAL_ERROR);
+				ErrorCode_LOGIN_INCORRECT_ACC_PASSWORD);
 			Send(session, builder, response);
+			return;
 		}
+
+		// 로그인 체크
+		if (!AccountManager::GetInstance().CheckAndSetLogin(account->id, session))
+		{
+			// 로그인 되어있는 세션을 얻는다
+			auto logged_in_session = AccountManager::GetInstance().FindSession(account->id);
+			// 동일 세션이 아니면
+			if(logged_in_session != session)
+			{
+				// 이전 세션 로그아웃
+				AccountManager::GetInstance().SetLogout(account->id);
+				// 게임 플레이 종료 처리
+				auto player = GetGamePlayer(logged_in_session->GetID());
+				player->Disconnect();
+				// 새 새션 로그인
+				AccountManager::GetInstance().CheckAndSetLogin(account->id, session);
+			}
+		}
+
+		// 로그인 성공 response
+		auto response = CreateLoginSuccess(builder,
+			builder.CreateString(boost::uuids::to_string(session->GetID())));
+		Send(session, builder, response);
+
+		/*
+		Account acc_info;
+		acc_info.id = acc_id;
+		acc_info.acc_name = result_set->getString("acc_name").c_str();
+		uuid session_id = session->GetID();
+		auto game_user = std::make_shared<GamePlayer>(this, session, acc_info);
+		AddGamePlayer(session_id, game_user);
+		BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
+		// 성공
+		auto response = CreateLoginSuccess(builder,
+			builder.CreateString(boost::uuids::to_string(session->GetID())));
+		Send(session, builder, response);
+		*/
 	}
 
 	// Join ================================================================================================================
@@ -346,7 +303,7 @@ namespace mmog {
 
 		try
 		{
-			auto user = GetGameUser(session->GetID());
+			auto user = GetGamePlayer(session->GetID());
 			if (!user)
 			{
 				CreateCharacterFailedT response;
@@ -451,7 +408,7 @@ namespace mmog {
 		
 		try
 		{
-			auto user = GetGameUser(session->GetID());
+			auto user = GetGamePlayer(session->GetID());
 			if (!user)
 			{
 				CharacterListFailedT response;
@@ -506,7 +463,7 @@ namespace mmog {
 
 		try
 		{
-			auto user = GetGameUser(session->GetID());
+			auto user = GetGamePlayer(session->GetID());
 			if (!user)
 			{
 				DeleteCharacterFailedT response;
@@ -559,7 +516,7 @@ namespace mmog {
 
 		try
 		{
-			auto user = GetGameUser(session->GetID());
+			auto user = GetGamePlayer(session->GetID());
 			if (!user)
 			{
 				EnterGameFailedT response;

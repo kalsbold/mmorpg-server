@@ -2,14 +2,13 @@
 #include <gisunnet/gisunnet.h>
 #include "GameServer.h"
 #include "Character.h"
+#include "DatabaseEntity.h"
 
 namespace mmog {
 
 	using namespace gisunnet;
 
-	
-
-	class GameUser : public std::enable_shared_from_this<GameUser>
+	class GamePlayer : public std::enable_shared_from_this<GamePlayer>
 	{
 	public:
 		enum class State
@@ -19,10 +18,9 @@ namespace mmog {
 			Disconnected,	// 접속 종료
 		};
 
-		GameUser(GameServer* server, Session* net_session, uuid user_uuid, const AccountData& account_info)
+		GamePlayer(GameServer* server, Ptr<Session> net_session, const Account& account_info)
 			: server_(server)
 			, net_session_(net_session)
-			, user_uuid_(user_uuid)
 			, account_info_(account_info)
 			, state_(State::Connected)
 		{
@@ -30,14 +28,19 @@ namespace mmog {
 			assert(net_session != nullptr);
 			assert(net_session->IsOpen());
 		}
-		~GameUser() {}
+		~GamePlayer() {}
 
-		const uuid& GetUUID() const
+		const SessionID& GetSessionID() const
 		{
-			return user_uuid_;
+			return net_session_->GetID();
 		}
 
-		const AccountData& GetAccountInfo() const
+		const Ptr<Session> GetSession() const
+		{
+			return net_session_;
+		}
+
+		const Account& GetAccountInfo() const
 		{
 			return account_info_;
 		}
@@ -70,33 +73,33 @@ namespace mmog {
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
 
-			// 플레이어 상태 검사
-			if (state_ != GameUser::State::Connected)
-			{
-				EnterGameFailedT response;
-				response.error_code = ErrorCode_ENTER_GAME_INVALID_STATE;
-				helper::Send(net_session_, response);
-				return;
-			}
+			//// 플레이어 상태 검사
+			//if (state_ != GameUser::State::Connected)
+			//{
+			//	EnterGameFailedT response;
+			//	response.error_code = ErrorCode_ENTER_GAME_INVALID_STATE;
+			//	helper::Send(net_session_, response);
+			//	return;
+			//}
 
-			auto db = server_->GetDB();
-			// 케릭터 데이터를 불러온다.
-			std::stringstream ss;
-			ss << "SELECT * FROM user_character_tb "
-				<< "WHERE id=" << character_id << " acc_id=" << account_info_.id << " AND del_type='F'";
-			auto result_set = db->Excute(ss.str());
+			//auto db = server_->GetDB();
+			//// 케릭터 데이터를 불러온다.
+			//std::stringstream ss;
+			//ss << "SELECT * FROM user_character_tb "
+			//	<< "WHERE id=" << character_id << " acc_id=" << account_info_.id << " AND del_type='F'";
+			//auto result_set = db->Excute(ss.str());
 
-			if (!result_set->next())
-			{
-				// 케릭터가 존재하지 않는다. 실패
-				EnterGameFailedT response;
-				response.error_code = ErrorCode_ENTER_GAME_INVALID_CHARACTER;
-				Send(net_session_, response);
+			//if (!result_set->next())
+			//{
+			//	// 케릭터가 존재하지 않는다. 실패
+			//	EnterGameFailedT response;
+			//	response.error_code = ErrorCode_ENTER_GAME_INVALID_CHARACTER;
+			//	Send(net_session_, response);
 
-				// 연결을 끊는다.
-				Disconnect();
-				return;
-			}
+			//	// 연결을 끊는다.
+			//	Disconnect();
+			//	return;
+			//}
 
 			// 필요한 데이터 로딩
 
@@ -114,7 +117,7 @@ namespace mmog {
 		// 데이터를 DB에 저장.
 		void UpdateToDB()
 		{
-			if (!character_)
+			/*if (!character_)
 				return;
 
 			auto db = server_->GetDB();
@@ -132,15 +135,14 @@ namespace mmog {
 				<< "pos_z=" << character_->pos_.Z
 				<< "rotation_y=" << character_->rotation_y
 				<< "WHERE id=" << character_->id_;
-			auto result_set = db->Excute(ss.str());
+			auto result_set = db->Excute(ss.str());*/
 		}
 
 		GameServer* server_;
 		Ptr<Session> net_session_;
 
 		std::mutex mutex_;
-		uuid user_uuid_;
-		AccountData account_info_;
+		Account account_info_;
 		State state_;
 
 		//Ptr<PlayerCharacter> character_;

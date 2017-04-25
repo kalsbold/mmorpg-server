@@ -9,8 +9,12 @@ namespace mmog {
 	class ServerBase
 	{
 	public:
+		ServerBase() {}
+		virtual ~ServerBase() {}
+
 		string GetName() { return name_; }
 		void SetName(const string& name) { name_ = name; }
+		
 		virtual void Run() = 0;
 		virtual void Stop() = 0;
 

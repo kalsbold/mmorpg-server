@@ -22,7 +22,7 @@ table CharacterSimple{
 }
 
 // 로컬 플레이어 캐릭터 정보
-table PlayerCharacter{
+table Character{
     uid:int;
     name:string;
     class_type:int;
@@ -56,14 +56,14 @@ table RemoteCharacter{
 // 에러 코드
 enum ErrorCode : int {
     SUCCESS = 0,
-    FATAL_ERROR = 1,
     INVALID_SESSION = 10,   // 잘못된 세션
     INVALID_STRING = 20,    // 잘못된 문자
     // JOIN
     JOIN_ACC_NAME_ALREADY = 100,    // 계정명 중복
     JOIN_CANNOT_ACC_CREATE = 101,   // 계정 생성 실패
     // Login
-    LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD = 200, // 계정명이나 패스워드가 잘못됨
+    LOGIN_INCORRECT_ACC_NAME = 200, // 계정명이 잘못됨
+    LOGIN_INCORRECT_ACC_PASSWORD = 201, // 패스워드가 잘못됨
     LOGIN_ALREADY = 201,    // 이미 로그인됨
     // Create Character
     CREATE_CHARACTER_NAME_ALREADY = 301,
