@@ -1,11 +1,13 @@
 #pragma once
-#include "TypeDef.h"
+#include <algorithm>
 #include "Singleton.h"
-#include "DatabaseEntity.h"
+#include "DBSchema.h"
 #include "MySQL.h"
 #include "ServerConfig.h"
 
 namespace mmog {
+
+	using namespace db_schema;
 
 	class MapData : public Singleton<MapData>
 	{
@@ -13,6 +15,17 @@ namespace mmog {
 		const std::vector<Ptr<Map>>& Get()
 		{
 			return map_data_;
+		}
+
+		const Ptr<Map> Get(int id)
+		{
+			auto iter = std::find_if(map_data_.begin(), map_data_.end(),
+				[id](const Ptr<Map>& map)
+				{
+					return map->id == id;
+				});
+
+			return (iter != map_data_.end()) ? *iter : nullptr;
 		}
 
 		static bool Load()
@@ -58,12 +71,23 @@ namespace mmog {
 		std::vector<Ptr<Map>> map_data_;
 	};
 
-	class HeroClassData : public Singleton<HeroClassData>
+	class CharacterAttributeData : public Singleton<CharacterAttributeData>
 	{
 	public:
-		const std::vector<Ptr<HeroClass>>& Get()
+		const std::vector<Ptr<CharacterAttribute>>& Get()
 		{
-			return hero_class_data_;
+			return data_;
+		}
+
+		const Ptr<CharacterAttribute>& Get(ClassType type, int level)
+		{
+			auto iter = std::find_if(data_.begin(), data_.end(),
+				[&](const Ptr<CharacterAttribute>& value)
+				{
+					return (value->class_type == type) && (value->level == level);
+				});
+
+			return (iter != data_.end()) ? *iter : nullptr;
 		}
 
 		static bool Load()
@@ -77,27 +101,23 @@ namespace mmog {
 					ServerConfig::GetInstance().db_user,
 					ServerConfig::GetInstance().db_password,
 					ServerConfig::GetInstance().db_schema,
-					ServerConfig::GetInstance().db_connection_pool);
+					1);
 
 				std::stringstream ss;
-				ss << "SELECT * FROM hero_class_tb";
+				ss << "SELECT * FROM character_attribute_tb";
 
 				auto result_set = db->Excute(ss.str());
 				while (result_set->next())
 				{
-					auto hero_class = std::make_shared<HeroClass>();
-					hero_class->class_type = (ClassType)result_set->getInt("class_type");
-					hero_class->name = result_set->getString("name").c_str();
-					hero_class->hp = result_set->getInt("hp");
-					hero_class->mp = result_set->getInt("mp");
-					hero_class->att = result_set->getInt("att");
-					hero_class->def = result_set->getInt("def");
-					hero_class->map_id = result_set->getInt("map_id");
-					hero_class->pos.X = result_set->getDouble("pos_x");
-					hero_class->pos.Y = result_set->getDouble("pos_y");
-					hero_class->pos.Z = result_set->getDouble("pos_z");
+					auto attribute = std::make_shared<CharacterAttribute>();
+					attribute->class_type = (ClassType)result_set->getInt("class_type");
+					attribute->level = result_set->getInt("level");
+					attribute->hp = result_set->getInt("hp");
+					attribute->mp = result_set->getInt("mp");
+					attribute->att = result_set->getInt("att");
+					attribute->def = result_set->getInt("def");
 					
-					instance.hero_class_data_.push_back(hero_class);
+					instance.data_.push_back(attribute);
 				}
 
 			}
@@ -111,7 +131,7 @@ namespace mmog {
 		}
 
 	private:
-		std::vector<Ptr<HeroClass>> hero_class_data_;
+		std::vector<Ptr<CharacterAttribute>> data_;
 	};
 }
 

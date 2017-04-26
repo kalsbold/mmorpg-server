@@ -22,7 +22,7 @@
     <Filter Include="Helper">
       <UniqueIdentifier>{44e65e11-88f8-4266-9689-8ed9e68c3429}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DB Entity">
+    <Filter Include="DB">
       <UniqueIdentifier>{837d0517-62cb-4a9f-9039-8ea0f1442f78}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -60,9 +60,6 @@
     <ClInclude Include="World.h">
       <Filter>World</Filter>
     </ClInclude>
-    <ClInclude Include="DatabaseEntity.h">
-      <Filter>DB Entity</Filter>
-    </ClInclude>
     <ClInclude Include="AccountManager.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -77,6 +74,9 @@
     </ClInclude>
     <ClInclude Include="GamePlayer.h">
       <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="DBSchema.h">
+      <Filter>DB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

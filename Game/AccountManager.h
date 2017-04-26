@@ -23,13 +23,28 @@ namespace mmog {
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
 			auto iter = logged_in_accounts_.find(account_id);
-			if (iter != logged_in_accounts_.end())
-			{
-				logout_callback_(iter->first, iter->second);
-				return true;
-			}
+			if (iter == logged_in_accounts_.end())
+				return false;
 			
-			return false;
+			logout_callback_(iter->first, iter->second);
+			logged_in_accounts_.erase(iter);
+			return true;
+		}
+
+		bool SetLogout(const Ptr<Session>& session)
+		{
+			std::lock_guard<std::mutex> lock_guard(mutex_);
+			auto iter = std::find_if(logged_in_accounts_.begin(), logged_in_accounts_.end(),
+				[&session](const std::pair<int, Ptr<Session>>& pair)
+				{
+					return session == pair.second;
+				});
+			if (iter == logged_in_accounts_.end())
+				return false;
+
+			logout_callback_(iter->first, iter->second);
+			logged_in_accounts_.erase(iter);
+			return true;
 		}
 
 		int FindAccount(const Ptr<Session>& session)
@@ -41,12 +56,10 @@ namespace mmog {
 					return session == pair.second;
 				});
 
-			if (iter != logged_in_accounts_.end())
-			{
-				return iter->first;
-			}
+			if (iter == logged_in_accounts_.end())
+				return 0;
 
-			return 0;
+			return iter->first;
 		}
 
 		const Ptr<Session> FindSession(int account_id)

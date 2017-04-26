@@ -28,7 +28,7 @@ namespace mmog {
 		void Stop() override;
 
 		const Ptr<IoServicePool>& GetIoServicePool() { return ios_pool_; }
-		const Ptr<MySQLPool>& GetDB() { return db_; }
+		const Ptr<MySQLPool>& GetDB() { return db_conn_; }
 
 		// Network Session ID 로 찾는다.
 		const Ptr<GamePlayer> GetGamePlayer(const SessionID& session_id);
@@ -52,7 +52,7 @@ namespace mmog {
 
 		Ptr<IoServicePool> ios_pool_;
 		Ptr<NetServer> net_server_;
-		Ptr<MySQLPool> db_;
+		Ptr<MySQLPool> db_conn_;
 
 		std::mutex mutex_;
 		SessionOpenedHandler session_opened_handler_;

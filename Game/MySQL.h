@@ -8,6 +8,8 @@
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
 
+using ConnectionPtr = std::unique_ptr<sql::Connection, std::function<void(sql::Connection*)>>;
+using PstmtPtr = std::unique_ptr<sql::PreparedStatement>;
 using ResultSetPtr = std::shared_ptr<sql::ResultSet>;
 
 // MySQL database connection pool
@@ -30,7 +32,7 @@ public:
 	}
 
 	// 풀에서 커넥션을 가져온다.
-	sql::Connection* GetConnection()
+	ConnectionPtr GetConnection()
 	{
 		std::lock_guard<std::mutex> guard(mutex_);
 		if (pool_list_.empty())
@@ -42,31 +44,18 @@ public:
 
 		sql::Connection* conn = pool_list_.front();
 		pool_list_.pop_front();
-		
-		return conn;
-	}
 
-	// 커넥션을 풀로 되돌린다.
-	void ReleaseConnection(sql::Connection* conn)
-	{
-		std::lock_guard<std::mutex> guard(mutex_);
-		pool_list_.push_front(conn);
+		return ConnectionPtr(conn, [this](sql::Connection* ptr) { ReleaseConnection(ptr); });
 	}
-
-	using ConnectionGuard = std::unique_ptr<sql::Connection, std::function<void(sql::Connection*)>>;
 
 	// 비동기로 쿼리를 실행
 	std::future<ResultSetPtr> ExcuteAsync(const std::string& query)
 	{
 		return std::async(std::launch::async, [this, query] {
-				ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
-						ReleaseConnection(ptr);
-					});
-
-				std::unique_ptr<sql::Statement> stmt;
+				ConnectionPtr conn = GetConnection();
+				std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 				ResultSetPtr result;
 
-				stmt.reset(conn->createStatement());
 				if (stmt->execute(query.c_str()))
 					result.reset(stmt->getResultSet());
 
@@ -77,11 +66,8 @@ public:
 	// 동기로 쿼리를 실행
 	ResultSetPtr Excute(const std::string& query)
 	{
-		ConnectionGuard conn(GetConnection(), [this](sql::Connection* ptr) {
-			ReleaseConnection(ptr);
-		});
-
-		std::unique_ptr<sql::Statement> stmt;
+		ConnectionPtr conn = GetConnection();
+		std::unique_ptr<sql::Statement> stmt(conn->createStatement());
 		ResultSetPtr result;
 		
 		stmt.reset(conn->createStatement());
@@ -127,6 +113,13 @@ private:
 		conn->setClientOption("OPT_RECONNECT", (void*)&reconnect);
 
 		return conn;
+	}
+
+	// 커넥션을 풀로 되돌린다.
+	void ReleaseConnection(sql::Connection* conn)
+	{
+		std::lock_guard<std::mutex> guard(mutex_);
+		pool_list_.push_front(conn);
 	}
 	
 	std::string url_;

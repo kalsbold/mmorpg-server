@@ -16,8 +16,8 @@ struct Vec3;
 struct CharacterSimple;
 struct CharacterSimpleT;
 
-struct PlayerCharacter;
-struct PlayerCharacterT;
+struct Character;
+struct CharacterT;
 
 struct RemoteCharacter;
 struct RemoteCharacterT;
@@ -87,17 +87,19 @@ struct NetMessageT;
 
 enum ErrorCode {
   ErrorCode_SUCCESS = 0,
-  ErrorCode_FATAL_ERROR = 1,
   ErrorCode_INVALID_SESSION = 10,
   ErrorCode_INVALID_STRING = 20,
-  ErrorCode_JOIN_ACC_NAME_ALREADY = 100,
-  ErrorCode_JOIN_CANNOT_ACC_CREATE = 101,
-  ErrorCode_LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD = 200,
-  ErrorCode_LOGIN_ALREADY = 201,
+  ErrorCode_LOGIN_INCORRECT_ACC_NAME = 100,
+  ErrorCode_LOGIN_INCORRECT_ACC_PASSWORD = 101,
+  ErrorCode_LOGIN_ALREADY = 102,
+  ErrorCode_JOIN_ACC_NAME_ALREADY = 200,
+  ErrorCode_JOIN_CANNOT_ACC_CREATE = 201,
   ErrorCode_CREATE_CHARACTER_NAME_ALREADY = 301,
   ErrorCode_CREATE_CHARACTER_CANNOT_CREATE = 302,
-  ErrorCode_ENTER_GAME_INVALID_CHARACTER = 401,
-  ErrorCode_ENTER_GAME_INVALID_STATE = 402,
+  ErrorCode_DELETE_CHARACTER_NOT_EXIST = 401,
+  ErrorCode_DELETE_CHARACTER_CANNOT_DELETE = 402,
+  ErrorCode_ENTER_GAME_INVALID_CHARACTER = 501,
+  ErrorCode_ENTER_GAME_INVALID_STATE = 502,
   ErrorCode_MIN = ErrorCode_SUCCESS,
   ErrorCode_MAX = ErrorCode_ENTER_GAME_INVALID_STATE
 };
@@ -511,8 +513,8 @@ inline flatbuffers::Offset<CharacterSimple> CreateCharacterSimpleDirect(
 
 flatbuffers::Offset<CharacterSimple> CreateCharacterSimple(flatbuffers::FlatBufferBuilder &_fbb, const CharacterSimpleT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct PlayerCharacterT : public flatbuffers::NativeTable {
-  typedef PlayerCharacter TableType;
+struct CharacterT : public flatbuffers::NativeTable {
+  typedef Character TableType;
   int32_t uid;
   std::string name;
   int32_t class_type;
@@ -527,7 +529,7 @@ struct PlayerCharacterT : public flatbuffers::NativeTable {
   float rotation_y;
   std::unique_ptr<Vec3> direction;
   float speed;
-  PlayerCharacterT()
+  CharacterT()
       : uid(0),
         class_type(0),
         exp(0),
@@ -542,8 +544,8 @@ struct PlayerCharacterT : public flatbuffers::NativeTable {
   }
 };
 
-struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef PlayerCharacterT NativeTableType;
+struct Character FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef CharacterT NativeTableType;
   enum {
     VT_UID = 4,
     VT_NAME = 6,
@@ -621,69 +623,69 @@ struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<float>(verifier, VT_SPEED) &&
            verifier.EndTable();
   }
-  PlayerCharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(PlayerCharacterT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<PlayerCharacter> Pack(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  CharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(CharacterT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Character> Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct PlayerCharacterBuilder {
+struct CharacterBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_uid(int32_t uid) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_UID, uid, 0);
+    fbb_.AddElement<int32_t>(Character::VT_UID, uid, 0);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(PlayerCharacter::VT_NAME, name);
+    fbb_.AddOffset(Character::VT_NAME, name);
   }
   void add_class_type(int32_t class_type) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_CLASS_TYPE, class_type, 0);
+    fbb_.AddElement<int32_t>(Character::VT_CLASS_TYPE, class_type, 0);
   }
   void add_exp(int32_t exp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_EXP, exp, 0);
+    fbb_.AddElement<int32_t>(Character::VT_EXP, exp, 0);
   }
   void add_level(int32_t level) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_LEVEL, level, 0);
+    fbb_.AddElement<int32_t>(Character::VT_LEVEL, level, 0);
   }
   void add_hp(int32_t hp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_HP, hp, 0);
+    fbb_.AddElement<int32_t>(Character::VT_HP, hp, 0);
   }
   void add_mp(int32_t mp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_MP, mp, 0);
+    fbb_.AddElement<int32_t>(Character::VT_MP, mp, 0);
   }
   void add_att(int32_t att) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_ATT, att, 0);
+    fbb_.AddElement<int32_t>(Character::VT_ATT, att, 0);
   }
   void add_def(int32_t def) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_DEF, def, 0);
+    fbb_.AddElement<int32_t>(Character::VT_DEF, def, 0);
   }
   void add_zone_id(int32_t zone_id) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_ZONE_ID, zone_id, 0);
+    fbb_.AddElement<int32_t>(Character::VT_ZONE_ID, zone_id, 0);
   }
   void add_pos(const Vec3 *pos) {
-    fbb_.AddStruct(PlayerCharacter::VT_POS, pos);
+    fbb_.AddStruct(Character::VT_POS, pos);
   }
   void add_rotation_y(float rotation_y) {
-    fbb_.AddElement<float>(PlayerCharacter::VT_ROTATION_Y, rotation_y, 0.0f);
+    fbb_.AddElement<float>(Character::VT_ROTATION_Y, rotation_y, 0.0f);
   }
   void add_direction(const Vec3 *direction) {
-    fbb_.AddStruct(PlayerCharacter::VT_DIRECTION, direction);
+    fbb_.AddStruct(Character::VT_DIRECTION, direction);
   }
   void add_speed(float speed) {
-    fbb_.AddElement<float>(PlayerCharacter::VT_SPEED, speed, 0.0f);
+    fbb_.AddElement<float>(Character::VT_SPEED, speed, 0.0f);
   }
-  PlayerCharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  CharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  PlayerCharacterBuilder &operator=(const PlayerCharacterBuilder &);
-  flatbuffers::Offset<PlayerCharacter> Finish() {
+  CharacterBuilder &operator=(const CharacterBuilder &);
+  flatbuffers::Offset<Character> Finish() {
     const auto end = fbb_.EndTable(start_, 14);
-    auto o = flatbuffers::Offset<PlayerCharacter>(end);
+    auto o = flatbuffers::Offset<Character>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
+inline flatbuffers::Offset<Character> CreateCharacter(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t uid = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
@@ -699,7 +701,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
     float rotation_y = 0.0f,
     const Vec3 *direction = 0,
     float speed = 0.0f) {
-  PlayerCharacterBuilder builder_(_fbb);
+  CharacterBuilder builder_(_fbb);
   builder_.add_speed(speed);
   builder_.add_direction(direction);
   builder_.add_rotation_y(rotation_y);
@@ -717,7 +719,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
+inline flatbuffers::Offset<Character> CreateCharacterDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t uid = 0,
     const char *name = nullptr,
@@ -733,7 +735,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
     float rotation_y = 0.0f,
     const Vec3 *direction = 0,
     float speed = 0.0f) {
-  return CreatePlayerCharacter(
+  return CreateCharacter(
       _fbb,
       uid,
       name ? _fbb.CreateString(name) : 0,
@@ -751,7 +753,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
       speed);
 }
 
-flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Character> CreateCharacter(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct RemoteCharacterT : public flatbuffers::NativeTable {
   typedef RemoteCharacter TableType;
@@ -1914,7 +1916,7 @@ flatbuffers::Offset<EnterGameFailed> CreateEnterGameFailed(flatbuffers::FlatBuff
 
 struct EnterGameSuccessT : public flatbuffers::NativeTable {
   typedef EnterGameSuccess TableType;
-  std::unique_ptr<PlayerCharacterT> character;
+  std::unique_ptr<CharacterT> character;
   EnterGameSuccessT() {
   }
 };
@@ -1924,8 +1926,8 @@ struct EnterGameSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_CHARACTER = 4
   };
-  const PlayerCharacter *character() const {
-    return GetPointer<const PlayerCharacter *>(VT_CHARACTER);
+  const Character *character() const {
+    return GetPointer<const Character *>(VT_CHARACTER);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1941,7 +1943,7 @@ struct EnterGameSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct EnterGameSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_character(flatbuffers::Offset<PlayerCharacter> character) {
+  void add_character(flatbuffers::Offset<Character> character) {
     fbb_.AddOffset(EnterGameSuccess::VT_CHARACTER, character);
   }
   EnterGameSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -1958,7 +1960,7 @@ struct EnterGameSuccessBuilder {
 
 inline flatbuffers::Offset<EnterGameSuccess> CreateEnterGameSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<PlayerCharacter> character = 0) {
+    flatbuffers::Offset<Character> character = 0) {
   EnterGameSuccessBuilder builder_(_fbb);
   builder_.add_character(character);
   return builder_.Finish();
@@ -2206,13 +2208,13 @@ inline flatbuffers::Offset<CharacterSimple> CreateCharacterSimple(flatbuffers::F
       _level);
 }
 
-inline PlayerCharacterT *PlayerCharacter::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new PlayerCharacterT();
+inline CharacterT *Character::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new CharacterT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void PlayerCharacter::UnPackTo(PlayerCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Character::UnPackTo(CharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = uid(); _o->uid = _e; };
@@ -2231,11 +2233,11 @@ inline void PlayerCharacter::UnPackTo(PlayerCharacterT *_o, const flatbuffers::r
   { auto _e = speed(); _o->speed = _e; };
 }
 
-inline flatbuffers::Offset<PlayerCharacter> PlayerCharacter::Pack(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreatePlayerCharacter(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Character> Character::Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateCharacter(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Character> CreateCharacter(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _uid = _o->uid;
@@ -2252,7 +2254,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::F
   auto _rotation_y = _o->rotation_y;
   auto _direction = _o->direction ? _o->direction.get() : 0;
   auto _speed = _o->speed;
-  return CreatePlayerCharacter(
+  return CreateCharacter(
       _fbb,
       _uid,
       _name,
@@ -2759,7 +2761,7 @@ inline EnterGameSuccessT *EnterGameSuccess::UnPack(const flatbuffers::resolver_f
 inline void EnterGameSuccess::UnPackTo(EnterGameSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = character(); if (_e) _o->character = std::unique_ptr<PlayerCharacterT>(_e->UnPack(_resolver)); };
+  { auto _e = character(); if (_e) _o->character = std::unique_ptr<CharacterT>(_e->UnPack(_resolver)); };
 }
 
 inline flatbuffers::Offset<EnterGameSuccess> EnterGameSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const EnterGameSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -2769,7 +2771,7 @@ inline flatbuffers::Offset<EnterGameSuccess> EnterGameSuccess::Pack(flatbuffers:
 inline flatbuffers::Offset<EnterGameSuccess> CreateEnterGameSuccess(flatbuffers::FlatBufferBuilder &_fbb, const EnterGameSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _character = _o->character ? CreatePlayerCharacter(_fbb, _o->character.get(), _rehasher) : 0;
+  auto _character = _o->character ? CreateCharacter(_fbb, _o->character.get(), _rehasher) : 0;
   return CreateEnterGameSuccess(
       _fbb,
       _character);

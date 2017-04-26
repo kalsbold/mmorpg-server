@@ -159,7 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountManager.h" />
-    <ClInclude Include="DatabaseEntity.h" />
+    <ClInclude Include="DBSchema.h" />
     <ClInclude Include="MessageHelper.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="ServerBase.h" />

@@ -9,17 +9,19 @@ using FlatBuffers;
 public enum ErrorCode : int
 {
  SUCCESS = 0,
- FATAL_ERROR = 1,
  INVALID_SESSION = 10,
  INVALID_STRING = 20,
- JOIN_ACC_NAME_ALREADY = 100,
- JOIN_CANNOT_ACC_CREATE = 101,
- LOGIN_INCORRECT_ACC_NAME_OR_PASSWORD = 200,
- LOGIN_ALREADY = 201,
+ LOGIN_INCORRECT_ACC_NAME = 100,
+ LOGIN_INCORRECT_ACC_PASSWORD = 101,
+ LOGIN_ALREADY = 102,
+ JOIN_ACC_NAME_ALREADY = 200,
+ JOIN_CANNOT_ACC_CREATE = 201,
  CREATE_CHARACTER_NAME_ALREADY = 301,
  CREATE_CHARACTER_CANNOT_CREATE = 302,
- ENTER_GAME_INVALID_CHARACTER = 401,
- ENTER_GAME_INVALID_STATE = 402,
+ DELETE_CHARACTER_NOT_EXIST = 401,
+ DELETE_CHARACTER_CANNOT_DELETE = 402,
+ ENTER_GAME_INVALID_CHARACTER = 501,
+ ENTER_GAME_INVALID_STATE = 502,
 };
 
 public enum MessageT : byte
@@ -124,14 +126,14 @@ public struct CharacterSimple : IFlatbufferObject
   }
 };
 
-public struct PlayerCharacter : IFlatbufferObject
+public struct Character : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static PlayerCharacter GetRootAsPlayerCharacter(ByteBuffer _bb) { return GetRootAsPlayerCharacter(_bb, new PlayerCharacter()); }
-  public static PlayerCharacter GetRootAsPlayerCharacter(ByteBuffer _bb, PlayerCharacter obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static Character GetRootAsCharacter(ByteBuffer _bb) { return GetRootAsCharacter(_bb, new Character()); }
+  public static Character GetRootAsCharacter(ByteBuffer _bb, Character obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
-  public PlayerCharacter __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public Character __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int Uid { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string Name { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
@@ -149,7 +151,7 @@ public struct PlayerCharacter : IFlatbufferObject
   public Vec3? Direction { get { int o = __p.__offset(28); return o != 0 ? (Vec3?)(new Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
   public float Speed { get { int o = __p.__offset(30); return o != 0 ? __p.bb.GetFloat(o + __p.bb_pos) : (float)0.0f; } }
 
-  public static void StartPlayerCharacter(FlatBufferBuilder builder) { builder.StartObject(14); }
+  public static void StartCharacter(FlatBufferBuilder builder) { builder.StartObject(14); }
   public static void AddUid(FlatBufferBuilder builder, int uid) { builder.AddInt(0, uid, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddClassType(FlatBufferBuilder builder, int classType) { builder.AddInt(2, classType, 0); }
@@ -164,9 +166,9 @@ public struct PlayerCharacter : IFlatbufferObject
   public static void AddRotationY(FlatBufferBuilder builder, float rotationY) { builder.AddFloat(11, rotationY, 0.0f); }
   public static void AddDirection(FlatBufferBuilder builder, Offset<Vec3> directionOffset) { builder.AddStruct(12, directionOffset.Value, 0); }
   public static void AddSpeed(FlatBufferBuilder builder, float speed) { builder.AddFloat(13, speed, 0.0f); }
-  public static Offset<PlayerCharacter> EndPlayerCharacter(FlatBufferBuilder builder) {
+  public static Offset<Character> EndCharacter(FlatBufferBuilder builder) {
     int o = builder.EndObject();
-    return new Offset<PlayerCharacter>(o);
+    return new Offset<Character>(o);
   }
 };
 
@@ -662,17 +664,17 @@ public struct EnterGameSuccess : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public EnterGameSuccess __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public PlayerCharacter? Character { get { int o = __p.__offset(4); return o != 0 ? (PlayerCharacter?)(new PlayerCharacter()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public Character? Character { get { int o = __p.__offset(4); return o != 0 ? (Character?)(new Character()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<EnterGameSuccess> CreateEnterGameSuccess(FlatBufferBuilder builder,
-      Offset<PlayerCharacter> characterOffset = default(Offset<PlayerCharacter>)) {
+      Offset<Character> characterOffset = default(Offset<Character>)) {
     builder.StartObject(1);
     EnterGameSuccess.AddCharacter(builder, characterOffset);
     return EnterGameSuccess.EndEnterGameSuccess(builder);
   }
 
   public static void StartEnterGameSuccess(FlatBufferBuilder builder) { builder.StartObject(1); }
-  public static void AddCharacter(FlatBufferBuilder builder, Offset<PlayerCharacter> characterOffset) { builder.AddOffset(0, characterOffset.Value, 0); }
+  public static void AddCharacter(FlatBufferBuilder builder, Offset<Character> characterOffset) { builder.AddOffset(0, characterOffset.Value, 0); }
   public static Offset<EnterGameSuccess> EndEnterGameSuccess(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<EnterGameSuccess>(o);

@@ -2,23 +2,24 @@
 #include <gisunnet/gisunnet.h>
 #include "GameServer.h"
 #include "Character.h"
-#include "DatabaseEntity.h"
+#include "DBSchema.h"
 
 namespace mmog {
 
 	using namespace gisunnet;
+	namespace db = db_schema;
 
 	class GamePlayer : public std::enable_shared_from_this<GamePlayer>
 	{
 	public:
 		enum class State
 		{
-			Connected,		// ø¨∞·µ 
+			Connected = 0,		// ø¨∞·µ 
 			WorldEntered,	// ¿‘¿Âµ 
 			Disconnected,	// ¡¢º” ¡æ∑·
 		};
 
-		GamePlayer(GameServer* server, Ptr<Session> net_session, const Account& account_info)
+		GamePlayer(GameServer* server, const Ptr<Session>& net_session, const db::Account& account_info)
 			: server_(server)
 			, net_session_(net_session)
 			, account_info_(account_info)
@@ -40,7 +41,7 @@ namespace mmog {
 			return net_session_;
 		}
 
-		const Account& GetAccountInfo() const
+		const db::Account& GetAccountInfo() const
 		{
 			return account_info_;
 		}
@@ -142,7 +143,7 @@ namespace mmog {
 		Ptr<Session> net_session_;
 
 		std::mutex mutex_;
-		Account account_info_;
+		db::Account account_info_;
 		State state_;
 
 		//Ptr<PlayerCharacter> character_;
