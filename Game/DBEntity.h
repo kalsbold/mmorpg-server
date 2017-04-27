@@ -3,7 +3,7 @@
 #include "MySQL.h"
 
 namespace mmog {
-namespace db_schema {
+namespace db_entity {
 
 struct Account
 {

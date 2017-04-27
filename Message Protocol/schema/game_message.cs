@@ -35,7 +35,7 @@ public enum MessageT : byte
  JoinSuccess = 6,
  RequestCharacterList = 7,
  CharacterListFailed = 8,
- CharacterList = 9,
+ CharacterListSuccess = 9,
  RequestCreateCharacter = 10,
  CreateCharacterFailed = 11,
  CreateCharacterSuccess = 12,
@@ -413,32 +413,32 @@ public struct CharacterListFailed : IFlatbufferObject
   }
 };
 
-public struct CharacterList : IFlatbufferObject
+public struct CharacterListSuccess : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static CharacterList GetRootAsCharacterList(ByteBuffer _bb) { return GetRootAsCharacterList(_bb, new CharacterList()); }
-  public static CharacterList GetRootAsCharacterList(ByteBuffer _bb, CharacterList obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static CharacterListSuccess GetRootAsCharacterListSuccess(ByteBuffer _bb) { return GetRootAsCharacterListSuccess(_bb, new CharacterListSuccess()); }
+  public static CharacterListSuccess GetRootAsCharacterListSuccess(ByteBuffer _bb, CharacterListSuccess obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
-  public CharacterList __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public CharacterListSuccess __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public CharacterSimple? CharacterList(int j) { int o = __p.__offset(4); return o != 0 ? (CharacterSimple?)(new CharacterSimple()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
-  public int CharacterListLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public CharacterSimple? List(int j) { int o = __p.__offset(4); return o != 0 ? (CharacterSimple?)(new CharacterSimple()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public int ListLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
 
-  public static Offset<CharacterList> CreateCharacterList(FlatBufferBuilder builder,
-      VectorOffset character_listOffset = default(VectorOffset)) {
+  public static Offset<CharacterListSuccess> CreateCharacterListSuccess(FlatBufferBuilder builder,
+      VectorOffset listOffset = default(VectorOffset)) {
     builder.StartObject(1);
-    CharacterList.AddCharacterList(builder, character_listOffset);
-    return CharacterList.EndCharacterList(builder);
+    CharacterListSuccess.AddList(builder, listOffset);
+    return CharacterListSuccess.EndCharacterListSuccess(builder);
   }
 
-  public static void StartCharacterList(FlatBufferBuilder builder) { builder.StartObject(1); }
-  public static void AddCharacterList(FlatBufferBuilder builder, VectorOffset characterListOffset) { builder.AddOffset(0, characterListOffset.Value, 0); }
-  public static VectorOffset CreateCharacterListVector(FlatBufferBuilder builder, Offset<CharacterSimple>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
-  public static void StartCharacterListVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static Offset<CharacterList> EndCharacterList(FlatBufferBuilder builder) {
+  public static void StartCharacterListSuccess(FlatBufferBuilder builder) { builder.StartObject(1); }
+  public static void AddList(FlatBufferBuilder builder, VectorOffset listOffset) { builder.AddOffset(0, listOffset.Value, 0); }
+  public static VectorOffset CreateListVector(FlatBufferBuilder builder, Offset<CharacterSimple>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static void StartListVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static Offset<CharacterListSuccess> EndCharacterListSuccess(FlatBufferBuilder builder) {
     int o = builder.EndObject();
-    return new Offset<CharacterList>(o);
+    return new Offset<CharacterListSuccess>(o);
   }
 };
 

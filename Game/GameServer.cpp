@@ -2,7 +2,7 @@
 #include "GameServer.h"
 #include "ServerConfig.h"
 #include "GamePlayer.h"
-#include "DBSchema.h"
+#include "DBEntity.h"
 #include "AccountManager.h"
 #include "StaticCachedData.h"
 #include "MessageHelper.h"
@@ -13,7 +13,7 @@ namespace mmog {
 	using namespace flatbuffers;
 	using namespace protocol;
 	using namespace helper;
-	namespace db = db_schema;
+	namespace db = db_entity;
 
 	void GameServer::Run()
 	{

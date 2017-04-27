@@ -1,13 +1,13 @@
 #pragma once
 #include <algorithm>
 #include "Singleton.h"
-#include "DBSchema.h"
+#include "DBEntity.h"
 #include "MySQL.h"
 #include "ServerConfig.h"
 
 namespace mmog {
 
-	using namespace db_schema;
+	using namespace db_entity;
 
 	class MapData : public Singleton<MapData>
 	{

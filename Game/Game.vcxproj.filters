@@ -75,7 +75,7 @@
     <ClInclude Include="GamePlayer.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="DBSchema.h">
+    <ClInclude Include="DBEntity.h">
       <Filter>DB</Filter>
     </ClInclude>
   </ItemGroup>

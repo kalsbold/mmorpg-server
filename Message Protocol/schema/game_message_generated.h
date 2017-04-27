@@ -46,8 +46,8 @@ struct RequestCharacterListT;
 struct CharacterListFailed;
 struct CharacterListFailedT;
 
-struct CharacterList;
-struct CharacterListT;
+struct CharacterListSuccess;
+struct CharacterListSuccessT;
 
 struct RequestCreateCharacter;
 struct RequestCreateCharacterT;
@@ -114,7 +114,7 @@ enum MessageT {
   MessageT_JoinSuccess = 6,
   MessageT_RequestCharacterList = 7,
   MessageT_CharacterListFailed = 8,
-  MessageT_CharacterList = 9,
+  MessageT_CharacterListSuccess = 9,
   MessageT_RequestCreateCharacter = 10,
   MessageT_CreateCharacterFailed = 11,
   MessageT_CreateCharacterSuccess = 12,
@@ -141,7 +141,7 @@ inline const char **EnumNamesMessageT() {
     "JoinSuccess",
     "RequestCharacterList",
     "CharacterListFailed",
-    "CharacterList",
+    "CharacterListSuccess",
     "RequestCreateCharacter",
     "CreateCharacterFailed",
     "CreateCharacterSuccess",
@@ -199,8 +199,8 @@ template<> struct MessageTTraits<CharacterListFailed> {
   static const MessageT enum_value = MessageT_CharacterListFailed;
 };
 
-template<> struct MessageTTraits<CharacterList> {
-  static const MessageT enum_value = MessageT_CharacterList;
+template<> struct MessageTTraits<CharacterListSuccess> {
+  static const MessageT enum_value = MessageT_CharacterListSuccess;
 };
 
 template<> struct MessageTTraits<RequestCreateCharacter> {
@@ -302,9 +302,9 @@ struct MessageTUnion {
     return type == MessageT_CharacterListFailed ?
       reinterpret_cast<CharacterListFailedT *>(table) : nullptr;
   }
-  CharacterListT *AsCharacterList() {
-    return type == MessageT_CharacterList ?
-      reinterpret_cast<CharacterListT *>(table) : nullptr;
+  CharacterListSuccessT *AsCharacterListSuccess() {
+    return type == MessageT_CharacterListSuccess ?
+      reinterpret_cast<CharacterListSuccessT *>(table) : nullptr;
   }
   RequestCreateCharacterT *AsRequestCreateCharacter() {
     return type == MessageT_RequestCreateCharacter ?
@@ -1397,68 +1397,68 @@ inline flatbuffers::Offset<CharacterListFailed> CreateCharacterListFailed(
 
 flatbuffers::Offset<CharacterListFailed> CreateCharacterListFailed(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct CharacterListT : public flatbuffers::NativeTable {
-  typedef CharacterList TableType;
-  std::vector<std::unique_ptr<CharacterSimpleT>> character_list;
-  CharacterListT() {
+struct CharacterListSuccessT : public flatbuffers::NativeTable {
+  typedef CharacterListSuccess TableType;
+  std::vector<std::unique_ptr<CharacterSimpleT>> list;
+  CharacterListSuccessT() {
   }
 };
 
-struct CharacterList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef CharacterListT NativeTableType;
+struct CharacterListSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef CharacterListSuccessT NativeTableType;
   enum {
-    VT_CHARACTER_LIST = 4
+    VT_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>> *character_list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>> *>(VT_CHARACTER_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>> *list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>> *>(VT_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_CHARACTER_LIST) &&
-           verifier.Verify(character_list()) &&
-           verifier.VerifyVectorOfTables(character_list()) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_LIST) &&
+           verifier.Verify(list()) &&
+           verifier.VerifyVectorOfTables(list()) &&
            verifier.EndTable();
   }
-  CharacterListT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(CharacterListT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<CharacterList> Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  CharacterListSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(CharacterListSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<CharacterListSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct CharacterListBuilder {
+struct CharacterListSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_character_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>>> character_list) {
-    fbb_.AddOffset(CharacterList::VT_CHARACTER_LIST, character_list);
+  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>>> list) {
+    fbb_.AddOffset(CharacterListSuccess::VT_LIST, list);
   }
-  CharacterListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  CharacterListSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  CharacterListBuilder &operator=(const CharacterListBuilder &);
-  flatbuffers::Offset<CharacterList> Finish() {
+  CharacterListSuccessBuilder &operator=(const CharacterListSuccessBuilder &);
+  flatbuffers::Offset<CharacterListSuccess> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<CharacterList>(end);
+    auto o = flatbuffers::Offset<CharacterListSuccess>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CharacterList> CreateCharacterList(
+inline flatbuffers::Offset<CharacterListSuccess> CreateCharacterListSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>>> character_list = 0) {
-  CharacterListBuilder builder_(_fbb);
-  builder_.add_character_list(character_list);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<CharacterSimple>>> list = 0) {
+  CharacterListSuccessBuilder builder_(_fbb);
+  builder_.add_list(list);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<CharacterList> CreateCharacterListDirect(
+inline flatbuffers::Offset<CharacterListSuccess> CreateCharacterListSuccessDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<CharacterSimple>> *character_list = nullptr) {
-  return CreateCharacterList(
+    const std::vector<flatbuffers::Offset<CharacterSimple>> *list = nullptr) {
+  return CreateCharacterListSuccess(
       _fbb,
-      character_list ? _fbb.CreateVector<flatbuffers::Offset<CharacterSimple>>(*character_list) : 0);
+      list ? _fbb.CreateVector<flatbuffers::Offset<CharacterSimple>>(*list) : 0);
 }
 
-flatbuffers::Offset<CharacterList> CreateCharacterList(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<CharacterListSuccess> CreateCharacterListSuccess(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct RequestCreateCharacterT : public flatbuffers::NativeTable {
   typedef RequestCreateCharacter TableType;
@@ -2524,29 +2524,29 @@ inline flatbuffers::Offset<CharacterListFailed> CreateCharacterListFailed(flatbu
       _error_code);
 }
 
-inline CharacterListT *CharacterList::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new CharacterListT();
+inline CharacterListSuccessT *CharacterListSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new CharacterListSuccessT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void CharacterList::UnPackTo(CharacterListT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void CharacterListSuccess::UnPackTo(CharacterListSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = character_list(); if (_e) for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->character_list.push_back(std::unique_ptr<CharacterSimpleT>(_e->Get(_i)->UnPack(_resolver))); } };
+  { auto _e = list(); if (_e) for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->list.push_back(std::unique_ptr<CharacterSimpleT>(_e->Get(_i)->UnPack(_resolver))); } };
 }
 
-inline flatbuffers::Offset<CharacterList> CharacterList::Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateCharacterList(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<CharacterListSuccess> CharacterListSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateCharacterListSuccess(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<CharacterList> CreateCharacterList(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<CharacterListSuccess> CreateCharacterListSuccess(flatbuffers::FlatBufferBuilder &_fbb, const CharacterListSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _character_list = _o->character_list.size() ? _fbb.CreateVector<flatbuffers::Offset<CharacterSimple>>(_o->character_list.size(), [&](size_t i) { return CreateCharacterSimple(_fbb, _o->character_list[i].get(), _rehasher); }) : 0;
-  return CreateCharacterList(
+  auto _list = _o->list.size() ? _fbb.CreateVector<flatbuffers::Offset<CharacterSimple>>(_o->list.size(), [&](size_t i) { return CreateCharacterSimple(_fbb, _o->list[i].get(), _rehasher); }) : 0;
+  return CreateCharacterListSuccess(
       _fbb,
-      _character_list);
+      _list);
 }
 
 inline RequestCreateCharacterT *RequestCreateCharacter::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -2901,8 +2901,8 @@ inline bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, Mes
       auto ptr = reinterpret_cast<const CharacterListFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageT_CharacterList: {
-      auto ptr = reinterpret_cast<const CharacterList *>(obj);
+    case MessageT_CharacterListSuccess: {
+      auto ptr = reinterpret_cast<const CharacterListSuccess *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MessageT_RequestCreateCharacter: {
@@ -2987,8 +2987,8 @@ inline flatbuffers::NativeTable *MessageTUnion::UnPack(const void *obj, MessageT
       auto ptr = reinterpret_cast<const CharacterListFailed *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageT_CharacterList: {
-      auto ptr = reinterpret_cast<const CharacterList *>(obj);
+    case MessageT_CharacterListSuccess: {
+      auto ptr = reinterpret_cast<const CharacterListSuccess *>(obj);
       return ptr->UnPack(resolver);
     }
     case MessageT_RequestCreateCharacter: {
@@ -3073,9 +3073,9 @@ inline flatbuffers::Offset<void> MessageTUnion::Pack(flatbuffers::FlatBufferBuil
       auto ptr = reinterpret_cast<const CharacterListFailedT *>(table);
       return CreateCharacterListFailed(_fbb, ptr, _rehasher).Union();
     }
-    case MessageT_CharacterList: {
-      auto ptr = reinterpret_cast<const CharacterListT *>(table);
-      return CreateCharacterList(_fbb, ptr, _rehasher).Union();
+    case MessageT_CharacterListSuccess: {
+      auto ptr = reinterpret_cast<const CharacterListSuccessT *>(table);
+      return CreateCharacterListSuccess(_fbb, ptr, _rehasher).Union();
     }
     case MessageT_RequestCreateCharacter: {
       auto ptr = reinterpret_cast<const RequestCreateCharacterT *>(table);
@@ -3167,8 +3167,8 @@ inline void MessageTUnion::Reset() {
       delete ptr;
       break;
     }
-    case MessageT_CharacterList: {
-      auto ptr = reinterpret_cast<CharacterListT *>(table);
+    case MessageT_CharacterListSuccess: {
+      auto ptr = reinterpret_cast<CharacterListSuccessT *>(table);
       delete ptr;
       break;
     }

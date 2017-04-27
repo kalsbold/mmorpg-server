@@ -1,5 +1,6 @@
 #pragma once
 #include "TypeDef.h"
+#include "DBEntity.h"
 
 namespace mmog
 {
@@ -8,13 +9,17 @@ namespace mmog
 	class Actor
 	{
 	public:
-		Actor(const EntityID& entity_id)
+		Actor()
+			: Actor(boost::uuids::random_generator()())
+		{}
+
+		explicit Actor(const EntityID& entity_id)
 			: entity_id_(entity_id)
 		{}
 		~Actor()
 		{}
 
-		virtual void Update(float dt) = 0;
+		virtual void Update(float delta_time) = 0;
 
 		const EntityID& GetEntityID() const
 		{
@@ -41,9 +46,29 @@ namespace mmog
 
 	private:
 		EntityID entity_id_;
-
 		Vector3 position_;
 		float rotation_y_;
+	};
+
+
+	namespace db = db_entity;
+
+	class PlayerCharacter : public Actor
+	{
+	public:
+		using Actor::Actor;
+
+		void SetCharacteristic(Ptr<db::Character> value);
+
+		virtual void Update(float delta_time) override
+		{
+
+		}
+	private:
+
+		Ptr<db::Character> db_character_;
+
+
 	};
 
 }

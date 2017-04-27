@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 #include <fstream>
+#include <locale>
+#include <codecvt>
 #include <boost\program_options.hpp>
 #include "Singleton.h"
 
