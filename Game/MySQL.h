@@ -9,6 +9,7 @@
 #include <cppconn/prepared_statement.h>
 
 using ConnectionPtr = std::unique_ptr<sql::Connection, std::function<void(sql::Connection*)>>;
+using StmtPtr = std::unique_ptr<sql::Statement>;
 using PstmtPtr = std::unique_ptr<sql::PreparedStatement>;
 using ResultSetPtr = std::shared_ptr<sql::ResultSet>;
 
@@ -53,7 +54,7 @@ public:
 	{
 		return std::async(std::launch::async, [this, query] {
 				ConnectionPtr conn = GetConnection();
-				std::unique_ptr<sql::Statement> stmt(conn->createStatement());
+				StmtPtr stmt(conn->createStatement());
 				ResultSetPtr result;
 
 				if (stmt->execute(query.c_str()))
@@ -67,10 +68,9 @@ public:
 	ResultSetPtr Excute(const std::string& query)
 	{
 		ConnectionPtr conn = GetConnection();
-		std::unique_ptr<sql::Statement> stmt(conn->createStatement());
+		StmtPtr stmt(conn->createStatement());
 		ResultSetPtr result;
 		
-		stmt.reset(conn->createStatement());
 		if (stmt->execute(query.c_str()))
 			result.reset(stmt->getResultSet());
 

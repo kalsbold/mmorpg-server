@@ -41,10 +41,7 @@ namespace mmog {
 					ServerConfig::GetInstance().db_schema,
 					ServerConfig::GetInstance().db_connection_pool);
 
-				std::stringstream ss;
-				ss << "SELECT * FROM map_tb";
-
-				auto result_set = db->Excute(ss.str());
+				auto result_set = db->Excute("SELECT * FROM map_tb");
 				while (result_set->next())
 				{
 					auto map = std::make_shared<Map>();
@@ -79,7 +76,7 @@ namespace mmog {
 			return data_;
 		}
 
-		const Ptr<CharacterAttribute>& Get(ClassType type, int level)
+		const Ptr<CharacterAttribute> Get(ClassType type, int level)
 		{
 			auto iter = std::find_if(data_.begin(), data_.end(),
 				[&](const Ptr<CharacterAttribute>& value)
@@ -103,10 +100,7 @@ namespace mmog {
 					ServerConfig::GetInstance().db_schema,
 					1);
 
-				std::stringstream ss;
-				ss << "SELECT * FROM character_attribute_tb";
-
-				auto result_set = db->Excute(ss.str());
+				auto result_set = db->Excute("SELECT * FROM character_attribute_tb");
 				while (result_set->next())
 				{
 					auto attribute = std::make_shared<CharacterAttribute>();

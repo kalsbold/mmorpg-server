@@ -205,14 +205,14 @@ namespace AO
 			double ySeparation = vec1.Y - vec2.Y;
 			double xSeparation = vec1.X - vec2.X;
 			double zSeparation = vec1.Z - vec2.Z;
-			return (float)ySeparation*ySeparation + xSeparation*xSeparation + zSeparation*zSeparation;
+			return (float)(ySeparation*ySeparation + xSeparation*xSeparation + zSeparation*zSeparation);
 		}
 		//Returns (Float) distance between the two Vector3 objects
 		inline float distance(Vector3 const&vec1, Vector3 const&vec2) {
 			double ySeparation = vec1.Y - vec2.Y;
 			double xSeparation = vec1.X - vec2.X;
 			double zSeparation = vec1.Z - vec2.Z;
-			return sqrtf(ySeparation*ySeparation + xSeparation*xSeparation + zSeparation*zSeparation);
+			return sqrtf((float)(ySeparation*ySeparation + xSeparation*xSeparation + zSeparation*zSeparation));
 		}
 
 

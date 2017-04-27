@@ -6,7 +6,7 @@ IoServicePool::IoServicePool(size_t thread_count)
 	: idx_(0)
 {
 	if (thread_count == 0)
-		throw std::invalid_argument("thread_count : " + thread_count);
+		throw std::invalid_argument("thread_count 0");
 
 	for (int i = 0; i < thread_count; i++)
 	{

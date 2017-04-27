@@ -32,12 +32,12 @@ namespace mmog {
 			ServerConfig& config = ServerConfig::GetInstance();
 
 			// step 1 : 옵션 설명 정의
-			po::options_description desc;
+			po::options_description desc("Allowed options");
 			desc.add_options()
 				("Server.name", po::value<string>(&config.name)->default_value(""))
 				("Server.address", po::value<string>(&config.bind_address)->default_value("0.0.0.0"))
 				("Server.port", po::value<uint16_t>())
-				("Server.thread", po::value<size_t>()->default_value(thread::hardware_concurrency()))
+				("Server.thread", po::value<size_t>(&config.thread_count)->default_value(thread::hardware_concurrency()))
 				("Server.max-session", po::value<size_t>(&config.max_session_count)->default_value(10000))
 				("Server.min-receive-size", po::value<size_t>(&config.min_receive_size)->default_value(1024 * 4))
 				("Server.max-buffer-size", po::value<size_t>(&config.max_receive_buffer_size)->default_value(numeric_limits<size_t>::max()))
@@ -53,31 +53,36 @@ namespace mmog {
 			po::variables_map vm;
 			try
 			{
-				wifstream ifs(filepath);
+				std::ifstream ifs(filepath);
+				if (!ifs.is_open())
+				{
+					std::cerr << "Can not open file: " << filepath << "\n";
+					return false;
+				}
 				po::store(po::parse_config_file(ifs, desc), vm);
 			}
 			catch (po::unknown_option & e)
 			{
 				// 예외 1: 없는 옵션을 사용한 경우
-				std::cout << e.what() << std::endl;
+				std::cerr << e.what() << "\n";
 				return false;
 			}
 			catch (po::invalid_option_value & e)
 			{
 				// 예외 2: 옵션 값의 오류가 발생한 경우
-				std::cout << e.what() << std::endl;
+				std::cerr << e.what() << std::endl;
 				return false;
 			}
 			catch (po::invalid_command_line_syntax & e)
 			{
 				// 예외 3: 옵션 값이 없을 경우
-				std::cout << e.what() << std::endl;
+				std::cerr << e.what() << "\n";
 				return false;
 			}
 			catch (std::exception & e)
 			{
 				// 예외 4: 이외의 예외 발생
-				std::cout << e.what() << std::endl;
+				std::cerr << e.what() << "\n";
 				return false;
 			}
 
@@ -90,7 +95,7 @@ namespace mmog {
 			}
 			else
 			{
-				cout << "Server.port required" << "\n";
+				std::cerr << "Server.port required" << "\n";
 				return false;
 			}
 
@@ -100,7 +105,7 @@ namespace mmog {
 			}
 			else
 			{
-				cout << "DB.host required" << "\n";
+				std::cerr << "DB.host required" << "\n";
 				return false;
 			}
 
@@ -110,7 +115,7 @@ namespace mmog {
 			}
 			else
 			{
-				cout << "DB.user required" << "\n";
+				std::cerr << "DB.user required" << "\n";
 				return false;
 			}
 
@@ -120,7 +125,7 @@ namespace mmog {
 			}
 			else
 			{
-				cout << "DB.pass required" << "\n";
+				std::cerr << "DB.pass required" << "\n";
 				return false;
 			}
 
@@ -130,10 +135,9 @@ namespace mmog {
 			}
 			else
 			{
-				cout << "DB.schema required" << "\n";
+				std::cerr << "DB.schema required" << "\n";
 				return false;
 			}
-
 			return true;
 		}
 	};

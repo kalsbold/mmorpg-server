@@ -7,13 +7,20 @@
 
 using namespace std;
 using namespace mmog;
-
+namespace po = boost::program_options;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	try
 	{
-		ServerConfig::GetInstance().Load("server.cfg");
+		if (argc < 2)
+		{
+			std::cerr << "Usage: cfg file path \n";
+			return 1;
+		}
+
+		if (!ServerConfig::GetInstance().Load(argv[1]))
+			return 0;
 
 		auto server = std::make_shared<GameServer>();
 		// Ω√¿€
@@ -21,7 +28,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	catch (const std::exception& e)
 	{
-		BOOST_LOG_TRIVIAL(fatal) << e.what();
+		std::cerr << "Exception: " << e.what() <<"\n";
 	}
 
     return 0;

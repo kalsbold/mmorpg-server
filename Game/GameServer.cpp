@@ -213,7 +213,7 @@ namespace mmog {
 			}
 		}
 
-		BOOST_LOG_TRIVIAL(info) << "Login : " << acc_name;
+		BOOST_LOG_TRIVIAL(info) << "Login : " << account->id;
 
 		auto response = CreateLoginSuccess(builder,
 			builder.CreateString(boost::uuids::to_string(session->GetID())));
@@ -424,7 +424,7 @@ namespace mmog {
 	void GameServer::RegisterHandlers()
 	{
 		AccountManager::GetInstance().RegisterLogoutHandler([this](int account_id, auto& session) {
-			BOOST_LOG_TRIVIAL(info) << "On Logout. id : " << account_id;
+			BOOST_LOG_TRIVIAL(info) << "Logout. id : " << account_id;
 		});
 
 		message_handlers_.insert(make_pair(MessageT_RequestLogin, [this](auto& session, auto* msg) { OnLogin(session, msg); }));
