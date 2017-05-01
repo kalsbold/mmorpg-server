@@ -74,10 +74,11 @@ namespace mmog {
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
 
+			/*
 			// 플레이어 상태 검사
 			if (state_ != State::Connected)
 			{
-				EnterGameFailedT response;
+				protocol::EnterGameFailedT response;
 				response.error_code = ErrorCode_ENTER_GAME_INVALID_STATE;
 				helper::Send(net_session_, response);
 				return false;
@@ -87,20 +88,23 @@ namespace mmog {
 			if (!db_character)
 			{
 				// 케릭터가 존재하지 않는다. 실패
-				EnterGameFailedT response;
+				protocol::EnterGameFailedT response;
 				response.error_code = ErrorCode_ENTER_GAME_INVALID_CHARACTER;
 				Send(net_session_, response);
 				return false;
 			}
 
 			// 필요한 데이터 로딩
-
+			*/
 		}
 
 	private:
 		// 세션 종료 처리. 상태 저장 등 을 한다.
 		void ProcessDisconnect()
 		{
+			if (state_ == State::Disconnected)
+				return;
+
 			state_ = State::Disconnected;
 			// 저장
 			UpdateToDB();

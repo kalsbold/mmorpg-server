@@ -17,8 +17,8 @@ public:
 		ConnectionPtr conn = db.GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
 			"INSERT INTO account_tb(acc_name, password) VALUES(?,?)"));
-		pstmt->setString(1, acc_name);
-		pstmt->setString(2, password);
+		pstmt->setString(1, acc_name.c_str());
+		pstmt->setString(2, password.c_str());
 
 		if (pstmt->executeUpdate() == 0)
 			return nullptr;
@@ -29,18 +29,17 @@ public:
 	static Ptr<Account> Fetch(MySQLPool& db, const string& acc_name)
 	{
 		ConnectionPtr conn = db.GetConnection();
-		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT id, acc_name, password FROM account_tb WHERE acc_name=?"));
-		pstmt->setString(1, acc_name);
-
+		PstmtPtr pstmt(conn->prepareStatement("SELECT id, acc_name, password FROM account_tb WHERE acc_name=?"));
+		pstmt->setString(1, acc_name.c_str());
+		
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
 			return nullptr;
 
 		auto account = std::make_shared<Account>();
 		account->id = result_set->getInt("id");
-		account->acc_name = result_set->getString("acc_name");
-		account->password = result_set->getString("password");
+		account->acc_name = result_set->getString("acc_name").c_str();
+		account->password = result_set->getString("password").c_str();
 		return account;
 	}
 };
@@ -107,7 +106,7 @@ public:
 		PstmtPtr pstmt(conn->prepareStatement(
 			"INSERT INTO  character_tb (acc_id, name, class_type) VALUES(?,?,?)"));
 		pstmt->setInt(1, account_id);
-		pstmt->setString(2, name);
+		pstmt->setString(2, name.c_str());
 		pstmt->setInt(3, (int)class_type);
 
 		if (pstmt->executeUpdate() == 0)
@@ -141,7 +140,7 @@ public:
 		PstmtPtr pstmt(conn->prepareStatement(
 			"SELECT * FROM character_tb WHERE acc_id=? AND name=?"));
 		pstmt->setInt(1, account_id);
-		pstmt->setString(2, name);
+		pstmt->setString(2, name.c_str());
 
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
@@ -174,7 +173,7 @@ public:
 		ConnectionPtr conn = db.GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
 			"SELECT * FROM character_tb WHERE name=?"));
-		pstmt->setString(1, name);
+		pstmt->setString(1, name.c_str());
 
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
@@ -208,7 +207,7 @@ public:
 			<< ",first_play=" << first_play
 			<< " WHERE id=" << id;
 
-		return stmt->execute(ss.str());
+		return stmt->execute(ss.str().c_str());
 	}
 
 	bool Delete(MySQLPool& db)
@@ -219,7 +218,7 @@ public:
 		std::stringstream ss;
 		ss << "DELETE FROM character_tb WHERE id=" << id;
 
-		return stmt->execute(ss.str());
+		return stmt->execute(ss.str().c_str());
 	}
 
 	void SetAttribute(CharacterAttribute& attribute)
@@ -238,7 +237,7 @@ private:
 	{
 		c->id = result_set->getInt("id");
 		c->acc_id = result_set->getInt("acc_id");
-		c->name = result_set->getString("name");
+		c->name = result_set->getString("name").c_str();
 		c->class_type = (ClassType)result_set->getInt("class_type");
 		c->exp = result_set->getInt("exp");
 		c->level = result_set->getInt("level");

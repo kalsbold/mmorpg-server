@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <future>
 #include <cppconn/driver.h>
@@ -14,22 +15,23 @@ using PstmtPtr = std::unique_ptr<sql::PreparedStatement>;
 using ResultSetPtr = std::shared_ptr<sql::ResultSet>;
 
 // MySQL database connection pool
-class MySQLPool
+class MySQLPool : public std::enable_shared_from_this<MySQLPool>
 {
 public:
-	MySQLPool(const std::string& url, const std::string& user, const std::string& password,
-		const std::string& database, size_t connection_count = 1,
-		const std::string& connection_charset = "")
-		: url_(url), user_(user), password_(password)
-		, database_(database), connection_count_(connection_count)
-		, connection_charset_(connection_charset)
-	{
-		Initialize();
-	}
-
 	~MySQLPool()
 	{
 		Finalize();
+	}
+
+	static std::shared_ptr<MySQLPool> Create(
+		const std::string& url,
+		const std::string& user,
+		const std::string& password,
+		const std::string& database,
+		size_t connection_count = 1,
+		const std::string& connection_charset = "")
+	{
+		return std::make_shared<MySQLPool>(url, user, password, database, connection_count, connection_charset);
 	}
 
 	// 풀에서 커넥션을 가져온다.
@@ -46,13 +48,15 @@ public:
 		sql::Connection* conn = pool_list_.front();
 		pool_list_.pop_front();
 
-		return ConnectionPtr(conn, [this](sql::Connection* ptr) { ReleaseConnection(ptr); });
+		auto self = shared_from_this();
+		return ConnectionPtr(conn, [this, self](sql::Connection* ptr) { ReleaseConnection(ptr); });
 	}
 
 	// 비동기로 쿼리를 실행
 	std::future<ResultSetPtr> ExcuteAsync(const std::string& query)
 	{
-		return std::async(std::launch::async, [this, query] {
+		auto self = shared_from_this();
+		return std::async(std::launch::async, [this, self, query] {
 				ConnectionPtr conn = GetConnection();
 				StmtPtr stmt(conn->createStatement());
 				ResultSetPtr result;
@@ -75,6 +79,16 @@ public:
 			result.reset(stmt->getResultSet());
 
 		return result;
+	}
+
+	MySQLPool(const std::string& url, const std::string& user, const std::string& password,
+		const std::string& database, size_t connection_count = 1,
+		const std::string& connection_charset = "")
+		: url_(url), user_(user), password_(password)
+		, database_(database), connection_count_(connection_count)
+		, connection_charset_(connection_charset)
+	{
+		Initialize();
 	}
 
 private:

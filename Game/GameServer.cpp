@@ -58,13 +58,17 @@ namespace mmog {
 		net_server_->Start(bind_address, bind_port);
 
 		// Create DB connection Pool
-		db_conn_ = std::make_shared<MySQLPool>(
+		db_conn_ = MySQLPool::Create(
 			server_config.db_host,
 			server_config.db_user,
 			server_config.db_password,
 			server_config.db_schema,
 			server_config.db_connection_pool);
 		
+		// DB 데이터 로드
+		MapData::Load();
+		CharacterAttributeData::Load();
+
 		BOOST_LOG_TRIVIAL(info) << "Run Game Server : " << GetName();
 
 		// 종료될때 까지 대기
@@ -158,13 +162,10 @@ namespace mmog {
 		if (!player)
 			return;
 
-		// 클라이언트 측에서 끊었을 경우 종료 처리
-		if (CloseReason::Disconnected == reason)
-		{
-			player->OnDisconnected();
-		}
+		// 종료 처리
+		player->OnDisconnected();
 
-		// 삭제
+		// 목록에서 제거
 		RemoveGamePlayer(session->GetID());
 	}
 
@@ -195,22 +196,23 @@ namespace mmog {
 			return;
 		}
 
-		// 로그인 체크
+		// 중복 체크 및 로그인
 		if (!AccountManager::GetInstance().CheckAndSetLogin(account->id, session))
 		{
-			// 로그인 되어있는 세션을 얻는다
+			// 중복 로그인 처리
+			// 이미 로그인 되어있는 세션을 얻는다
 			auto logged_in_session = AccountManager::GetInstance().FindSession(account->id);
-			// 동일 세션이 아니면
-			if(logged_in_session != session)
-			{
-				// 이전 세션 로그아웃
-				AccountManager::GetInstance().SetLogout(account->id);
-				// 게임 플레이 종료 처리
-				auto player = GetGamePlayer(logged_in_session->GetID());
-				player->Disconnect();
-				// 새 새션 로그인
-				AccountManager::GetInstance().CheckAndSetLogin(account->id, session);
-			}
+			
+			// 로그아웃
+			AccountManager::GetInstance().SetLogout(account->id);
+			// 세션 종료
+			logged_in_session->Close();
+			// 동일 세션 이면 리턴
+			if(logged_in_session == session)
+				return;
+
+			// 새 새션 로그인
+			AccountManager::GetInstance().CheckAndSetLogin(account->id, session);
 		}
 
 		BOOST_LOG_TRIVIAL(info) << "Login : " << account->id;
@@ -310,6 +312,17 @@ namespace mmog {
 			return;
 		}
 
+		// 초기 능력치를 가져온다.
+		auto attribute = CharacterAttributeData::GetInstance().Get((db::ClassType)class_type, 1);
+		if (!attribute)
+		{
+			CreateCharacterFailedT response;
+			response.error_code = ErrorCode_CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST;
+			Send(session, response);
+			return;
+		}
+
+		//생성
 		auto character = db::Character::Create(*db_conn_, account_id, character_name, (db::ClassType)class_type);
 		if (!character)
 		{
@@ -320,9 +333,7 @@ namespace mmog {
 			return;
 		}
 
-		// 초기 능력치 셋팅
-		auto lv1_attribute = CharacterAttributeData::GetInstance().Get((db::ClassType)class_type, 1);
-		character->SetAttribute(*lv1_attribute);
+		character->SetAttribute(*attribute);
 		character->Update(*db_conn_);
 		
 		BOOST_LOG_TRIVIAL(info) << "Create Character success : " << character->name;
@@ -356,7 +367,7 @@ namespace mmog {
 
 		auto char_list = db::Character::Fetch(*db_conn_, account_id);
 		
-		CharacterListT response;
+		CharacterListSuccessT response;
 		for (auto& character : char_list)
 		{
 			auto char_simple = std::make_unique<CharacterSimpleT>();
@@ -364,7 +375,7 @@ namespace mmog {
 			char_simple->name = character->name;
 			char_simple->class_type = (int)character->class_type;
 			char_simple->level = character->level;
-			response.character_list.emplace_back(std::move(char_simple));
+			response.list.emplace_back(std::move(char_simple));
 		}
 
 		Send(session, response);
