@@ -8,70 +8,70 @@ namespace mmog {
 	class AccountManager : public Singleton<AccountManager>
 	{
 	public:
+		using AccountID = int;
 		using LogoutCallback = function<void(int, const Ptr<Session>&)>;
 
 		AccountManager() {};
 		~AccountManager() {};
 
-		bool CheckAndSetLogin(int account_id, const Ptr<Session>& session)
+		bool CheckAndSetLogin(AccountID account_id, const Ptr<Session>& session)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
-			return logged_in_accounts_.insert(std::make_pair(account_id, session)).second;
+			bool result = id_to_session_.insert(std::make_pair(account_id, session)).second;
+			if (result)
+			{
+				session_to_id_.insert(std::make_pair(session, account_id));
+			}
+
+			return result;
 		}
 
-		bool SetLogout(int account_id)
+		bool SetLogout(AccountID account_id)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = logged_in_accounts_.find(account_id);
-			if (iter == logged_in_accounts_.end())
+			auto iter = id_to_session_.find(account_id);
+			if (iter == id_to_session_.end())
 				return false;
 			
 			logout_callback_(iter->first, iter->second);
-			logged_in_accounts_.erase(iter);
+			
+			session_to_id_.erase(iter->second);
+			id_to_session_.erase(iter);
 			return true;
 		}
 
 		bool SetLogout(const Ptr<Session>& session)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = std::find_if(logged_in_accounts_.begin(), logged_in_accounts_.end(),
-				[&session](const std::pair<int, Ptr<Session>>& pair)
-				{
-					return session == pair.second;
-				});
-			if (iter == logged_in_accounts_.end())
+			auto iter = session_to_id_.find(session);
+			if (iter == session_to_id_.end())
 				return false;
 
-			logout_callback_(iter->first, iter->second);
-			logged_in_accounts_.erase(iter);
+			logout_callback_(iter->second, iter->first);
+
+			id_to_session_.erase(iter->second);
+			session_to_id_.erase(iter);
 			return true;
 		}
 
-		int FindAccount(const Ptr<Session>& session)
+		AccountID FindAccount(const Ptr<Session>& session)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = std::find_if(logged_in_accounts_.begin(), logged_in_accounts_.end(),
-				[&session](const std::pair<int, Ptr<Session>>& pair)
-				{
-					return session == pair.second;
-				});
-
-			if (iter == logged_in_accounts_.end())
+			auto iter = session_to_id_.find(session);
+			if (iter == session_to_id_.end())
 				return 0;
 
-			return iter->first;
+			return iter->second;
 		}
 
 		const Ptr<Session> FindSession(int account_id)
 		{
 			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = logged_in_accounts_.find(account_id);
-			if (iter != logged_in_accounts_.end())
-			{
-				return iter->second;
-			}
+			auto iter = id_to_session_.find(account_id);
+			if (iter == id_to_session_.end())
+				return nullptr;
 
-			return nullptr;
+			return iter->second;
 		}
 
 		void RegisterLogoutHandler(const LogoutCallback& handler)
@@ -82,7 +82,8 @@ namespace mmog {
 
 	private:
 		std::mutex mutex_;
-		std::map<int, Ptr<Session>> logged_in_accounts_;
+		std::map<AccountID, Ptr<Session>> id_to_session_;
+		std::map<Ptr<Session>, AccountID> session_to_id_;
 		LogoutCallback logout_callback_;
 	};
 }

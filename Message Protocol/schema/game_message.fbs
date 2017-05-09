@@ -22,7 +22,7 @@ table CharacterSimple{
 }
 
 // 로컬 플레이어 캐릭터 정보
-table Character{
+table PlayerCharacter{
     uid:int;
     name:string;
     class_type:int;
@@ -160,7 +160,7 @@ table EnterGameFailed{
 }
 // 게임 입장 성공
 table EnterGameSuccess{
-    character:Character;
+    character:PlayerCharacter;
 }
 // 리모트 케릭터 스폰
 table SpawnRemoteCharacter{

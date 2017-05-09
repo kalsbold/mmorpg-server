@@ -1,23 +1,43 @@
 #pragma once
 #include "TypeDef.h"
+#include "DBEntity.h"
+#include "GameServer.h"
 
 namespace mmog {
 
-	class Field
+	namespace db = db_entity;
+
+	class Zone
 	{
 	public:
-		Field() {}
-		~Field() {}
-
 		const uuid& GetUUID() const
 		{
 			return uuid_;
 		}
 
-		const MapInfo& GetMapInfo() const
+		const db::Map& GetMapInfo() const
 		{
 			return map_info_;
 		}
+
+		virtual void Update()
+		{
+
+		}
+
+		uuid uuid_;
+		//asio::strand strand_;
+		// 지역에 들어와 있는 게임 플레이어
+		std::map<SessionID, GamePlayer*> game_users_;
+		// 맵 정보
+		db::Map map_info_;
+	};
+
+	class Field : public Zone
+	{
+	public:
+		Field() {}
+		~Field() {}
 
 		void Update()
 		{
@@ -25,14 +45,15 @@ namespace mmog {
 		}
 
 	private:
-		asio::strand strand_;
-		uuid uuid_;
-		MapInfo map_info_;
+		db::Map map_info_;
 
-		// 지역에 들어와 있는 게임 플레이어
-		std::map<SessionID, Player*> game_users_;
 	};
 
+	class InstanceDungeon : public Zone
+	{
+	public:
+
+	};
 
 	class World
 	{
@@ -44,7 +65,7 @@ namespace mmog {
 		void Stop() {}
 
 	private:
-		IoServicePool ios_pool_;
+		//IoServicePool ios_pool_;
 	};
 
 }

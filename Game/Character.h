@@ -53,12 +53,15 @@ namespace mmog
 
 	namespace db = db_entity;
 
-	class PlayerCharacter : public Actor
+	class Character : public Actor
 	{
 	public:
 		using Actor::Actor;
 
-		void SetCharacteristic(Ptr<db::Character> value);
+		void SetCharacteristic(Ptr<db::Character> value)
+		{
+
+		}
 
 		virtual void Update(float delta_time) override
 		{

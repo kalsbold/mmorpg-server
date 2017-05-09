@@ -13,9 +13,6 @@
     <Filter Include="Protocol">
       <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Actor">
-      <UniqueIdentifier>{638008b2-58e8-46b8-9331-85c2518ed6ae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="World">
       <UniqueIdentifier>{70476592-46d7-45ad-9480-06b616b315af}</UniqueIdentifier>
     </Filter>
@@ -51,9 +48,6 @@
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="TypeDef.h" />
-    <ClInclude Include="Character.h">
-      <Filter>Actor</Filter>
-    </ClInclude>
     <ClInclude Include="ServerBase.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -77,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="DBEntity.h">
       <Filter>DB</Filter>
+    </ClInclude>
+    <ClInclude Include="Character.h">
+      <Filter>World</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

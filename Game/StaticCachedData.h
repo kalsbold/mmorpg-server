@@ -7,20 +7,20 @@
 
 namespace mmog {
 
-	using namespace db_entity;
+	namespace db = db_entity;
 
 	class MapData : public Singleton<MapData>
 	{
 	public:
-		const std::vector<Ptr<Map>>& Get()
+		const std::vector<Ptr<db::Map>>& Get()
 		{
 			return map_data_;
 		}
 
-		const Ptr<Map> Get(int id)
+		const Ptr<db::Map> Get(int id)
 		{
 			auto iter = std::find_if(map_data_.begin(), map_data_.end(),
-				[id](const Ptr<Map>& map)
+				[id](const Ptr<db::Map>& map)
 				{
 					return map->id == id;
 				});
@@ -44,12 +44,12 @@ namespace mmog {
 				auto result_set = db->Excute("SELECT * FROM map_tb");
 				while (result_set->next())
 				{
-					auto map = std::make_shared<Map>();
+					auto map = std::make_shared<db::Map>();
 					map->id = result_set->getInt("id");
 					map->name = result_set->getString("name").c_str();
 					map->width = result_set->getInt("width");
 					map->height = result_set->getInt("height");
-					map->type = (MapType)result_set->getInt("type");
+					map->type = (db::MapType)result_set->getInt("type");
 
 					instance.map_data_.push_back(map);
 				}
@@ -65,21 +65,21 @@ namespace mmog {
 		}
 
 	private:
-		std::vector<Ptr<Map>> map_data_;
+		std::vector<Ptr<db::Map>> map_data_;
 	};
 
 	class CharacterAttributeData : public Singleton<CharacterAttributeData>
 	{
 	public:
-		const std::vector<Ptr<CharacterAttribute>>& Get()
+		const std::vector<Ptr<db::CharacterAttribute>>& Get()
 		{
 			return data_;
 		}
 
-		const Ptr<CharacterAttribute> Get(ClassType type, int level)
+		const Ptr<db::CharacterAttribute> Get(db::ClassType type, int level)
 		{
 			auto iter = std::find_if(data_.begin(), data_.end(),
-				[&](const Ptr<CharacterAttribute>& value)
+				[&](const Ptr<db::CharacterAttribute>& value)
 				{
 					return (value->class_type == type) && (value->level == level);
 				});
@@ -103,8 +103,8 @@ namespace mmog {
 				auto result_set = db->Excute("SELECT * FROM character_attribute_tb");
 				while (result_set->next())
 				{
-					auto attribute = std::make_shared<CharacterAttribute>();
-					attribute->class_type = (ClassType)result_set->getInt("class_type");
+					auto attribute = std::make_shared<db::CharacterAttribute>();
+					attribute->class_type = (db::ClassType)result_set->getInt("class_type");
 					attribute->level = result_set->getInt("level");
 					attribute->hp = result_set->getInt("hp");
 					attribute->mp = result_set->getInt("mp");
@@ -125,7 +125,7 @@ namespace mmog {
 		}
 
 	private:
-		std::vector<Ptr<CharacterAttribute>> data_;
+		std::vector<Ptr<db::CharacterAttribute>> data_;
 	};
 }
 
