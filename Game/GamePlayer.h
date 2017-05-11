@@ -134,6 +134,11 @@ namespace mmog {
 			auto result_set = db->Excute(ss.str());*/
 		}
 
+		bool LoadCharacter(int character_id)
+		{
+			db_character_ = db::Character::Fetch(server_->GetDB(), character_id, account_id_);
+		}
+
 		GameServer* server_;
 		Ptr<Session> net_session_;
 
@@ -141,6 +146,7 @@ namespace mmog {
 		int account_id_;
 		State state_;
 
-		//Ptr<PlayerCharacter> character_;
+		Ptr<db::Character> db_character_;
+		Ptr<Character> go_character_;
 	};
 }

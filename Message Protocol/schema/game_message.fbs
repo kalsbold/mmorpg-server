@@ -13,6 +13,12 @@ struct Vec3 {
   z:float;
 }
 
+struct MoveState {
+    rotation:float;
+    pos:Vec3;
+    velocity:Vec3;
+}
+
 // 간단한 플레이어 캐릭터 정보
 table CharacterSimple{
     id:int;
@@ -22,7 +28,7 @@ table CharacterSimple{
 }
 
 // 로컬 플레이어 캐릭터 정보
-table PlayerCharacter{
+table LocalCharacter{
     uid:int;
     name:string;
     class_type:int;
@@ -168,10 +174,8 @@ table SpawnRemoteCharacter{
 }
 // 케릭터 이동
 table MoveCharacter{
-    uid:int;
-    pos:Vec3;
-    rotation_y:float;
-    velocity:Vec3;
+    uuid:int;
+    move:MoveState;
 }
 
 // 메시지 타입을 정의 한다 ================================================

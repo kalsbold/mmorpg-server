@@ -7,9 +7,32 @@ namespace mmog {
 
 	namespace db = db_entity;
 
+	class FrameUpdater
+	{
+	public:
+		void ExcuteFrame()
+		{
+		}
+
+		std::chrono::milliseconds per_excute_time_;
+
+	private:
+		asio::strand strand_;
+
+
+	};
+
 	class Zone
 	{
 	public:
+		Zone(const uuid& uuid, Ptr<db::Map> map_info)
+			: uuid_(uuid)
+			, map_info_(map_info)
+		{
+
+		}
+		virtual ~Zone() {}
+
 		const uuid& GetUUID() const
 		{
 			return uuid_;
@@ -17,27 +40,27 @@ namespace mmog {
 
 		const db::Map& GetMapInfo() const
 		{
-			return map_info_;
+			return *map_info_;
 		}
 
-		virtual void Update()
+	protected:
+		virtual void Update(float delta_time)
 		{
 
 		}
 
 		uuid uuid_;
 		//asio::strand strand_;
-		// 지역에 들어와 있는 게임 플레이어
-		std::map<SessionID, GamePlayer*> game_users_;
+		// 지역에 들어와 있는 게임 오브젝트
+		std::map<uuid, GameObject*> game_objects_;
 		// 맵 정보
-		db::Map map_info_;
+		Ptr<db::Map> map_info_;
 	};
 
-	class Field : public Zone
+	class StaticZone : public Zone
 	{
 	public:
-		Field() {}
-		~Field() {}
+		using Zone::Zone;
 
 		void Update()
 		{
@@ -45,27 +68,40 @@ namespace mmog {
 		}
 
 	private:
-		db::Map map_info_;
 
 	};
 
-	class InstanceDungeon : public Zone
+	class InstanceZone : public Zone
 	{
 	public:
+		using Zone::Zone;
 
 	};
+
 
 	class World
 	{
 	public:
-		World() {}
-		~World() {}
+		World()
+		{
+		}
+		~World()
+		{
+			Stop();
+		}
 
 		void Start() {}
-		void Stop() {}
+		void Stop()
+		{
+			loop_pool_->Stop();
+		}
 
 	private:
-		//IoServicePool ios_pool_;
+
+
+		Ptr<IoServicePool> loop_pool_;
+		std::map<uuid, Ptr<StaticZone>> static_zones_;
+		std::map<uuid, Ptr<InstanceZone>> instance_zones_;
 	};
 
 }

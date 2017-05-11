@@ -179,7 +179,7 @@ namespace mmog {
 		const string acc_name = msg->acc_name()->str();
 		const string password = msg->password()->str();
 
-		auto account = db::Account::Fetch(*db_conn_, acc_name);
+		auto account = db::Account::Fetch(db_conn_, acc_name);
 		if (!account)
 		{
 			auto response = CreateLoginFailed(builder,
@@ -220,20 +220,6 @@ namespace mmog {
 		auto response = CreateLoginSuccess(builder,
 			builder.CreateString(boost::uuids::to_string(session->GetID())));
 		Send(session, builder, response);
-
-		/*
-		Account acc_info;
-		acc_info.id = acc_id;
-		acc_info.acc_name = result_set->getString("acc_name").c_str();
-		uuid session_id = session->GetID();
-		auto game_user = std::make_shared<GamePlayer>(this, session, acc_info);
-		AddGamePlayer(session_id, game_user);
-		BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
-		// 성공
-		auto response = CreateLoginSuccess(builder,
-			builder.CreateString(boost::uuids::to_string(session->GetID())));
-		Send(session, builder, response);
-		*/
 	}
 
 	// Join ================================================================================================================
@@ -255,14 +241,14 @@ namespace mmog {
 			return;
 		}
 
-		if (db::Account::Fetch(*db_conn_, acc_name))
+		if (db::Account::Fetch(db_conn_, acc_name))
 		{
 			auto response = CreateJoinFailed(builder, ErrorCode_JOIN_ACC_NAME_ALREADY);
 			Send(session, builder, response);
 			return;
 		}
 
-		if (!db::Account::Create(*db_conn_, acc_name, password))
+		if (!db::Account::Create(db_conn_, acc_name, password))
 		{
 			auto response = CreateJoinFailed(builder, ErrorCode_JOIN_CANNOT_ACC_CREATE);
 			Send(session, builder, response);
@@ -303,7 +289,7 @@ namespace mmog {
 			return;
 		}
 
-		if (db::Character::Fetch(*db_conn_, character_name))
+		if (db::Character::Fetch(db_conn_, character_name))
 		{
 			// 이미 있는 이름.
 			CreateCharacterFailedT response;
@@ -323,7 +309,7 @@ namespace mmog {
 		}
 
 		//생성
-		auto character = db::Character::Create(*db_conn_, account_id, character_name, (db::ClassType)class_type);
+		auto character = db::Character::Create(db_conn_, account_id, character_name, (db::ClassType)class_type);
 		if (!character)
 		{
 			// 생성 된게 없다.
@@ -334,7 +320,7 @@ namespace mmog {
 		}
 
 		character->SetAttribute(*attribute);
-		character->Update(*db_conn_);
+		character->Update();
 		
 		BOOST_LOG_TRIVIAL(info) << "Create Character success : " << character->name;
 
@@ -365,7 +351,7 @@ namespace mmog {
 			return;
 		}
 
-		auto char_list = db::Character::Fetch(*db_conn_, account_id);
+		auto char_list = db::Character::Fetch(db_conn_, account_id);
 		
 		CharacterListSuccessT response;
 		for (auto& character : char_list)
@@ -397,7 +383,7 @@ namespace mmog {
 		}
 
 		const int character_id = msg->character_id();
-		auto character = db::Character::Fetch(*db_conn_, character_id, account_id);
+		auto character = db::Character::Fetch(db_conn_, character_id, account_id);
 		if (!character)
 		{
 			DeleteCharacterFailedT response;
@@ -430,6 +416,20 @@ namespace mmog {
 			Send(session, response);
 			return;
 		}
+
+		/*
+		Account acc_info;
+		acc_info.id = acc_id;
+		acc_info.acc_name = result_set->getString("acc_name").c_str();
+		uuid session_id = session->GetID();
+		auto game_user = std::make_shared<GamePlayer>(this, session, acc_info);
+		AddGamePlayer(session_id, game_user);
+		BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
+		// 성공
+		auto response = CreateLoginSuccess(builder,
+		builder.CreateString(boost::uuids::to_string(session->GetID())));
+		Send(session, builder, response);
+		*/
 	}
 
 	void GameServer::RegisterHandlers()

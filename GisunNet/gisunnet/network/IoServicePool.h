@@ -14,7 +14,7 @@ public:
 	IoServicePool(const IoServicePool&) = delete;
 	IoServicePool& operator=(const IoServicePool&) = delete;
 
-	IoServicePool(size_t thread_count);
+	IoServicePool(size_t thread_count = 1);
 	~IoServicePool();
 
 	// Stop all io_service.

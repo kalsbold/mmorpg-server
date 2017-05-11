@@ -75,6 +75,9 @@
     <ClInclude Include="Character.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>World</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -85,5 +88,8 @@
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="GameObject.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
