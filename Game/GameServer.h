@@ -27,7 +27,7 @@ namespace mmog {
 		// 서버 종료
 		void Stop() override;
 
-		const Ptr<IoServicePool>& GetIoServicePool() { return ios_pool_; }
+		const Ptr<IoServiceLoop>& GetIoServiceLoop() { return ios_loop_; }
 		const Ptr<MySQLPool>& GetDB() { return db_conn_; }
 
 		// Network Session ID 로 찾는다.
@@ -50,7 +50,7 @@ namespace mmog {
 		void OnDeleteCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
 		void OnEnterGame(const Ptr<Session>& session, const protocol::NetMessage* net_message);
 
-		Ptr<IoServicePool> ios_pool_;
+		Ptr<IoServiceLoop> ios_loop_;
 		Ptr<NetServer> net_server_;
 		Ptr<MySQLPool> db_conn_;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gisunnet/network/Client.h"
-#include "gisunnet/network/IoServicePool.h"
+#include "gisunnet/network/IoServiceLoop.h"
 #include "gisunnet/utility/AsioHelper.h"
 
 namespace gisunnet {
@@ -136,7 +136,7 @@ private:
 
 	ClientConfiguration	config_;
 	State				state_;
-	Ptr<IoServicePool>	ios_pool_;
+	Ptr<IoServiceLoop>	ios_loop_;
 	//std::mutex			mutex_;
 };
 

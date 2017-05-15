@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 #include <gisunnet/network/NetServer.h>
-#include <gisunnet/network/IoServicePool.h>
+#include <gisunnet/network/IoServiceLoop.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
 #include <boost/locale.hpp>
@@ -70,9 +70,9 @@ int main()
 	std::getline(std::cin, input, '\n');
 	
 	server->Stop();
-	auto ios_pool = server->GetIoServicePool();
-	ios_pool->Stop();
-	ios_pool->Wait();
+	auto ios_loop = server->GetIoServiceLoop();
+	ios_loop->Stop();
+	ios_loop->Wait();
 
     return 0;
 }

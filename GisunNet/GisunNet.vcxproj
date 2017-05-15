@@ -26,7 +26,7 @@
     <ClInclude Include="gisunnet\types.h" />
     <ClInclude Include="gisunnet\utility\AsioHelper.h" />
     <ClInclude Include="gisunnet\network\ByteBuffer.h" />
-    <ClInclude Include="gisunnet\network\IoServicePool.h" />
+    <ClInclude Include="gisunnet\network\IoServiceLoop.h" />
     <ClInclude Include="gisunnet\network\NetServer.h" />
     <ClInclude Include="gisunnet\network\Session.h" />
     <ClInclude Include="gisunnet\network\tcp\TcpSession.h" />
@@ -34,7 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Client.cpp" />
-    <ClCompile Include="src\IoServicePool.cpp" />
+    <ClCompile Include="src\IoServiceLoop.cpp" />
     <ClCompile Include="src\Server.cpp" />
     <ClCompile Include="src\Session.cpp" />
     <ClCompile Include="src\TcpClient.cpp" />

@@ -39,7 +39,7 @@ public:
 	virtual void Stop() = 0;
 
 	virtual State GetState() = 0;
-	virtual Ptr<IoServicePool> GetIoServicePool() = 0;
+	virtual Ptr<IoServiceLoop> GetIoServiceLoop() = 0;
 
 	virtual Ptr<Session> Find(const uuid& id) = 0;
 

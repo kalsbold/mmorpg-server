@@ -7,14 +7,14 @@ TcpServer::TcpServer(const Configuration & config)
 	, config_(config)
 	, state_(State::Ready)
 {
-	// 설정된 io_service_pool 이 없으면 생성.
-	if (config_.io_service_pool.get() == nullptr)
+	// 설정된 io_service_loop 이 없으면 생성.
+	if (config_.io_service_loop.get() == nullptr)
 	{
 		size_t thread_count = std::max<size_t>(config_.thread_count, 1);
-		config_.io_service_pool = std::make_shared<IoServicePool>(thread_count);
+		config_.io_service_loop = std::make_shared<IoServiceLoop>(thread_count);
 	}
-	ios_pool_ = config_.io_service_pool;
-	strand_ = std::make_unique<strand>(ios_pool_->PickIoService());
+	ios_loop_ = config_.io_service_loop;
+	strand_ = std::make_unique<strand>(ios_loop_->GetIoService());
 }
 
 TcpServer::~TcpServer()
@@ -81,7 +81,7 @@ void TcpServer::Listen(tcp::endpoint endpoint)
 inline void TcpServer::AcceptStart()
 {
 	// Create tcp socket
-	socket_ = std::make_unique<tcp::socket>(ios_pool_->PickIoService());
+	socket_ = std::make_unique<tcp::socket>(ios_loop_->GetIoService());
 	// Async accept
 	acceptor_->async_accept(*socket_, strand_->wrap([this, self = shared_from_this() ](error_code error) mutable
 	{

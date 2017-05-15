@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 #include <gisunnet/network/Client.h>
-#include <gisunnet/network/IoServicePool.h>
+#include <gisunnet/network/IoServiceLoop.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
 #include <boost/locale.hpp>

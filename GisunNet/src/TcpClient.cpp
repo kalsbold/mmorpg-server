@@ -7,14 +7,14 @@ TcpClient::TcpClient(const ClientConfiguration & config)
 	, config_(config)
 	, state_(State::Ready)
 {
-	// 설정된 io_service_pool 이 없으면 생성.
-	if (config_.io_service_pool.get() == nullptr)
+	// 설정된 io_service_loop 이 없으면 생성.
+	if (config_.io_service_loop.get() == nullptr)
 	{
 		size_t thread_count = 1;
-		config_.io_service_pool = std::make_shared<IoServicePool>(thread_count);
+		config_.io_service_loop = std::make_shared<IoServiceLoop>(thread_count);
 	}
-	ios_pool_ = config_.io_service_pool;
-	strand_ = std::make_unique<strand>(ios_pool_->PickIoService());
+	ios_loop_ = config_.io_service_loop;
+	strand_ = std::make_unique<strand>(ios_loop_->GetIoService());
 }
 
 TcpClient::~TcpClient()
@@ -32,7 +32,7 @@ void TcpClient::Connect(const std::string & host, const std::string & service)
 			return;
 		}
 
-		tcp::resolver resolver(ios_pool_->PickIoService());
+		tcp::resolver resolver(ios_loop_->GetIoService());
 		auto endpoint_iterator = resolver.resolve({ host, service });
 
 		BOOST_LOG_TRIVIAL(info) << "Connect to : " << host << ":" << service;
@@ -51,7 +51,7 @@ void TcpClient::Close()
 
 void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 {
-	socket_ = std::make_unique<tcp::socket>(ios_pool_->PickIoService());
+	socket_ = std::make_unique<tcp::socket>(ios_loop_->GetIoService());
 	tcp::resolver::iterator end;
 	boost::asio::async_connect(*socket_, endpoint_iterator, end, strand_->wrap(
 		[this](const error_code& error, tcp::resolver::iterator i)

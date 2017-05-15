@@ -22,12 +22,12 @@ namespace mmog {
 		SetName(server_config.name);
 		RegisterHandlers();
 
-		// Create io_service pool
+		// Create io_service loop
 		size_t thread_count = server_config.thread_count;
-		ios_pool_ = std::make_shared<IoServicePool>(thread_count);
+		ios_loop_ = std::make_shared<IoServiceLoop>(thread_count);
 		// NetServer Config
 		Configuration net_config;
-		net_config.io_service_pool = ios_pool_;
+		net_config.io_service_loop = ios_loop_;
 		net_config.max_session_count = server_config.max_session_count;
 		net_config.max_receive_buffer_size = server_config.max_receive_buffer_size;
 		net_config.min_receive_size = server_config.min_receive_size;
@@ -72,7 +72,7 @@ namespace mmog {
 		BOOST_LOG_TRIVIAL(info) << "Run Game Server : " << GetName();
 
 		// 종료될때 까지 대기
-		ios_pool_->Wait();
+		ios_loop_->Wait();
 	}
 
 	void GameServer::Stop()
@@ -82,7 +82,7 @@ namespace mmog {
 		// 종료 작업.
 
 
-		ios_pool_->Stop();
+		ios_loop_->Stop();
 
 		BOOST_LOG_TRIVIAL(info) << "Stop Game Server : " << GetName();
 	}
@@ -393,7 +393,7 @@ namespace mmog {
 		}
 
 		// 삭제
-		character->Delete(*db_conn_);
+		character->Delete();
 
 		BOOST_LOG_TRIVIAL(info) << "Delete Character success. Character : " << character->name;
 

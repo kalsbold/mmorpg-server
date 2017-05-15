@@ -4,7 +4,7 @@
 #include <set>
 #include "gisunnet/network/NetServer.h"
 #include "gisunnet/network/tcp/TcpSession.h"
-#include "gisunnet/network/IoServicePool.h"
+#include "gisunnet/network/IoServiceLoop.h"
 
 namespace gisunnet {
 
@@ -25,9 +25,9 @@ public:
 		return state_;
 	}
 
-	Ptr<IoServicePool> GetIoServicePool() override
+	Ptr<IoServiceLoop> GetIoServiceLoop() override
 	{
-		return ios_pool_;
+		return ios_loop_;
 	}
 
 	Ptr<Session> Find(const uuid& id) override
@@ -72,7 +72,7 @@ private:
 
 	Configuration			config_;
 	State					state_;
-	Ptr<IoServicePool>		ios_pool_;
+	Ptr<IoServiceLoop>		ios_loop_;
 	std::mutex				mutex_;
 	std::map<uuid, Ptr<Session>>	session_list_;
 
