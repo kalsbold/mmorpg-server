@@ -2,6 +2,7 @@
 #include "GameServer.h"
 #include "ServerConfig.h"
 #include "GamePlayer.h"
+#include "World.h"
 #include "DBEntity.h"
 #include "AccountManager.h"
 #include "StaticCachedData.h"
@@ -9,9 +10,6 @@
 
 namespace mmog {
 
-	using namespace std;
-	using namespace flatbuffers;
-	using namespace protocol;
 	using namespace helper;
 	namespace db = db_entity;
 
@@ -69,6 +67,10 @@ namespace mmog {
 		MapData::Load();
 		CharacterAttributeData::Load();
 
+		// Game World 생성및 시작.
+		world_ = make_shared<World>(ios_loop_);
+		world_->Start();
+
 		BOOST_LOG_TRIVIAL(info) << "Run Game Server : " << GetName();
 
 		// 종료될때 까지 대기
@@ -77,11 +79,11 @@ namespace mmog {
 
 	void GameServer::Stop()
 	{
-		net_server_->Stop();
-
 		// 종료 작업.
-
-
+		net_server_->Stop();
+		
+		world_->Stop();
+		
 		ios_loop_->Stop();
 
 		BOOST_LOG_TRIVIAL(info) << "Stop Game Server : " << GetName();
@@ -299,7 +301,7 @@ namespace mmog {
 		}
 
 		// 초기 능력치를 가져온다.
-		auto attribute = CharacterAttributeData::GetInstance().Get((db::ClassType)class_type, 1);
+		auto attribute = CharacterAttributeData::GetInstance().Get((ClassType)class_type, 1);
 		if (!attribute)
 		{
 			CreateCharacterFailedT response;
@@ -309,7 +311,7 @@ namespace mmog {
 		}
 
 		//생성
-		auto character = db::Character::Create(db_conn_, account_id, character_name, (db::ClassType)class_type);
+		auto character = db::Character::Create(db_conn_, account_id, character_name, (ClassType)class_type);
 		if (!character)
 		{
 			// 생성 된게 없다.
@@ -416,6 +418,10 @@ namespace mmog {
 			Send(session, response);
 			return;
 		}
+
+		// GamePlayer 생성
+		auto player = std::make_shared<GamePlayer>(this, world_.get(), session, account_id);
+		AddGamePlayer(session->GetID(), player);
 
 		/*
 		Account acc_info;

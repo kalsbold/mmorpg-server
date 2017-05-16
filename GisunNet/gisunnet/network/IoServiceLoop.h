@@ -16,7 +16,7 @@ public:
 	IoServiceLoop(const IoServiceLoop&) = delete;
 	IoServiceLoop& operator=(const IoServiceLoop&) = delete;
 
-	IoServiceLoop(size_t count = 1, bool ios_pool = false);
+	explicit IoServiceLoop(size_t count = 1, bool ios_pool = false);
 	~IoServiceLoop();
 
 	// Stop io_service.

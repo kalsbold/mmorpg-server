@@ -12,7 +12,7 @@ namespace mmog {
 	class MapData : public Singleton<MapData>
 	{
 	public:
-		const std::vector<Ptr<db::Map>>& Get()
+		const std::vector<Ptr<db::Map>>& GetAll()
 		{
 			return map_data_;
 		}
@@ -34,6 +34,8 @@ namespace mmog {
 
 			try
 			{
+				instance.map_data_.clear();
+
 				auto db = std::make_shared<MySQLPool>(
 					ServerConfig::GetInstance().db_host,
 					ServerConfig::GetInstance().db_user,
@@ -49,7 +51,7 @@ namespace mmog {
 					map->name = result_set->getString("name").c_str();
 					map->width = result_set->getInt("width");
 					map->height = result_set->getInt("height");
-					map->type = (db::MapType)result_set->getInt("type");
+					map->type = (MapType)result_set->getInt("type");
 
 					instance.map_data_.push_back(map);
 				}
@@ -71,12 +73,12 @@ namespace mmog {
 	class CharacterAttributeData : public Singleton<CharacterAttributeData>
 	{
 	public:
-		const std::vector<Ptr<db::CharacterAttribute>>& Get()
+		const std::vector<Ptr<db::CharacterAttribute>>& GetAll()
 		{
 			return data_;
 		}
 
-		const Ptr<db::CharacterAttribute> Get(db::ClassType type, int level)
+		const Ptr<db::CharacterAttribute> Get(ClassType type, int level)
 		{
 			auto iter = std::find_if(data_.begin(), data_.end(),
 				[&](const Ptr<db::CharacterAttribute>& value)
@@ -93,6 +95,8 @@ namespace mmog {
 
 			try
 			{
+				instance.data_.clear();
+
 				auto db = std::make_shared<MySQLPool>(
 					ServerConfig::GetInstance().db_host,
 					ServerConfig::GetInstance().db_user,
@@ -104,7 +108,7 @@ namespace mmog {
 				while (result_set->next())
 				{
 					auto attribute = std::make_shared<db::CharacterAttribute>();
-					attribute->class_type = (db::ClassType)result_set->getInt("class_type");
+					attribute->class_type = (ClassType)result_set->getInt("class_type");
 					attribute->level = result_set->getInt("level");
 					attribute->hp = result_set->getInt("hp");
 					attribute->mp = result_set->getInt("mp");

@@ -8,7 +8,12 @@
 #include "game_message_generated.h"
 
 namespace mmog {
+	
+	using namespace std;
+	namespace fb = flatbuffers;
+	namespace proto = protocol;
 
+	class World;
 	class GamePlayer;
 
 	// 게임 서버.
@@ -17,7 +22,7 @@ namespace mmog {
 	public:
 		using SessionOpenedHandler = std::function<void(const Ptr<Session>&)>;
 		using SessionClosedHandler = std::function<void(const Ptr<Session>&, CloseReason reason)>;
-		using MessageHandler = std::function<void(const Ptr<Session>&, const protocol::NetMessage* net_message)>;
+		using MessageHandler = std::function<void(const Ptr<Session>&, const proto::NetMessage* net_message)>;
 
 		GameServer(){}
 		~GameServer(){}
@@ -43,24 +48,25 @@ namespace mmog {
 		void HandleSessionOpened(const Ptr<Session>& session);
 		void HandleSessionClosed(const Ptr<Session>& session, CloseReason reason);
 
-		void OnLogin(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		void OnJoin(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		void OnCreateCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		void OnCharacterList(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		void OnDeleteCharacter(const Ptr<Session>& session, const protocol::NetMessage* net_message);
-		void OnEnterGame(const Ptr<Session>& session, const protocol::NetMessage* net_message);
+		void OnLogin(const Ptr<Session>& session, const proto::NetMessage* net_message);
+		void OnJoin(const Ptr<Session>& session, const proto::NetMessage* net_message);
+		void OnCreateCharacter(const Ptr<Session>& session, const proto::NetMessage* net_message);
+		void OnCharacterList(const Ptr<Session>& session, const proto::NetMessage* net_message);
+		void OnDeleteCharacter(const Ptr<Session>& session, const proto::NetMessage* net_message);
+		void OnEnterGame(const Ptr<Session>& session, const proto::NetMessage* net_message);
 
 		Ptr<IoServiceLoop> ios_loop_;
 		Ptr<NetServer> net_server_;
 		Ptr<MySQLPool> db_conn_;
 
-		std::mutex mutex_;
+		mutex mutex_;
 		SessionOpenedHandler session_opened_handler_;
 		SessionClosedHandler session_closed_handler_;
-		std::map<protocol::MessageT, MessageHandler> message_handlers_;
-
+		map<proto::MessageT, MessageHandler> message_handlers_;
 		// 유저 관리
-		std::map<SessionID, Ptr<GamePlayer>> players_;
+		map<SessionID, Ptr<GamePlayer>> players_;
+		// Game World
+		Ptr<World> world_;
 	};
 };
 

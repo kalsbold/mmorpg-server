@@ -3,10 +3,13 @@
 #include "GameServer.h"
 #include "Character.h"
 #include "DBEntity.h"
+#include "MessageHelper.h"
 
 namespace mmog {
 
-	using namespace gisunnet;
+	using namespace std;
+	namespace fb = flatbuffers;
+	namespace proto = protocol;
 	namespace db = db_entity;
 
 	class GamePlayer : public std::enable_shared_from_this<GamePlayer>
@@ -19,8 +22,9 @@ namespace mmog {
 			Disconnected,	// 접속 종료
 		};
 
-		GamePlayer(GameServer* server, const Ptr<Session>& net_session, int account_id)
+		GamePlayer(GameServer* server, World* world, const Ptr<Session>& net_session, int account_id)
 			: server_(server)
+			, world_(world)
 			, net_session_(net_session)
 			, account_id_(account_id)
 			, state_(State::Connected)
@@ -73,29 +77,32 @@ namespace mmog {
 		bool EnterGame(int character_id)
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
-
-			/*
+			
 			// 플레이어 상태 검사
 			if (state_ != State::Connected)
 			{
-				protocol::EnterGameFailedT response;
-				response.error_code = ErrorCode_ENTER_GAME_INVALID_STATE;
+				proto::EnterGameFailedT response;
+				response.error_code = proto::ErrorCode_ENTER_GAME_INVALID_STATE;
 				helper::Send(net_session_, response);
 				return false;
 			}
 
-			auto db_character = db::Character::Fetch(*server_->GetDB(), character_id, GetAccountID());
+			// 캐릭터 로드
+			auto db_character = db::Character::Fetch(server_->GetDB(), character_id, GetAccountID());
 			if (!db_character)
 			{
-				// 케릭터가 존재하지 않는다. 실패
-				protocol::EnterGameFailedT response;
-				response.error_code = ErrorCode_ENTER_GAME_INVALID_CHARACTER;
-				Send(net_session_, response);
+				// 캐릭터가 존재하지 않는다. 실패
+				proto::EnterGameFailedT response;
+				response.error_code = proto::ErrorCode_ENTER_GAME_INVALID_CHARACTER;
+				helper::Send(net_session_, response);
 				return false;
 			}
 
+
+
 			// 필요한 데이터 로딩
-			*/
+			
+
 		}
 
 	private:
@@ -140,6 +147,7 @@ namespace mmog {
 		}
 
 		GameServer* server_;
+		World* world_;
 		Ptr<Session> net_session_;
 
 		std::mutex mutex_;
@@ -147,6 +155,6 @@ namespace mmog {
 		State state_;
 
 		Ptr<db::Character> db_character_;
-		Ptr<Character> go_character_;
+		mmog::Character* go_character_;
 	};
 }

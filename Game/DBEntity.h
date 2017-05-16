@@ -11,10 +11,10 @@ public:
 	EntityBase()
 		: db_(nullptr)
 	{}
-	EntityBase(Ptr<MySQLPool> db)
+	explicit EntityBase(Ptr<MySQLPool> db)
 		: db_(db)
 	{}
-	virtual ~EntityBase() = 0;
+	virtual ~EntityBase() {};
 
 	void SetDB(Ptr<MySQLPool> db)
 	{
@@ -25,8 +25,8 @@ public:
 		return db_;
 	}
 
-	virtual bool Update() {}
-	virtual bool Delete() {}
+	virtual bool Update() { return true; }
+	virtual bool Delete() { return true; }
 
 private:
 	Ptr<MySQLPool> db_;
@@ -35,6 +35,8 @@ private:
 class Account : public EntityBase
 {
 public:
+	using EntityBase::EntityBase;
+
 	int    id;
 	string acc_name;
 	string password;
@@ -71,13 +73,6 @@ public:
 	}
 };
 
-enum MapType : int
-{
-	NONE = 0,
-	FIELD = 1,
-	DUNGEON = 2,
-};
-
 class Map
 {
 public:
@@ -85,15 +80,7 @@ public:
 	string  name;
 	int     width;
 	int     height;
-	MapType type;
-};
-
-enum class ClassType : int
-{
-	NONE = 0,
-	Knight = 1,
-	Archer = 2,
-	Mage = 3,
+	MapType	type;
 };
 
 class CharacterAttribute
@@ -110,6 +97,8 @@ public:
 class Character : public EntityBase
 {
 public:
+	using EntityBase::EntityBase;
+
 	int       id;
 	int       acc_id;
 	string    name;
@@ -211,7 +200,7 @@ public:
 		return c;
 	}
 
-	bool Update()
+	bool Update() override
 	{
 		auto db = GetDB();
 		if (!db) return false;
@@ -240,7 +229,7 @@ public:
 		return stmt->execute(ss.str().c_str());
 	}
 
-	bool Delete()
+	bool Delete() override
 	{
 		auto db = GetDB();
 		if (!db) return false;

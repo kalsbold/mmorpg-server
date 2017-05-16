@@ -9,36 +9,26 @@ namespace mmog
 	class Character : public GameObject
 	{
 	public:
+		friend class Player;
+		friend class World;
+		friend class Zone;
+
 		using GameObject::GameObject;
 
-		static Character* Create()
+		static Ptr<Character> Create()
 		{
-			return new Character(boost::uuids::random_generator()());
+			return make_shared<Character>(boost::uuids::random_generator()());
 		}
 
-		void SetCharacteristic(db::Character* data)
-		{
-			db_data_ = data;
-		}
-
-		const string& GetName() const
-		{
-			return db_data_->name;
-		}
-
-		void SetOwner(GamePlayer* owner)
-		{
-			owner_ = owner;
-		}
-
-		virtual void Update(float delta_time) override
+		virtual void Update(double delta_time) override
 		{
 
 		}
 
 	private:
-		GamePlayer* owner_;
+		GamePlayer* player_;
 		db::Character* db_data_;
+		Zone* zone_;
 	};
 
 }

@@ -2,15 +2,15 @@
 
 namespace gisunnet {
 
-IoServiceLoop::IoServiceLoop(size_t thread_count, bool ios_pool)
+IoServiceLoop::IoServiceLoop(size_t count, bool ios_pool)
 	: idx_(0)
 {
-	if (thread_count == 0)
-		throw std::invalid_argument("thread_count 0");
+	if (count == 0)
+		throw std::invalid_argument("count 0");
 
 	if (ios_pool)
 	{
-		for (int i = 0; i < thread_count; i++)
+		for (int i = 0; i < count; i++)
 		{
 			io_services_.emplace_back(std::make_unique<boost::asio::io_service>());
 			works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*io_services_[i]));
@@ -33,7 +33,7 @@ IoServiceLoop::IoServiceLoop(size_t thread_count, bool ios_pool)
 		io_services_.emplace_back(std::make_unique<boost::asio::io_service>());
 		works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*io_services_[0]));
 
-		for (int i = 0; i < thread_count; i++)
+		for (int i = 0; i < count; i++)
 		{
 			threads_.emplace_back(std::thread([this]()
 			{
@@ -50,7 +50,7 @@ IoServiceLoop::IoServiceLoop(size_t thread_count, bool ios_pool)
 		}
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "Run IoServiceLoop. thread_count:" << thread_count;
+	BOOST_LOG_TRIVIAL(info) << "Run IoServiceLoop. count:" << count;
 }
 
 IoServiceLoop::~IoServiceLoop()

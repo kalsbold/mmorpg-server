@@ -9,7 +9,7 @@ namespace mmog {
 		GameObject(uuid uuid);
 		virtual ~GameObject();
 
-		virtual void Update(float delta_time) = 0;
+		virtual void Update(double delta_time) = 0;
 
 		uuid GetUUID() const;
 		void SetPosition(const Vector3& position);

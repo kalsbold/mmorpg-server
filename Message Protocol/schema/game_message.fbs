@@ -27,9 +27,9 @@ table CharacterSimple{
     level:int;
 }
 
-// 로컬 플레이어 캐릭터 정보
-table LocalCharacter{
-    uid:int;
+// 캐릭터 정보
+table Character{
+    uuid:int;
     name:string;
     class_type:int;
     exp:int;
@@ -39,20 +39,6 @@ table LocalCharacter{
     att:int;
     def:int;
     zone_id:int;
-    pos:Vec3;
-    rotation_y:float;
-    direction:Vec3;
-    speed:float;
-}
-
-// 리모트 플레이어 캐릭터 정보
-table RemoteCharacter{
-    uid:int;
-    name:string;
-    class_type:int;
-    level:int;
-    hp:int;
-    mp:int;
     pos:Vec3;
     rotation_y:float;
     direction:Vec3;
@@ -168,9 +154,13 @@ table EnterGameFailed{
 table EnterGameSuccess{
     character:PlayerCharacter;
 }
-// 리모트 케릭터 스폰
-table SpawnRemoteCharacter{
-    character:RemoteCharacter;
+// 케릭터 스폰
+table SpawnCharacter{
+    character:Character;
+}
+// 케릭터 삭제
+table DeleteCharacter{
+    uuid:int;
 }
 // 케릭터 이동
 table MoveCharacter{
