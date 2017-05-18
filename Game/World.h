@@ -14,10 +14,10 @@ namespace mmog {
 	namespace db = db_entity;
 
 	// 50fps
-	constexpr std::chrono::nanoseconds timestep(50ms);
+	constexpr chrono::nanoseconds timestep(50ms);
 	using double_seconds = chrono::duration<double>;
 
-	class Zone
+	class Zone : enable_shared_from_this<Zone>
 	{
 	public:
 		// The clock type.
