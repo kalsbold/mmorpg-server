@@ -1,9 +1,10 @@
-#include "gisunnet/network/tcp/TcpClient.h"
+#include "include/network/tcp/TcpClient.h"
 
-namespace gisunnet {
+namespace gisun {
+namespace net {
 
-TcpClient::TcpClient(const ClientConfiguration & config)
-	: Client()
+TcpClient::TcpClient(const ClientConfig & config)
+	: NetClient()
 	, config_(config)
 	, state_(State::Ready)
 {
@@ -81,14 +82,14 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 			BOOST_LOG_TRIVIAL(info) << "Client Connected";
 			// Read
 			Read(config_.min_receive_size);
-			if(net_event_handler_) net_event_handler_(NetEventType::Opened);
+			if (net_event_handler_) net_event_handler_(NetEventType::Opened);
 		}
 		else
 		{
 			HandleError(error);
 			_Close();
 			BOOST_LOG_TRIVIAL(info) << "Client Connect failed";
-			if(net_event_handler_) net_event_handler_(NetEventType::ConnectFailed);
+			if (net_event_handler_) net_event_handler_(NetEventType::ConnectFailed);
 		}
 	}));
 }
@@ -101,7 +102,7 @@ inline void TcpClient::Read(size_t min_read_bytes)
 	if (!PrepareRead(min_read_bytes))
 	{
 		_Close();
-		if(net_event_handler_) net_event_handler_(NetEventType::Closed);
+		if (net_event_handler_) net_event_handler_(NetEventType::Closed);
 		return;
 	}
 
@@ -122,7 +123,7 @@ inline void TcpClient::HandleRead(const error_code & error, std::size_t bytes_tr
 	{
 		HandleError(error);
 		_Close();
-		if(net_event_handler_) net_event_handler_(NetEventType::Closed);
+		if (net_event_handler_) net_event_handler_(NetEventType::Closed);
 		return;
 	}
 
@@ -215,7 +216,7 @@ inline void TcpClient::HandleWrite(const error_code & error)
 	{
 		HandleError(error);
 		_Close();
-		if(net_event_handler_) net_event_handler_(NetEventType::Closed);
+		if (net_event_handler_) net_event_handler_(NetEventType::Closed);
 		return;
 	}
 
@@ -250,4 +251,5 @@ void TcpClient::_Close()
 	BOOST_LOG_TRIVIAL(info) << "Client close";
 }
 
-} // namespace gisunnet
+} // namespace net
+} // namespace gisun

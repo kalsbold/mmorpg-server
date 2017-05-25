@@ -4,19 +4,18 @@
 #include "stdafx.h"
 #include <string>
 #include <iostream>
-#include <gisunnet/network/Client.h>
-#include <gisunnet/network/IoServiceLoop.h>
+#include <include/GisunNet.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
 #include <boost/locale.hpp>
 
-using namespace gisunnet;
+using namespace gisun::net;
 using namespace MyGame::Sample;
 
 int main()
 {
-	ClientConfiguration clientConfig;
-	auto client = Client::Create(clientConfig);
+	ClientConfig clientConfig;
+	auto client = NetClient::Create(clientConfig);
 	client->RegisterNetEventHandler([](const NetEventType& net_event)
 	{
 		if (net_event == NetEventType::Opened)

@@ -1,6 +1,7 @@
-#include "gisunnet/network/IoServiceLoop.h"
+#include "include/network/IoServiceLoop.h"
 
-namespace gisunnet {
+namespace gisun {
+namespace net {
 
 IoServiceLoop::IoServiceLoop(size_t count, bool ios_pool)
 	: idx_(0)
@@ -61,9 +62,11 @@ IoServiceLoop::~IoServiceLoop()
 
 void IoServiceLoop::Stop()
 {
-	for (auto& ios : io_services_)
+	for (auto& work : works_)
 	{
-		ios->stop();
+		auto& ios = work->get_io_service();
+		work.reset();
+		ios.stop();
 	}
 	BOOST_LOG_TRIVIAL(info) << "Stop IoServiceLoop";
 }
@@ -72,9 +75,10 @@ void IoServiceLoop::Wait()
 {
 	for (auto& thread : threads_)
 	{
-		if(thread.joinable())
+		if (thread.joinable())
 			thread.join();
 	}
 }
 
-} // namespace gisunnet
+} // namespace net
+} // namespace gisun

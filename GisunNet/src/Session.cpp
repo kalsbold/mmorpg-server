@@ -1,7 +1,9 @@
-#include "gisunnet/network/Session.h"
+#include "include/network/Session.h"
 
-namespace gisunnet {
+namespace gisun {
+namespace net {
 
-	DEFINE_CLASS_PTR(Session);
+DEFINE_CLASS_PTR(Session);
 
-} // namespace gisunnet
+} // namespace net
+} // namespace gisun

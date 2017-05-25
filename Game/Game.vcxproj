@@ -169,7 +169,7 @@
     <ClInclude Include="game_message_generated.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="MySQL.h" />
-    <ClInclude Include="ServerConfig.h" />
+    <ClInclude Include="ServerSettings.h" />
     <ClInclude Include="TestMySQL.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="stdafx.h" />

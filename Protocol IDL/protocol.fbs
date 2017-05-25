@@ -1,0 +1,40 @@
+include "common.fbs";
+include "login.fbs";
+include "game.fbs";
+include "manager.fbs";
+
+namespace protocol;
+
+// 메시지 타입을 정의 한다 ================================================
+union MessageT {
+    common.UnauthedAccess = 1000,
+    login.RequestLogin = 2000,
+    login.ResponseLoginFailed,
+    login.ResponseLoginSuccess,
+    login.RequestJoin,
+    login.ResponseJoinFailed,
+    login.ResponseJoinSuccess,
+    login.RequestCharacterList,
+    login.ResponseCharacterList,
+    login.RequestCreateCharacter,
+    login.ResponseCreateCharacterFailed,
+    login.ResponseCreateCharacterSuccess,
+    login.RequestDeleteCharacter,
+    login.ResponseDeleteCharacterFailed,
+    login.ResponseDeleteCharacterSuccess,
+    game.RequestEnterGame = 3000,
+    game.ResponseEnterGameFailed,
+    game.ResponseEnterGameSuccess,
+    game.SpawnCharacter,
+    game.MoveCharacter,
+    manager.RequestLogin = 4000,
+    manager.ResponseLoginFailed,
+    manager.ResponseLoginSuccess,
+}
+
+// 기본 네트워크 메시지 =================================================================
+table NetMessage {
+    message:MessageT; // Union
+}
+
+root_type NetMessage;

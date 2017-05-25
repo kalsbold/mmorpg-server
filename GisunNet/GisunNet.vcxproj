@@ -19,23 +19,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gisunnet\gisunnet.h" />
-    <ClInclude Include="gisunnet\network\Client.h" />
-    <ClInclude Include="gisunnet\network\Configuration.h" />
-    <ClInclude Include="gisunnet\network\tcp\TcpClient.h" />
-    <ClInclude Include="gisunnet\types.h" />
-    <ClInclude Include="gisunnet\utility\AsioHelper.h" />
-    <ClInclude Include="gisunnet\network\ByteBuffer.h" />
-    <ClInclude Include="gisunnet\network\IoServiceLoop.h" />
-    <ClInclude Include="gisunnet\network\NetServer.h" />
-    <ClInclude Include="gisunnet\network\Session.h" />
-    <ClInclude Include="gisunnet\network\tcp\TcpSession.h" />
-    <ClInclude Include="gisunnet\network\tcp\TcpServer.h" />
+    <ClInclude Include="include\GisunNet.h" />
+    <ClInclude Include="include\network\NetClient.h" />
+    <ClInclude Include="include\network\NetConfig.h" />
+    <ClInclude Include="include\network\tcp\TcpClient.h" />
+    <ClInclude Include="include\Types.h" />
+    <ClInclude Include="include\utility\AsioHelper.h" />
+    <ClInclude Include="include\network\ByteBuffer.h" />
+    <ClInclude Include="include\network\IoServiceLoop.h" />
+    <ClInclude Include="include\network\NetServer.h" />
+    <ClInclude Include="include\network\Session.h" />
+    <ClInclude Include="include\network\tcp\TcpSession.h" />
+    <ClInclude Include="include\network\tcp\TcpServer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Client.cpp" />
+    <ClCompile Include="src\NetClient.cpp" />
     <ClCompile Include="src\IoServiceLoop.cpp" />
-    <ClCompile Include="src\Server.cpp" />
+    <ClCompile Include="src\NetServer.cpp" />
     <ClCompile Include="src\Session.cpp" />
     <ClCompile Include="src\TcpClient.cpp" />
     <ClCompile Include="src\TcpSession.cpp" />

@@ -15,40 +15,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gisunnet\utility\AsioHelper.h">
+    <ClInclude Include="include\network\tcp\TcpClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\types.h">
+    <ClInclude Include="include\network\tcp\TcpServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\ByteBuffer.h">
+    <ClInclude Include="include\network\tcp\TcpSession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\Session.h">
+    <ClInclude Include="include\network\ByteBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\tcp\TcpSession.h">
+    <ClInclude Include="include\network\IoServiceLoop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\tcp\TcpServer.h">
+    <ClInclude Include="include\network\NetClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\Configuration.h">
+    <ClInclude Include="include\network\NetServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\tcp\TcpClient.h">
+    <ClInclude Include="include\network\Session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\Client.h">
+    <ClInclude Include="include\utility\AsioHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\NetServer.h">
+    <ClInclude Include="include\Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\gisunnet.h">
+    <ClInclude Include="include\network\NetConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gisunnet\network\IoServiceLoop.h">
+    <ClInclude Include="include\GisunNet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,16 +62,16 @@
     <ClCompile Include="src\TcpSession.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Client.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Server.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\Session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\IoServiceLoop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NetClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NetServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

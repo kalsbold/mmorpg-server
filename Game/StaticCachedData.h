@@ -37,11 +37,11 @@ namespace mmog {
 				instance.map_data_.clear();
 
 				auto db = std::make_shared<MySQLPool>(
-					ServerConfig::GetInstance().db_host,
-					ServerConfig::GetInstance().db_user,
-					ServerConfig::GetInstance().db_password,
-					ServerConfig::GetInstance().db_schema,
-					ServerConfig::GetInstance().db_connection_pool);
+					ServerSettings::GetInstance().db_host,
+					ServerSettings::GetInstance().db_user,
+					ServerSettings::GetInstance().db_password,
+					ServerSettings::GetInstance().db_schema,
+					ServerSettings::GetInstance().db_connection_pool);
 
 				auto result_set = db->Excute("SELECT * FROM map_tb");
 				while (result_set->next())
@@ -98,10 +98,10 @@ namespace mmog {
 				instance.data_.clear();
 
 				auto db = std::make_shared<MySQLPool>(
-					ServerConfig::GetInstance().db_host,
-					ServerConfig::GetInstance().db_user,
-					ServerConfig::GetInstance().db_password,
-					ServerConfig::GetInstance().db_schema,
+					ServerSettings::GetInstance().db_host,
+					ServerSettings::GetInstance().db_user,
+					ServerSettings::GetInstance().db_password,
+					ServerSettings::GetInstance().db_schema,
 					1);
 
 				auto result_set = db->Excute("SELECT * FROM character_attribute_tb");

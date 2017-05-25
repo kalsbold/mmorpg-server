@@ -1,0 +1,24 @@
+namespace protocol;
+
+// 에러 코드
+enum ErrorCode : int {
+    OK = 0,
+    UNEXPECTED = 1, // 예외 상황 발생
+    DATABASE_FAILED = 2, // DB 쿼리 실패
+    INVALID_SESSION = 10,   // 잘못된 세션
+    INVALID_STRING = 20,    // 잘못된 문자
+    LOGIN_INCORRECT_ACC_NAME = 100, // 계정명이 잘못됨
+    LOGIN_INCORRECT_ACC_PASSWORD = 101, // 패스워드가 잘못됨
+    LOGIN_ALREADY = 102,    // 이미 로그인됨
+    JOIN_ACC_NAME_ALREADY = 200,    // 계정명 중복
+    JOIN_CANNOT_ACC_CREATE = 201,   // 계정 생성 실패
+    CREATE_CHARACTER_NAME_ALREADY = 301,
+    CREATE_CHARACTER_CANNOT_CREATE = 302,
+    CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST = 303, // 능력치 설정 에러
+    // Delete Character
+    DELETE_CHARACTER_NOT_EXIST = 401,
+    DELETE_CHARACTER_CANNOT_DELETE = 402,
+    // Enter Game
+    ENTER_GAME_INVALID_CHARACTER = 501, // 캐릭터가 존재하지 않음
+    ENTER_GAME_INVALID_STATE = 502, // 잘못된 상태
+}

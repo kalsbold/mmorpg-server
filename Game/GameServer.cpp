@@ -15,7 +15,7 @@ namespace mmog {
 
 	void GameServer::Run()
 	{
-		ServerConfig& server_config = ServerConfig::GetInstance();
+		ServerSettings& server_config = ServerSettings::GetInstance();
 		
 		SetName(server_config.name);
 		RegisterHandlers();

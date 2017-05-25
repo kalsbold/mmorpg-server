@@ -1,0 +1,18 @@
+include "error_code.fbs";
+
+namespace protocol.manager;
+
+// Login ===================================
+// 로그인 요청
+table RequestLogin {
+    acc_name:string;
+    password:string;
+}
+// 로그인 실패
+table ResponseLoginFailed {
+    error_code:ErrorCode;
+}
+// 로그인 성공
+table ResponseLoginSuccess {
+    session_id:string;
+}

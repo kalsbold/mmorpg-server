@@ -38,9 +38,6 @@
     <ClInclude Include="TestMySQL.h">
       <Filter>test</Filter>
     </ClInclude>
-    <ClInclude Include="ServerConfig.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="game_message_generated.h">
       <Filter>Protocol</Filter>
     </ClInclude>
@@ -80,6 +77,9 @@
     </ClInclude>
     <ClInclude Include="Zone.h">
       <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerSettings.h">
+      <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -4,33 +4,34 @@
 #include "stdafx.h"
 #include <string>
 #include <iostream>
-#include <gisunnet/network/NetServer.h>
-#include <gisunnet/network/IoServiceLoop.h>
+#include <include/GisunNet.h>
 #include <flatbuffers/flatbuffers.h>
 #include "monster_generated.h"
 #include <boost/locale.hpp>
 
-using namespace gisunnet;
+using namespace gisun::net;
 using namespace MyGame::Sample;
 
 int main()
 {
-	Configuration config;
+	ServerConfig config;
 	config.max_session_count = 5;
 	auto server = NetServer::Create(config);
 
 	server->RegisterSessionOpenedHandler([](auto& session)
 	{
-		std::cout << "Connect session id :" << session->ID() << "\n";
 		string ip;
 		uint16_t port;
 		session->GetRemoteEndpoint(ip, port);
-		std::cout << "Connect from :" << ip << ":" << port << "\n";
+		std::cout << "Connect from " << ip << ":" << port << "\n";
 	});
 
 	server->RegisterSessionClosedHandler([](auto& session, auto& reason)
 	{
-		std::cout << "Close session id :" << session->ID() << "\n";
+		string ip;
+		uint16_t port;
+		session->GetRemoteEndpoint(ip, port);
+		std::cout << "Close " << ip << ":" << port << "\n";
 	});
 
 	server->RegisterMessageHandler([](auto& session, const uint8_t* data, size_t bytes)

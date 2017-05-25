@@ -1,10 +1,10 @@
-#include "gisunnet/network/tcp/TcpSession.h"
+#include "include/network/tcp/TcpSession.h"
 
-namespace gisunnet {
+namespace gisun {
+namespace net {
 
-TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id, const Configuration & config)
+TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const ServerConfig & config)
 	: socket_(std::move(socket))
-	, id_(id)
 	, state_(State::Ready)
 {
 	assert(socket_.get() != nullptr);
@@ -17,19 +17,13 @@ TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const SessionID& id,
 	no_delay_ = config.no_delay;
 	min_receive_size_ = config.min_receive_size;
 	max_receive_buffer_size_ = config.max_receive_buffer_size;
-	max_transfer_size_ = config.max_transfer_size;
 }
 
 TcpSession::~TcpSession()
 {
 }
 
-const uuid& TcpSession::GetID() const
-{
-	return id_;
-}
-
-bool TcpSession::GetRemoteEndpoint(string& ip, uint16_t& port) const
+bool TcpSession::GetRemoteEndpoint(std::string& ip, uint16_t& port) const
 {
 	if (state_ == State::Closed)
 		return false;
@@ -41,7 +35,7 @@ bool TcpSession::GetRemoteEndpoint(string& ip, uint16_t& port) const
 
 void TcpSession::Close()
 {
-	strand_->dispatch([this , self = shared_from_this()]
+	strand_->dispatch([this, self = shared_from_this()]
 	{
 		_Close(CloseReason::ActiveClose);
 	});
@@ -79,7 +73,7 @@ void TcpSession::Start()
 		Read(min_receive_size_);
 		BOOST_LOG_TRIVIAL(info) << "TcpSession start";
 
-		openHandler();
+		open_handler(shared_from_this());
 	});
 }
 
@@ -241,8 +235,9 @@ void TcpSession::_Close(CloseReason reason)
 
 	BOOST_LOG_TRIVIAL(info) << "TcpSession Close";
 
-	if (closeHandler)
-		closeHandler(reason);
+	if (close_handler)
+		close_handler(shared_from_this(), reason);
 }
 
-} // namespace gisunnet
+} // namespace net
+} // namespace gisun

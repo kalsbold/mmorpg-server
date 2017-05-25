@@ -11,7 +11,7 @@ namespace mmog {
 	using namespace std;
 	namespace po = boost::program_options;
 
-	class ServerConfig : public Singleton<ServerConfig>
+	class ServerSettings : public Singleton<ServerSettings>
 	{
 	public:
 		string   name;
@@ -31,7 +31,7 @@ namespace mmog {
 		template <typename CharT>
 		static bool Load(CharT* filepath)
 		{
-			ServerConfig& config = ServerConfig::GetInstance();
+			ServerSettings& config = ServerSettings::GetInstance();
 
 			// step 1 : 옵션 설명 정의
 			po::options_description desc("Allowed options");

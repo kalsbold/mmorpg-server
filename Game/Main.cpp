@@ -19,7 +19,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			return 1;
 		}
 
-		if (!ServerConfig::GetInstance().Load(argv[1]))
+		if (!ServerSettings::GetInstance().Load(argv[1]))
 			return 0;
 
 		auto server = std::make_shared<GameServer>();

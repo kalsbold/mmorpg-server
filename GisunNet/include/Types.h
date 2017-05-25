@@ -1,19 +1,20 @@
 #pragma once
 
 #include <cstdint>
+#include <cassert>
 #include <memory>
-#include <functional>
 #include <string>
-#include <vector>
+#include <functional>
+#include <exception>
+#include <atomic>
+#include <thread>
 #include <boost/log/trivial.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/asio.hpp>
-#include <boost/asio/basic_waitable_timer.hpp>
-#include "gisunnet/network/ByteBuffer.h"
 
-namespace gisunnet {
+namespace gisun {
 
 	template<typename T>
 	using Ptr = std::shared_ptr<T>;
@@ -21,25 +22,18 @@ namespace gisunnet {
 	template<typename T>
 	using WeakPtr = std::weak_ptr<T>;
 
-	using std::function;
-
 	using boost::uuids::uuid;
-
-	using std::string;
 
 	using boost::system::error_code;
 
-	// 기본 버퍼 타입.
-	using Buffer = ByteBuffer<>;
-
 	namespace asio = boost::asio;
 
-} // namespace gisunnet
+} // namespace gisun
 
 #define DECLARE_CLASS_PTR(CLS) \
-  static const gisunnet::Ptr<CLS> NullPtr; \
-  static const gisunnet::WeakPtr<CLS> NullWeakPtr;
+  static const gisun::Ptr<CLS> NullPtr; \
+  static const gisun::WeakPtr<CLS> NullWeakPtr;
 
 #define DEFINE_CLASS_PTR(CLS) \
-  const gisunnet::Ptr<CLS> CLS::NullPtr; \
-  const gisunnet::WeakPtr<CLS> CLS::NullWeakPtr;
+  const gisun::Ptr<CLS> CLS::NullPtr; \
+  const gisun::WeakPtr<CLS> CLS::NullWeakPtr;
