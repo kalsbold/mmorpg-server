@@ -1,8 +1,8 @@
 #pragma once
 
-#include "include/network/Session.h"
-#include "include/network/NetConfig.h"
-#include "include/utility/AsioHelper.h"
+#include "network/Session.h"
+#include "network/NetConfig.h"
+#include "utility/AsioHelper.h"
 
 namespace gisun {
 namespace net {
@@ -15,9 +15,11 @@ namespace net {
 		TcpSession(const TcpSession&) = delete;
 		TcpSession& operator=(const TcpSession&) = delete;
 
-		TcpSession(std::unique_ptr<tcp::socket> socket, const ServerConfig& config);
+		TcpSession(std::unique_ptr<tcp::socket> socket, int id, const ServerConfig& config);
 
 		virtual ~TcpSession();
+
+		virtual int GetID() const override;
 
 		virtual bool GetRemoteEndpoint(std::string& ip, uint16_t& port) const override;
 
@@ -131,7 +133,7 @@ namespace net {
 		std::unique_ptr<tcp::socket> socket_;
 		std::unique_ptr<asio::strand> strand_;
 		tcp::endpoint remote_endpoint_;
-
+		int  id_;
 		State state_;
 
 		Ptr<Buffer> read_buf_;

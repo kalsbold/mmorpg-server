@@ -106,7 +106,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet;..\3rd Party\flatbuffers\include;..\3rd Party\MySQL Connector C++ 1.1.8\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet\include;..\3rd Party\flatbuffers\include;..\3rd Party\MySQL Connector C++ 1.1.8\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -159,14 +159,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountManager.h" />
+    <ClInclude Include="Common.h" />
     <ClInclude Include="DBEntity.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="MessageHelper.h" />
     <ClInclude Include="GameServer.h" />
+    <ClInclude Include="protocol_generated.h" />
     <ClInclude Include="ServerBase.h" />
     <ClInclude Include="StaticCachedData.h" />
     <ClInclude Include="TypeDef.h" />
-    <ClInclude Include="game_message_generated.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="MySQL.h" />
     <ClInclude Include="ServerSettings.h" />
@@ -174,7 +175,7 @@
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="GamePlayer.h" />
+    <ClInclude Include="RemoteClient.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="World.h" />
     <ClInclude Include="Zone.h" />
@@ -190,6 +191,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Vector3.cpp" />
+    <ClCompile Include="World.cpp" />
     <ClCompile Include="Zone.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

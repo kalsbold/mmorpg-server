@@ -1,90 +1,95 @@
 #pragma once
-#include "Singleton.h"
-#include "TypeDef.h"
+#include <functional>
+#include "Common.h"
 
-namespace mmog {
+// 인증 관리
+class AccountManager
+{
+public:
+	using AccountID = int;
+	using UUID = uuid;
+	using LogoutCallback = std::function<void(AccountID, UUID)>;
 
-	// 로그인 유저 관리
-	class AccountManager : public Singleton<AccountManager>
+	AccountManager() {};
+	~AccountManager() {};
+
+	bool CheckAndSetLogin(AccountID account_id, UUID uuid)
 	{
-	public:
-		using AccountID = int;
-		using LogoutCallback = function<void(int, const Ptr<Session>&)>;
+		std::lock_guard<std::mutex> lock_guard(mutex_);
 
-		AccountManager() {};
-		~AccountManager() {};
-
-		bool CheckAndSetLogin(AccountID account_id, const Ptr<Session>& session)
+		auto result = acc_id_to_uuid_.insert(std::make_pair(account_id, uuid));
+		if (result.second)
 		{
-			std::lock_guard<std::mutex> lock_guard(mutex_);
-			bool result = id_to_session_.insert(std::make_pair(account_id, session)).second;
-			if (result)
-			{
-				session_to_id_.insert(std::make_pair(session, account_id));
-			}
-
-			return result;
+			uuid_to_acc_id_.insert(std::make_pair(uuid, account_id));
 		}
 
-		bool SetLogout(AccountID account_id)
-		{
-			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = id_to_session_.find(account_id);
-			if (iter == id_to_session_.end())
-				return false;
+		return result.second;
+	}
+
+	bool SetLogout(AccountID account_id)
+	{
+		std::lock_guard<std::mutex> lock_guard(mutex_);
+
+		auto iter = acc_id_to_uuid_.find(account_id);
+		if (iter == acc_id_to_uuid_.end())
+			return false;
 			
-			logout_callback_(iter->first, iter->second);
+		logout_callback_(iter->first, iter->second);
 			
-			session_to_id_.erase(iter->second);
-			id_to_session_.erase(iter);
-			return true;
-		}
+		uuid_to_acc_id_.erase(iter->second);
+		acc_id_to_uuid_.erase(iter);
+		return true;
+	}
 
-		bool SetLogout(const Ptr<Session>& session)
+	bool SetLogout(UUID uuid)
+	{
+		std::lock_guard<std::mutex> lock_guard(mutex_);
+
+		auto iter = uuid_to_acc_id_.find(uuid);
+		if (iter == uuid_to_acc_id_.end())
+			return false;
+
+		logout_callback_(iter->second, iter->first);
+
+		acc_id_to_uuid_.erase(iter->second);
+		uuid_to_acc_id_.erase(iter);
+		return true;
+	}
+
+	std::pair<bool, UUID> CheckLogin(AccountID account_id)
+	{
+		std::lock_guard<std::mutex> lock_guard(mutex_);
+		auto iter = acc_id_to_uuid_.find(account_id);
+		if (iter == acc_id_to_uuid_.end())
 		{
-			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = session_to_id_.find(session);
-			if (iter == session_to_id_.end())
-				return false;
-
-			logout_callback_(iter->second, iter->first);
-
-			id_to_session_.erase(iter->second);
-			session_to_id_.erase(iter);
-			return true;
+			return std::make_pair(false, UUID());
 		}
 
-		AccountID FindAccount(const Ptr<Session>& session)
+		return std::make_pair(true, iter->second);
+	}
+
+	std::pair<bool, AccountID> CheckLogin(UUID uuid)
+	{
+		std::lock_guard<std::mutex> lock_guard(mutex_);
+		auto iter = uuid_to_acc_id_.find(uuid);
+		if (iter == uuid_to_acc_id_.end())
 		{
-			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = session_to_id_.find(session);
-			if (iter == session_to_id_.end())
-				return 0;
-
-			return iter->second;
+			return std::make_pair(false, 0);
 		}
 
-		const Ptr<Session> FindSession(int account_id)
-		{
-			std::lock_guard<std::mutex> lock_guard(mutex_);
-			auto iter = id_to_session_.find(account_id);
-			if (iter == id_to_session_.end())
-				return nullptr;
+		return std::make_pair(true, iter->second);
+	}
 
-			return iter->second;
-		}
+	void RegisterLogoutHandler(const LogoutCallback& handler)
+	{
+		std::lock_guard<std::mutex> lock_guard(mutex_);
+		logout_callback_ = handler;
+	}
 
-		void RegisterLogoutHandler(const LogoutCallback& handler)
-		{
-			std::lock_guard<std::mutex> lock_guard(mutex_);
-			logout_callback_ = handler;
-		}
-
-	private:
-		std::mutex mutex_;
-		std::map<AccountID, Ptr<Session>> id_to_session_;
-		std::map<Ptr<Session>, AccountID> session_to_id_;
-		LogoutCallback logout_callback_;
-	};
-}
+private:
+	std::mutex mutex_;
+	std::map<AccountID, UUID> acc_id_to_uuid_;
+	std::map<UUID, AccountID> uuid_to_acc_id_;
+	LogoutCallback logout_callback_;
+};
 

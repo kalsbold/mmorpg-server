@@ -1,10 +1,11 @@
-#include "include/network/tcp/TcpSession.h"
+#include "network/tcp/TcpSession.h"
 
 namespace gisun {
 namespace net {
 
-TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, const ServerConfig & config)
+TcpSession::TcpSession(std::unique_ptr<tcp::socket> socket, int id, const ServerConfig & config)
 	: socket_(std::move(socket))
+	, id_(id)
 	, state_(State::Ready)
 {
 	assert(socket_.get() != nullptr);
@@ -23,6 +24,11 @@ TcpSession::~TcpSession()
 {
 }
 
+int TcpSession::GetID() const
+{
+	return id_;
+}
+
 bool TcpSession::GetRemoteEndpoint(std::string& ip, uint16_t& port) const
 {
 	if (state_ == State::Closed)
@@ -35,7 +41,7 @@ bool TcpSession::GetRemoteEndpoint(std::string& ip, uint16_t& port) const
 
 void TcpSession::Close()
 {
-	strand_->dispatch([this, self = shared_from_this()]
+	strand_->post([this, self = shared_from_this()]
 	{
 		_Close(CloseReason::ActiveClose);
 	});
@@ -48,7 +54,7 @@ bool TcpSession::IsOpen() const
 
 void TcpSession::Start()
 {
-	strand_->dispatch([this, self = shared_from_this()]
+	strand_->post([this, self = shared_from_this()]
 	{
 		try
 		{
@@ -71,7 +77,7 @@ void TcpSession::Start()
 
 		state_ = State::Opened;
 		Read(min_receive_size_);
-		BOOST_LOG_TRIVIAL(info) << "TcpSession start";
+		BOOST_LOG_TRIVIAL(info) << "TcpSession start. id : " << GetID();
 
 		open_handler(shared_from_this());
 	});
@@ -188,9 +194,9 @@ inline void TcpSession::Write()
 
 	boost::asio::async_write(*socket_, bufs, strand_->wrap(
 		[this, self = shared_from_this()](error_code const& ec, std::size_t)
-	{
-		HandleWrite(ec);
-	}));
+		{
+			HandleWrite(ec);
+		}));
 }
 
 inline void TcpSession::HandleWrite(const error_code & error)
@@ -233,7 +239,7 @@ void TcpSession::_Close(CloseReason reason)
 	socket_->close();
 	state_ = State::Closed;
 
-	BOOST_LOG_TRIVIAL(info) << "TcpSession Close";
+	BOOST_LOG_TRIVIAL(info) << "TcpSession Close. id : " << GetID();
 
 	if (close_handler)
 		close_handler(shared_from_this(), reason);

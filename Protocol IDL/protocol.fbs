@@ -1,35 +1,250 @@
-include "common.fbs";
-include "login.fbs";
-include "game.fbs";
-include "manager.fbs";
+namespace protocol;
+
+// 에러 코드
+enum ErrorCode : int {
+    OK = 0,
+    UNEXPECTED = 1, // 예외 상황 발생
+    DATABASE_FAILED = 2, // DB 쿼리 실패
+    INVALID_SESSION = 10,   // 잘못된 세션
+    INVALID_STRING = 20,    // 잘못된 문자
+    // Login
+    LOGIN_INCORRECT_ACC_NAME = 100, // 계정명이 잘못됨
+    LOGIN_INCORRECT_ACC_PASSWORD = 101, // 패스워드가 잘못됨
+    LOGIN_DUPLICATION = 102,        // 중복 로그인
+    // JOIN
+    JOIN_ACC_NAME_ALREADY = 200,    // 계정명 중복
+    JOIN_CANNOT_ACC_CREATE = 201,   // 계정 생성 실패
+    // Create Character
+    CREATE_CHARACTER_NAME_ALREADY = 301,
+    CREATE_CHARACTER_CANNOT_CREATE = 302,
+    CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST = 303, // 능력치 설정 에러
+    // Delete Character
+    DELETE_CHARACTER_NOT_EXIST = 401,
+    DELETE_CHARACTER_CANNOT_DELETE = 402,
+    // Enter Game
+    ENTER_WORLD_INVALID_CHARACTER = 501, // 영웅이 존재하지 않음
+    ENTER_WORLD_INVALID_STATE = 502, // 잘못된 상태
+    ENTER_WORLD_CANNOT_ENTER_ZONE = 504, // 지역에 들어갈수 없다
+}
+
+enum ClassType : int {
+    NONE = 0,
+    Knight = 1,
+    Archer = 2,
+    Mage = 3,
+}
+
+enum MapType : int {
+    NONE = 0,
+    FIELD = 1,
+    DUNGEON = 2,
+}
+
+// 로그인 하지 않은 유저가 로그인이 선결되어야 하는 요청을 했을때 보내는 경고
+table NotifyUnauthedAccess {
+
+}
+
+namespace protocol.login;
+
+// 간단한 플레이어 캐릭터 정보
+table Character {
+    id:int;
+    name:string;
+    class_type:ClassType;
+    level:int;
+}
+
+// 메시지 스키마 정의 =================================================================
+// Login =====================================
+// 로그인을 요청
+table RequestLogin {
+    acc_name:string;
+    password:string;
+}
+// 로그인 실패
+table ReplyLoginFailed {
+    error_code:ErrorCode;
+}
+// 로그인 성공
+table ReplyLoginSuccess {
+    uuid:string;
+}
+
+// Join =====================================
+// 가입을 요청
+table RequestJoin {
+    acc_name:string;
+    password:string;
+}
+// 가입 실패
+table ReplyJoinFailed {
+    error_code:ErrorCode;
+}
+// 가입 성공
+table ReplyJoinSuccess {
+}
+
+// Character List =====================
+// 플레이어 캐릭터 리스트를 요청
+table RequestCharacterList{
+}
+// 캐릭터 리스트
+table ReplyCharacterList{
+    list:[Character]; // Vector of tables.
+}
+
+// Create Character ==========================
+// 새 캐릭터 생성을 요청
+table RequestCreateCharacter{
+    name:string;
+    class_type:ClassType;
+}
+// 새 캐릭터 생성 실패
+table ReplyCreateCharacterFailed{
+    error_code:ErrorCode;
+}
+// 새 캐릭터 생성 성공
+table ReplyCreateCharacterSuccess{
+    character:Character; // 생성된 캐릭터 정보
+}
+
+// Delete Character ==========================
+// 캐릭터 제거를 요청
+table RequestDeleteCharacter{
+    character_id:int;
+}
+// 캐릭터 제거 실패
+table ReplyDeleteCharacterFailed{
+    error_code:ErrorCode;
+}
+// 캐릭터 제거 성공
+table ReplyDeleteCharacterSuccess{
+    character_id:int;
+}
+
+namespace protocol.world;
+
+// 데이터 스키마 정의===================================================================
+// Vector2
+struct Vec2 {
+  x:float;
+  y:float;
+}
+// Vector3
+struct Vec3 {
+  x:float;
+  y:float;
+  z:float;
+}
+
+// 캐릭터 정보
+table LocalCharacter{
+    uuid:int;
+    name:string;
+    class_type:ClassType;
+    exp:int;
+    level:int;
+    max_hp:int;
+    hp:int;
+    max_mp:int;
+    mp:int;
+    att:int;
+    def:int;
+    map_id:int;
+    pos:Vec3;
+    rotation_y:float;
+    speed:float;
+}
+
+table RemoteCharacter{
+    uuid:int;
+    name:string;
+    class_type:ClassType;
+    level:int;
+    max_hp:int;
+    hp:int;
+    max_mp:int;
+    mp:int;
+    pos:Vec3;
+    rotation_y:float;
+}
+
+// Enter World ============================
+// 게임 입장 요청
+table RequestEnterWorld{
+    character_id:int;
+}
+// 게임 입장 실패
+table ReplyEnterWorldFailed{
+    error_code:ErrorCode;
+}
+// 게임 입장 성공
+table ReplyEnterWorldSuccess{
+    local_character:LocalCharacter;
+}
+
+// 로컬 케릭터의 이동을 보낸다.
+table ActionMove{
+    rotation:float;
+    pos:Vec3;
+    velocity:Vec3;
+}
+// 로컬 케릭터의 공격을 보낸다.
+table ActionAttack{
+    rotation:float;
+}
+
+// 케릭터의 이동 통지
+table NotifyMove{
+    uuid:int;
+    rotation:float;
+    pos:Vec3;
+    velocity:Vec3;
+}
+// 케릭터의 공격 통지
+table NotifyAttack{
+    uuid:int;
+    rotation:float;
+}
+
+// 원격 케릭터 스폰
+table AppearRemoteCharacter{
+    character:RemoteCharacter;
+}
+// 원격 케릭터 삭제
+table DisappearRemoteCharacter{
+    uuid:int;
+}
 
 namespace protocol;
 
 // 메시지 타입을 정의 한다 ================================================
 union MessageT {
-    common.UnauthedAccess = 1000,
-    login.RequestLogin = 2000,
-    login.ResponseLoginFailed,
-    login.ResponseLoginSuccess,
+    NotifyUnauthedAccess,
+    login.RequestLogin,
+    login.ReplyLoginFailed,
+    login.ReplyLoginSuccess,
     login.RequestJoin,
-    login.ResponseJoinFailed,
-    login.ResponseJoinSuccess,
+    login.ReplyJoinFailed,
+    login.ReplyJoinSuccess,
     login.RequestCharacterList,
-    login.ResponseCharacterList,
+    login.ReplyCharacterList,
     login.RequestCreateCharacter,
-    login.ResponseCreateCharacterFailed,
-    login.ResponseCreateCharacterSuccess,
+    login.ReplyCreateCharacterFailed,
+    login.ReplyCreateCharacterSuccess,
     login.RequestDeleteCharacter,
-    login.ResponseDeleteCharacterFailed,
-    login.ResponseDeleteCharacterSuccess,
-    game.RequestEnterGame = 3000,
-    game.ResponseEnterGameFailed,
-    game.ResponseEnterGameSuccess,
-    game.SpawnCharacter,
-    game.MoveCharacter,
-    manager.RequestLogin = 4000,
-    manager.ResponseLoginFailed,
-    manager.ResponseLoginSuccess,
+    login.ReplyDeleteCharacterFailed,
+    login.ReplyDeleteCharacterSuccess,
+    world.RequestEnterWorld,
+    world.ReplyEnterWorldFailed,
+    world.ReplyEnterWorldSuccess,
+    world.ActionMove,
+    world.ActionAttack,
+    world.NotifyMove,
+    world.NotifyAttack,
+    world.AppearRemoteCharacter,
+    world.DisappearRemoteCharacter,
 }
 
 // 기본 네트워크 메시지 =================================================================

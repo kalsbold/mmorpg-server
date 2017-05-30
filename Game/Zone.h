@@ -1,137 +1,81 @@
 #pragma once
-#include <boost/asio/high_resolution_timer.hpp>
-#include "TypeDef.h"
+#include <chrono>
+#include "Common.h"
 #include "DBEntity.h"
-#include "GameServer.h"
-#include "GameObject.h"
-#include "Character.h"
-#include "StaticCachedData.h"
 
-namespace mmog {
+using namespace std::chrono_literals;
+namespace db = db_entity;
 
-	using namespace std;
-	using namespace chrono;
-	namespace db = db_entity;
+// 50fps
+constexpr std::chrono::nanoseconds timestep(50ms);
+using double_seconds = std::chrono::duration<double>;
 
-	// 50fps
-	constexpr chrono::nanoseconds timestep(50ms);
-	using double_seconds = chrono::duration<double>;
+class World;
+class GameObject;
+class Character;
 
-	class World;
+class Zone : std::enable_shared_from_this<Zone>
+{
+public:
+	// The clock type.
+	using clock = std::chrono::high_resolution_clock;
+	// The duration type of the clock.
+	using duration = clock::duration;
+	// The time point type of the clock.
+	using time_point = clock::time_point;
+	// timer type
+	using timer = boost::asio::high_resolution_timer;
 
-	class Zone : enable_shared_from_this<Zone>
+	static Ptr<Zone> Create(boost::asio::io_service& ios, World* world)
 	{
-	public:
-		// The clock type.
-		using clock = chrono::high_resolution_clock;
-		// The duration type of the clock.
-		using duration = clock::duration;
-		// The time point type of the clock.
-		using time_point = clock::time_point;
-		// timer type
-		using timer = asio::high_resolution_timer;
+		return std::make_shared<Zone>(boost::uuids::random_generator()(), ios, world);
+	}
 
-		static Ptr<Zone> Create(asio::io_service& ios, World* world)
-		{
-			return make_shared<Zone>(boost::uuids::random_generator()(), ios, world);
-		}
+	Zone(const uuid& uuid, boost::asio::io_service& ios, World* world);
+	virtual ~Zone();
 
-		Zone(const uuid& uuid, asio::io_service& ios, World* world);
-		virtual ~Zone();
+	const uuid& GetUUID() const { return uuid_; }
+	boost::asio::strand& GetStrand() { return strand_; }
 
-		const uuid& GetUUID() const { return uuid_; }
-		asio::strand& GetStrand() { return strand_; }
+	void Start();
 
-		void Start()
-		{
-			if (update_timer_ != nullptr)
-				return;
+	void Stop();
 
-			update_timer_ = make_shared<timer>(strand_.get_io_service());
+	Ptr<GameObject> GetCharacter(const uuid& uuid);
 
-			time_point start_time = clock::now();
-			ScheduleNextUpdate(start_time);
-		}
+	const Ptr<db::Map>& GetMap() const { return db_map_; }
+	void SetMap(Ptr<db::Map> map) { db_map_ = map; }
 
-		void Stop()
-		{
-			if (update_timer_ == nullptr)
-				return;
+	void EnterCharacter(Ptr<Character> character);
 
-			update_timer_->cancel();
-		}
+	void LeaveCharacter(const uuid& uuid);
 
-		Ptr<GameObject> GetCharacter(uuid uuid);
+protected:
+	virtual void Update(double delta_time);
 
-		const Ptr<db::Map>& GetMap() const { return map_; }
-		void SetMap(Ptr<db::Map> map) { map_ = map; }
-
-		void EnterCharacter(Ptr<mmog::Character> character)
-		{
-			AddCharacter(character->GetUUID(), character);
-			character->zone_ = this;
-
-			for (auto& e : characters_)
-			{
-
-			}
-		}
-
-		void LeaveCharacter(uuid uuid)
+	void Broadcast()
+	{
+		for (auto& e : characters_)
 		{
 
 		}
+	}
 
-	protected:
-		virtual void Update(double delta_time)
-		{
-			cout << this_thread::get_id() << " zone : " << map_->name << " update. delta_time : " << delta_time << "\n";
-			for (auto& element : characters_)
-			{
-				element.second->Update(delta_time);
-			}
-		}
+private:
+	void AddCharacter(const uuid& uuid, Ptr<Character> c);
+	void RemoveCharacter(const uuid& uuid);
 
-		void Broadcast()
-		{
-			for (auto& e : characters_)
-			{
+	void ScheduleNextUpdate(const time_point& start_time);
 
-			}
-		}
+	void HandleNextUpdate(const time_point& start_time);
 
-	private:
-		void AddCharacter(uuid uuid, Ptr<mmog::Character> c);
-		void RemoveCharacter(uuid uuid);
+	boost::asio::strand strand_;
+	Ptr<timer> update_timer_;
+	uuid uuid_;
 
-		void ScheduleNextUpdate(const time_point& start_time)
-		{
-			update_timer_->expires_at(start_time + timestep);
-			update_timer_->async_wait(strand_.wrap([this, start_time](auto& error)
-			{
-				if (error)
-					return;
-
-				HandleNextUpdate(start_time);
-			}));
-		}
-
-		void HandleNextUpdate(const time_point& start_time)
-		{
-			double delta_time = double_seconds(clock::now() - start_time).count();
-			ScheduleNextUpdate(clock::now());
-			Update(delta_time);
-		}
-
-		asio::strand strand_;
-		Ptr<timer> update_timer_;
-		uuid uuid_;
-
-		World* world_;
-		// 지역에 속한 플레이어
-		map<uuid, Ptr<mmog::Character>> characters_;
-		// 맵 정보
-		Ptr<db::Map> map_;
-	};
-
-}
+	World* world_;
+	// 지역에 속한 플레이어
+	std::map<uuid, Ptr<Character>> characters_;
+	// 맵 정보
+	Ptr<db::Map> db_map_;
+};

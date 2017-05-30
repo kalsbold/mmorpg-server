@@ -1,8 +1,8 @@
 #pragma once
 
-#include "include/Types.h"
-#include "include/network/NetConfig.h"
-#include "include/network/ByteBuffer.h"
+#include "Types.h"
+#include "network/NetConfig.h"
+#include "network/ByteBuffer.h"
 
 namespace gisun {
 namespace net {

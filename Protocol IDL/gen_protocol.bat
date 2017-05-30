@@ -1,2 +1,2 @@
-flatc --cpp -o ./ ./protocol.fbs --gen-object-api
-flatc -n -o ./ ./protocol.fbs --gen-onefile
+flatc --cpp -o ./ ./protocol.fbs --gen-object-api --scoped-enums
+flatc --csharp -o ./ ./protocol.fbs

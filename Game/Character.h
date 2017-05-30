@@ -1,34 +1,32 @@
 #pragma once
+#include "Common.h"
 #include "GameObject.h"
 #include "DBEntity.h"
 
-namespace mmog
+namespace db = db_entity;
+
+class Character : public GameObject
 {
-	namespace db = db_entity;
+public:
+	friend class RemoteClient;
+	friend class World;
+	friend class Zone;
 
-	class Character : public GameObject
+	using GameObject::GameObject;
+
+	static Ptr<Character> Create()
 	{
-	public:
-		friend class Player;
-		friend class World;
-		friend class Zone;
+		return std::make_shared<Character>(boost::uuids::random_generator()());
+	}
 
-		using GameObject::GameObject;
+	virtual void Update(double delta_time) override
+	{
 
-		static Ptr<Character> Create()
-		{
-			return make_shared<Character>(boost::uuids::random_generator()());
-		}
+	}
 
-		virtual void Update(double delta_time) override
-		{
+private:
+	RemoteClient* remote_client_;
+	db::Character* db_data_;
+	Zone* zone_;
+};
 
-		}
-
-	private:
-		GamePlayer* player_;
-		db::Character* db_data_;
-		Zone* zone_;
-	};
-
-}

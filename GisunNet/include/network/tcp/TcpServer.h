@@ -1,10 +1,11 @@
 #pragma once
 
 #include <mutex>
-#include <set>
-#include "include/network/NetServer.h"
-#include "include/network/tcp/TcpSession.h"
-#include "include/network/IoServiceLoop.h"
+#include <map>
+#include <deque>
+#include "network/NetServer.h"
+#include "network/tcp/TcpSession.h"
+#include "network/IoServiceLoop.h"
 
 namespace gisun {
 namespace net {
@@ -31,7 +32,13 @@ namespace net {
 			return ios_loop_;
 		}
 
-		// Register Handler
+		Ptr<Session> GetSession(int session_id) override
+		{
+			std::lock_guard<std::mutex> lock_guard(mutex_);
+			auto iter = sessions_.find(session_id);
+			return (iter != sessions_.end()) ? iter->second : nullptr;
+		}
+
 		virtual void RegisterSessionOpenedHandler(const SessionOpenedHandler& handler) override
 		{
 			session_opened_handler_ = handler;
@@ -67,7 +74,8 @@ namespace net {
 		State					state_;
 		Ptr<IoServiceLoop>		ios_loop_;
 		std::mutex				mutex_;
-		std::set<Ptr<TcpSession>>	sessions_;
+		std::deque<int>					free_session_id_;
+		std::map<int, Ptr<TcpSession>>	sessions_;
 
 		std::unique_ptr<strand> strand_;
 		std::unique_ptr<tcp::acceptor> acceptor_;

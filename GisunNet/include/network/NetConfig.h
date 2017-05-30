@@ -1,7 +1,7 @@
 #pragma once
 
 #include <thread>
-#include "include/Types.h"
+#include "Types.h"
 
 namespace gisun {
 namespace net {

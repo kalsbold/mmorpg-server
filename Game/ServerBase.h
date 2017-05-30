@@ -1,24 +1,18 @@
 #pragma once
+#include <iostream>
 
-#include <map>
-#include <mutex>
-#include "TypeDef.h"
+class ServerBase
+{
+public:
+	ServerBase() {}
+	virtual ~ServerBase() {}
 
-namespace mmog {
-
-	class ServerBase
-	{
-	public:
-		ServerBase() {}
-		virtual ~ServerBase() {}
-
-		string GetName() { return name_; }
-		void SetName(const string& name) { name_ = name; }
+	std::string GetName() { return name_; }
+	void SetName(const std::string& name) { name_ = name; }
 		
-		virtual void Run() = 0;
-		virtual void Stop() = 0;
+	virtual void Run() {}
+	virtual void Stop() {};
 
-	private:
-		string name_;
-	};
-}
+private:
+	std::string name_;
+};

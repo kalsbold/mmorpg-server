@@ -1,5 +1,5 @@
-#include "include/network/NetClient.h"
-#include "include/network/tcp/TcpClient.h"
+#include "network/NetClient.h"
+#include "network/tcp/TcpClient.h"
 
 namespace gisun {
 namespace net {

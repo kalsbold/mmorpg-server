@@ -2,12 +2,8 @@
 //
 
 #include "stdafx.h"
-#include "ServerConfig.h"
+#include "ServerSettings.h"
 #include "GameServer.h"
-
-using namespace std;
-using namespace mmog;
-namespace po = boost::program_options;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -25,6 +21,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		auto server = std::make_shared<GameServer>();
 		// ½ÃÀÛ
 		server->Run();
+		server->Wait();
 	}
 	catch (const std::exception& e)
 	{

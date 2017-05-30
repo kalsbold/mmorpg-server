@@ -1,8 +1,8 @@
 #pragma once
 
-#include "include/network/NetClient.h"
-#include "include/network/IoServiceLoop.h"
-#include "include/utility/AsioHelper.h"
+#include "network/NetClient.h"
+#include "network/IoServiceLoop.h"
+#include "utility/AsioHelper.h"
 
 namespace gisun {
 namespace net {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "include/Types.h"
-#include "include/network/NetConfig.h"
-#include "include/network/Session.h"
+#include "Types.h"
+#include "network/NetConfig.h"
+#include "network/Session.h"
 
 namespace gisun {
 namespace net {
@@ -40,6 +40,7 @@ namespace net {
 
 		virtual State GetState() = 0;
 		virtual Ptr<IoServiceLoop> GetIoServiceLoop() = 0;
+		virtual Ptr<Session> GetSession(int session_id) = 0;
 
 		virtual void RegisterSessionOpenedHandler(const SessionOpenedHandler& handler) = 0;
 		virtual void RegisterSessionClosedHandler(const SessionClosedHandler& handler) = 0;

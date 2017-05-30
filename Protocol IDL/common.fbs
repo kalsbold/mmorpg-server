@@ -1,8 +1,0 @@
-include "error_code.fbs";
-
-namespace protocol.common;
-
-// 로그인 하지 않은 유저가 로그인이 선결되어야 하는 요청을 했을때 보내는 경고
-table UnauthedAccess {
-
-}

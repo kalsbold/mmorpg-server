@@ -1,5 +1,5 @@
-#include "include/network/NetServer.h"
-#include "include/network/tcp/TcpServer.h"
+#include "network/NetServer.h"
+#include "network/tcp/TcpServer.h"
 
 namespace gisun {
 namespace net {

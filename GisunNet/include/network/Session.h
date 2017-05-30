@@ -1,7 +1,7 @@
 #pragma once
 
-#include "include/Types.h"
-#include "include/network/ByteBuffer.h"
+#include "Types.h"
+#include "network/ByteBuffer.h"
 
 namespace gisun {
 namespace net {
@@ -21,6 +21,8 @@ namespace net {
 		Session& operator=(const Session&) = delete;
 
 		virtual ~Session() {};
+
+		virtual int GetID() const = 0;
 
 		virtual bool GetRemoteEndpoint(std::string& ip, uint16_t& port) const = 0;
 

@@ -3,7 +3,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
-#include "include/Types.h"
+#include "Types.h"
 
 namespace gisun {
 namespace net {

@@ -1,4 +1,4 @@
-#include "include/network/Session.h"
+#include "network/Session.h"
 
 namespace gisun {
 namespace net {

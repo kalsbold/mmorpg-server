@@ -1,34 +1,30 @@
 #pragma once
-#include <gisunnet\gisunnet.h>
-#include <flatbuffers\flatbuffers.h>
-#include "game_message_generated.h"
+#include <gisunnet.h>
+#include "protocol_generated.h"
 
-namespace mmog {
 namespace helper{
 
-using namespace gisunnet;
-using namespace flatbuffers;
-using namespace protocol;
+using namespace gisun;
+namespace fb = flatbuffers;
 
 template <typename T>
-void Send(const Ptr<Session>& session, FlatBufferBuilder& fbb, Offset<T>& message)
+void Send(const Ptr<net::Session>& session, fb::FlatBufferBuilder& fbb, fb::Offset<T>& message)
 {
-	auto net_message = CreateNetMessage(fbb, MessageTTraits<T>::enum_value, message.Union());
+	auto net_message = protocol::CreateNetMessage(fbb, protocol::MessageTTraits<T>::enum_value, message.Union());
 	fbb.Finish(net_message);
 
 	session->Send(fbb.GetBufferPointer(), fbb.GetSize());
 }
 
-template <typename MessageT>
-void Send(const Ptr<Session>& session, const MessageT& message)
+template <typename T>
+void Send(const Ptr<net::Session>& session, const T& message)
 {
 	flatbuffers::FlatBufferBuilder fbb;
-	auto offset = MessageT::TableType::Pack(fbb, &message);
-	auto net_message = CreateNetMessage(fbb, MessageTTraits<MessageT::TableType>::enum_value, offset.Union());
+	auto offset = T::TableType::Pack(fbb, &message);
+	auto net_message = CreateNetMessage(fbb, protocol::MessageTTraits<T::TableType>::enum_value, offset.Union());
 	fbb.Finish(net_message);
 
 	session->Send(fbb.GetBufferPointer(), fbb.GetSize());
 }
 
-}
 }

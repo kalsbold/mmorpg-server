@@ -1,8 +1,7 @@
 #pragma once
-#include "TypeDef.h"
+#include "Common.h"
 #include "MySQL.h"
 
-namespace mmog {
 namespace db_entity {
 
 class EntityBase
@@ -38,10 +37,10 @@ public:
 	using EntityBase::EntityBase;
 
 	int    id;
-	string acc_name;
-	string password;
+	std::string acc_name;
+	std::string password;
 
-	static Ptr<Account> Create(Ptr<MySQLPool> db, const string& acc_name, const string& password)
+	static Ptr<Account> Create(Ptr<MySQLPool> db, const std::string& acc_name, const std::string& password)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -55,7 +54,7 @@ public:
 		return Fetch(db, acc_name);
 	}
 
-	static Ptr<Account> Fetch(Ptr<MySQLPool> db, const string& acc_name)
+	static Ptr<Account> Fetch(Ptr<MySQLPool> db, const std::string& acc_name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement("SELECT id, acc_name, password FROM account_tb WHERE acc_name=?"));
@@ -76,11 +75,11 @@ public:
 class Map
 {
 public:
-	int     id;
-	string  name;
-	int     width;
-	int     height;
-	MapType	type;
+	int         id;
+	std::string name;
+	int         width;
+	int         height;
+	MapType	    type;
 };
 
 class CharacterAttribute
@@ -99,24 +98,24 @@ class Character : public EntityBase
 public:
 	using EntityBase::EntityBase;
 
-	int       id;
-	int       acc_id;
-	string    name;
-	ClassType class_type;
-	int       exp;
-	int       level;
-	int       max_hp;
-	int       hp;
-	int       max_mp;
-	int       mp;
-	int       att;
-	int       def;
-	int       map_id;
-	Vector3   pos;
-	float     rotation_y;
-	bool      first_play;
+	int            id;
+	int            acc_id;
+	std::string    name;
+	ClassType      class_type;
+	int            exp;
+	int            level;
+	int            max_hp;
+	int            hp;
+	int            max_mp;
+	int            mp;
+	int            att;
+	int            def;
+	int            map_id;
+	Vector3        pos;
+	float          rotation_y;
+	bool           first_play;
 
-	static Ptr<Character> Create(Ptr<MySQLPool> db, int account_id, const string& name, ClassType class_type)
+	static Ptr<Character> Create(Ptr<MySQLPool> db, int account_id, const std::string& name, ClassType class_type)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -150,7 +149,7 @@ public:
 		return characters;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int account_id, const string& name)
+	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int account_id, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -184,7 +183,7 @@ public:
 		return c;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, const string& name)
+	static Ptr<Character> Fetch(Ptr<MySQLPool> db, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -278,5 +277,4 @@ private:
 	}
 };
 
-}
 }
