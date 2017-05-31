@@ -8,7 +8,7 @@
 
 namespace db = db_entity;
 
-class MapData : public Singleton<MapData>
+class MapTable : public Singleton<MapTable>
 {
 public:
 	const std::vector<Ptr<db::Map>>& GetAll()
@@ -69,7 +69,7 @@ private:
 	std::vector<Ptr<db::Map>> map_data_;
 };
 
-class CharacterAttributeData : public Singleton<CharacterAttributeData>
+class CharacterAttributeTable : public Singleton<CharacterAttributeTable>
 {
 public:
 	const std::vector<Ptr<db::CharacterAttribute>>& GetAll()

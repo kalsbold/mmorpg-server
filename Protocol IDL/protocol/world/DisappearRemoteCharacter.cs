@@ -15,17 +15,18 @@ public struct DisappearRemoteCharacter : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public DisappearRemoteCharacter __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int Uuid { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public string Uuid { get { int o = __p.__offset(4); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+  public ArraySegment<byte>? GetUuidBytes() { return __p.__vector_as_arraysegment(4); }
 
   public static Offset<DisappearRemoteCharacter> CreateDisappearRemoteCharacter(FlatBufferBuilder builder,
-      int uuid = 0) {
+      StringOffset uuidOffset = default(StringOffset)) {
     builder.StartObject(1);
-    DisappearRemoteCharacter.AddUuid(builder, uuid);
+    DisappearRemoteCharacter.AddUuid(builder, uuidOffset);
     return DisappearRemoteCharacter.EndDisappearRemoteCharacter(builder);
   }
 
   public static void StartDisappearRemoteCharacter(FlatBufferBuilder builder) { builder.StartObject(1); }
-  public static void AddUuid(FlatBufferBuilder builder, int uuid) { builder.AddInt(0, uuid, 0); }
+  public static void AddUuid(FlatBufferBuilder builder, StringOffset uuidOffset) { builder.AddOffset(0, uuidOffset.Value, 0); }
   public static Offset<DisappearRemoteCharacter> EndDisappearRemoteCharacter(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<DisappearRemoteCharacter>(o);

@@ -8,6 +8,10 @@
 
 namespace protocol {
 
+struct Vec2;
+
+struct Vec3;
+
 struct NotifyUnauthedAccess;
 struct NotifyUnauthedAccessT;
 
@@ -61,10 +65,6 @@ struct ReplyDeleteCharacterSuccessT;
 }  // namespace login
 
 namespace world {
-
-struct Vec2;
-
-struct Vec3;
 
 struct LocalCharacter;
 struct LocalCharacterT;
@@ -465,8 +465,6 @@ struct MessageTUnion {
 
 bool VerifyMessageT(flatbuffers::Verifier &verifier, const void *obj, MessageT type);
 
-namespace world {
-
 MANUALLY_ALIGNED_STRUCT(4) Vec2 FLATBUFFERS_FINAL_CLASS {
  private:
   float x_;
@@ -521,8 +519,6 @@ MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
   }
 };
 STRUCT_END(Vec3, 12);
-
-}  // namespace world
 
 struct NotifyUnauthedAccessT : public flatbuffers::NativeTable {
   typedef NotifyUnauthedAccess TableType;
@@ -1487,7 +1483,7 @@ namespace world {
 
 struct LocalCharacterT : public flatbuffers::NativeTable {
   typedef LocalCharacter TableType;
-  int32_t uuid;
+  std::string uuid;
   std::string name;
   protocol::ClassType class_type;
   int32_t exp;
@@ -1499,12 +1495,11 @@ struct LocalCharacterT : public flatbuffers::NativeTable {
   int32_t att;
   int32_t def;
   int32_t map_id;
-  std::unique_ptr<Vec3> pos;
+  std::unique_ptr<protocol::Vec3> pos;
   float rotation_y;
   float speed;
   LocalCharacterT()
-      : uuid(0),
-        class_type(protocol::ClassType::NONE),
+      : class_type(protocol::ClassType::NONE),
         exp(0),
         level(0),
         max_hp(0),
@@ -1538,8 +1533,8 @@ struct LocalCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_ROTATION_Y = 30,
     VT_SPEED = 32
   };
-  int32_t uuid() const {
-    return GetField<int32_t>(VT_UUID, 0);
+  const flatbuffers::String *uuid() const {
+    return GetPointer<const flatbuffers::String *>(VT_UUID);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -1574,8 +1569,8 @@ struct LocalCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t map_id() const {
     return GetField<int32_t>(VT_MAP_ID, 0);
   }
-  const Vec3 *pos() const {
-    return GetStruct<const Vec3 *>(VT_POS);
+  const protocol::Vec3 *pos() const {
+    return GetStruct<const protocol::Vec3 *>(VT_POS);
   }
   float rotation_y() const {
     return GetField<float>(VT_ROTATION_Y, 0.0f);
@@ -1585,7 +1580,8 @@ struct LocalCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_UUID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_UUID) &&
+           verifier.Verify(uuid()) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
            VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
@@ -1598,7 +1594,7 @@ struct LocalCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_ATT) &&
            VerifyField<int32_t>(verifier, VT_DEF) &&
            VerifyField<int32_t>(verifier, VT_MAP_ID) &&
-           VerifyField<Vec3>(verifier, VT_POS) &&
+           VerifyField<protocol::Vec3>(verifier, VT_POS) &&
            VerifyField<float>(verifier, VT_ROTATION_Y) &&
            VerifyField<float>(verifier, VT_SPEED) &&
            verifier.EndTable();
@@ -1611,8 +1607,8 @@ struct LocalCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct LocalCharacterBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_uuid(int32_t uuid) {
-    fbb_.AddElement<int32_t>(LocalCharacter::VT_UUID, uuid, 0);
+  void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
+    fbb_.AddOffset(LocalCharacter::VT_UUID, uuid);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(LocalCharacter::VT_NAME, name);
@@ -1647,7 +1643,7 @@ struct LocalCharacterBuilder {
   void add_map_id(int32_t map_id) {
     fbb_.AddElement<int32_t>(LocalCharacter::VT_MAP_ID, map_id, 0);
   }
-  void add_pos(const Vec3 *pos) {
+  void add_pos(const protocol::Vec3 *pos) {
     fbb_.AddStruct(LocalCharacter::VT_POS, pos);
   }
   void add_rotation_y(float rotation_y) {
@@ -1670,7 +1666,7 @@ struct LocalCharacterBuilder {
 
 inline flatbuffers::Offset<LocalCharacter> CreateLocalCharacter(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0,
+    flatbuffers::Offset<flatbuffers::String> uuid = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     protocol::ClassType class_type = protocol::ClassType::NONE,
     int32_t exp = 0,
@@ -1682,7 +1678,7 @@ inline flatbuffers::Offset<LocalCharacter> CreateLocalCharacter(
     int32_t att = 0,
     int32_t def = 0,
     int32_t map_id = 0,
-    const Vec3 *pos = 0,
+    const protocol::Vec3 *pos = 0,
     float rotation_y = 0.0f,
     float speed = 0.0f) {
   LocalCharacterBuilder builder_(_fbb);
@@ -1706,7 +1702,7 @@ inline flatbuffers::Offset<LocalCharacter> CreateLocalCharacter(
 
 inline flatbuffers::Offset<LocalCharacter> CreateLocalCharacterDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0,
+    const char *uuid = nullptr,
     const char *name = nullptr,
     protocol::ClassType class_type = protocol::ClassType::NONE,
     int32_t exp = 0,
@@ -1718,12 +1714,12 @@ inline flatbuffers::Offset<LocalCharacter> CreateLocalCharacterDirect(
     int32_t att = 0,
     int32_t def = 0,
     int32_t map_id = 0,
-    const Vec3 *pos = 0,
+    const protocol::Vec3 *pos = 0,
     float rotation_y = 0.0f,
     float speed = 0.0f) {
   return CreateLocalCharacter(
       _fbb,
-      uuid,
+      uuid ? _fbb.CreateString(uuid) : 0,
       name ? _fbb.CreateString(name) : 0,
       class_type,
       exp,
@@ -1744,7 +1740,7 @@ flatbuffers::Offset<LocalCharacter> CreateLocalCharacter(flatbuffers::FlatBuffer
 
 struct RemoteCharacterT : public flatbuffers::NativeTable {
   typedef RemoteCharacter TableType;
-  int32_t uuid;
+  std::string uuid;
   std::string name;
   protocol::ClassType class_type;
   int32_t level;
@@ -1752,11 +1748,10 @@ struct RemoteCharacterT : public flatbuffers::NativeTable {
   int32_t hp;
   int32_t max_mp;
   int32_t mp;
-  std::unique_ptr<Vec3> pos;
+  std::unique_ptr<protocol::Vec3> pos;
   float rotation_y;
   RemoteCharacterT()
-      : uuid(0),
-        class_type(protocol::ClassType::NONE),
+      : class_type(protocol::ClassType::NONE),
         level(0),
         max_hp(0),
         hp(0),
@@ -1780,8 +1775,8 @@ struct RemoteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_POS = 20,
     VT_ROTATION_Y = 22
   };
-  int32_t uuid() const {
-    return GetField<int32_t>(VT_UUID, 0);
+  const flatbuffers::String *uuid() const {
+    return GetPointer<const flatbuffers::String *>(VT_UUID);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -1804,15 +1799,16 @@ struct RemoteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t mp() const {
     return GetField<int32_t>(VT_MP, 0);
   }
-  const Vec3 *pos() const {
-    return GetStruct<const Vec3 *>(VT_POS);
+  const protocol::Vec3 *pos() const {
+    return GetStruct<const protocol::Vec3 *>(VT_POS);
   }
   float rotation_y() const {
     return GetField<float>(VT_ROTATION_Y, 0.0f);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_UUID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_UUID) &&
+           verifier.Verify(uuid()) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
            VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
@@ -1821,7 +1817,7 @@ struct RemoteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_HP) &&
            VerifyField<int32_t>(verifier, VT_MAX_MP) &&
            VerifyField<int32_t>(verifier, VT_MP) &&
-           VerifyField<Vec3>(verifier, VT_POS) &&
+           VerifyField<protocol::Vec3>(verifier, VT_POS) &&
            VerifyField<float>(verifier, VT_ROTATION_Y) &&
            verifier.EndTable();
   }
@@ -1833,8 +1829,8 @@ struct RemoteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct RemoteCharacterBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_uuid(int32_t uuid) {
-    fbb_.AddElement<int32_t>(RemoteCharacter::VT_UUID, uuid, 0);
+  void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
+    fbb_.AddOffset(RemoteCharacter::VT_UUID, uuid);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(RemoteCharacter::VT_NAME, name);
@@ -1857,7 +1853,7 @@ struct RemoteCharacterBuilder {
   void add_mp(int32_t mp) {
     fbb_.AddElement<int32_t>(RemoteCharacter::VT_MP, mp, 0);
   }
-  void add_pos(const Vec3 *pos) {
+  void add_pos(const protocol::Vec3 *pos) {
     fbb_.AddStruct(RemoteCharacter::VT_POS, pos);
   }
   void add_rotation_y(float rotation_y) {
@@ -1877,7 +1873,7 @@ struct RemoteCharacterBuilder {
 
 inline flatbuffers::Offset<RemoteCharacter> CreateRemoteCharacter(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0,
+    flatbuffers::Offset<flatbuffers::String> uuid = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     protocol::ClassType class_type = protocol::ClassType::NONE,
     int32_t level = 0,
@@ -1885,7 +1881,7 @@ inline flatbuffers::Offset<RemoteCharacter> CreateRemoteCharacter(
     int32_t hp = 0,
     int32_t max_mp = 0,
     int32_t mp = 0,
-    const Vec3 *pos = 0,
+    const protocol::Vec3 *pos = 0,
     float rotation_y = 0.0f) {
   RemoteCharacterBuilder builder_(_fbb);
   builder_.add_rotation_y(rotation_y);
@@ -1903,7 +1899,7 @@ inline flatbuffers::Offset<RemoteCharacter> CreateRemoteCharacter(
 
 inline flatbuffers::Offset<RemoteCharacter> CreateRemoteCharacterDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0,
+    const char *uuid = nullptr,
     const char *name = nullptr,
     protocol::ClassType class_type = protocol::ClassType::NONE,
     int32_t level = 0,
@@ -1911,11 +1907,11 @@ inline flatbuffers::Offset<RemoteCharacter> CreateRemoteCharacterDirect(
     int32_t hp = 0,
     int32_t max_mp = 0,
     int32_t mp = 0,
-    const Vec3 *pos = 0,
+    const protocol::Vec3 *pos = 0,
     float rotation_y = 0.0f) {
   return CreateRemoteCharacter(
       _fbb,
-      uuid,
+      uuid ? _fbb.CreateString(uuid) : 0,
       name ? _fbb.CreateString(name) : 0,
       class_type,
       level,
@@ -2094,8 +2090,8 @@ flatbuffers::Offset<ReplyEnterWorldSuccess> CreateReplyEnterWorldSuccess(flatbuf
 struct ActionMoveT : public flatbuffers::NativeTable {
   typedef ActionMove TableType;
   float rotation;
-  std::unique_ptr<Vec3> pos;
-  std::unique_ptr<Vec3> velocity;
+  std::unique_ptr<protocol::Vec3> pos;
+  std::unique_ptr<protocol::Vec3> velocity;
   ActionMoveT()
       : rotation(0.0f) {
   }
@@ -2111,17 +2107,17 @@ struct ActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   float rotation() const {
     return GetField<float>(VT_ROTATION, 0.0f);
   }
-  const Vec3 *pos() const {
-    return GetStruct<const Vec3 *>(VT_POS);
+  const protocol::Vec3 *pos() const {
+    return GetStruct<const protocol::Vec3 *>(VT_POS);
   }
-  const Vec3 *velocity() const {
-    return GetStruct<const Vec3 *>(VT_VELOCITY);
+  const protocol::Vec3 *velocity() const {
+    return GetStruct<const protocol::Vec3 *>(VT_VELOCITY);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
-           VerifyField<Vec3>(verifier, VT_POS) &&
-           VerifyField<Vec3>(verifier, VT_VELOCITY) &&
+           VerifyField<protocol::Vec3>(verifier, VT_POS) &&
+           VerifyField<protocol::Vec3>(verifier, VT_VELOCITY) &&
            verifier.EndTable();
   }
   ActionMoveT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2135,10 +2131,10 @@ struct ActionMoveBuilder {
   void add_rotation(float rotation) {
     fbb_.AddElement<float>(ActionMove::VT_ROTATION, rotation, 0.0f);
   }
-  void add_pos(const Vec3 *pos) {
+  void add_pos(const protocol::Vec3 *pos) {
     fbb_.AddStruct(ActionMove::VT_POS, pos);
   }
-  void add_velocity(const Vec3 *velocity) {
+  void add_velocity(const protocol::Vec3 *velocity) {
     fbb_.AddStruct(ActionMove::VT_VELOCITY, velocity);
   }
   ActionMoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -2156,8 +2152,8 @@ struct ActionMoveBuilder {
 inline flatbuffers::Offset<ActionMove> CreateActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
     float rotation = 0.0f,
-    const Vec3 *pos = 0,
-    const Vec3 *velocity = 0) {
+    const protocol::Vec3 *pos = 0,
+    const protocol::Vec3 *velocity = 0) {
   ActionMoveBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_pos(pos);
@@ -2223,13 +2219,12 @@ flatbuffers::Offset<ActionAttack> CreateActionAttack(flatbuffers::FlatBufferBuil
 
 struct NotifyMoveT : public flatbuffers::NativeTable {
   typedef NotifyMove TableType;
-  int32_t uuid;
+  std::string uuid;
   float rotation;
-  std::unique_ptr<Vec3> pos;
-  std::unique_ptr<Vec3> velocity;
+  std::unique_ptr<protocol::Vec3> pos;
+  std::unique_ptr<protocol::Vec3> velocity;
   NotifyMoveT()
-      : uuid(0),
-        rotation(0.0f) {
+      : rotation(0.0f) {
   }
 };
 
@@ -2241,24 +2236,25 @@ struct NotifyMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_POS = 8,
     VT_VELOCITY = 10
   };
-  int32_t uuid() const {
-    return GetField<int32_t>(VT_UUID, 0);
+  const flatbuffers::String *uuid() const {
+    return GetPointer<const flatbuffers::String *>(VT_UUID);
   }
   float rotation() const {
     return GetField<float>(VT_ROTATION, 0.0f);
   }
-  const Vec3 *pos() const {
-    return GetStruct<const Vec3 *>(VT_POS);
+  const protocol::Vec3 *pos() const {
+    return GetStruct<const protocol::Vec3 *>(VT_POS);
   }
-  const Vec3 *velocity() const {
-    return GetStruct<const Vec3 *>(VT_VELOCITY);
+  const protocol::Vec3 *velocity() const {
+    return GetStruct<const protocol::Vec3 *>(VT_VELOCITY);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_UUID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_UUID) &&
+           verifier.Verify(uuid()) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
-           VerifyField<Vec3>(verifier, VT_POS) &&
-           VerifyField<Vec3>(verifier, VT_VELOCITY) &&
+           VerifyField<protocol::Vec3>(verifier, VT_POS) &&
+           VerifyField<protocol::Vec3>(verifier, VT_VELOCITY) &&
            verifier.EndTable();
   }
   NotifyMoveT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2269,16 +2265,16 @@ struct NotifyMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct NotifyMoveBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_uuid(int32_t uuid) {
-    fbb_.AddElement<int32_t>(NotifyMove::VT_UUID, uuid, 0);
+  void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
+    fbb_.AddOffset(NotifyMove::VT_UUID, uuid);
   }
   void add_rotation(float rotation) {
     fbb_.AddElement<float>(NotifyMove::VT_ROTATION, rotation, 0.0f);
   }
-  void add_pos(const Vec3 *pos) {
+  void add_pos(const protocol::Vec3 *pos) {
     fbb_.AddStruct(NotifyMove::VT_POS, pos);
   }
-  void add_velocity(const Vec3 *velocity) {
+  void add_velocity(const protocol::Vec3 *velocity) {
     fbb_.AddStruct(NotifyMove::VT_VELOCITY, velocity);
   }
   NotifyMoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -2295,10 +2291,10 @@ struct NotifyMoveBuilder {
 
 inline flatbuffers::Offset<NotifyMove> CreateNotifyMove(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0,
+    flatbuffers::Offset<flatbuffers::String> uuid = 0,
     float rotation = 0.0f,
-    const Vec3 *pos = 0,
-    const Vec3 *velocity = 0) {
+    const protocol::Vec3 *pos = 0,
+    const protocol::Vec3 *velocity = 0) {
   NotifyMoveBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_pos(pos);
@@ -2307,15 +2303,28 @@ inline flatbuffers::Offset<NotifyMove> CreateNotifyMove(
   return builder_.Finish();
 }
 
+inline flatbuffers::Offset<NotifyMove> CreateNotifyMoveDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *uuid = nullptr,
+    float rotation = 0.0f,
+    const protocol::Vec3 *pos = 0,
+    const protocol::Vec3 *velocity = 0) {
+  return CreateNotifyMove(
+      _fbb,
+      uuid ? _fbb.CreateString(uuid) : 0,
+      rotation,
+      pos,
+      velocity);
+}
+
 flatbuffers::Offset<NotifyMove> CreateNotifyMove(flatbuffers::FlatBufferBuilder &_fbb, const NotifyMoveT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct NotifyAttackT : public flatbuffers::NativeTable {
   typedef NotifyAttack TableType;
-  int32_t uuid;
+  std::string uuid;
   float rotation;
   NotifyAttackT()
-      : uuid(0),
-        rotation(0.0f) {
+      : rotation(0.0f) {
   }
 };
 
@@ -2325,15 +2334,16 @@ struct NotifyAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_UUID = 4,
     VT_ROTATION = 6
   };
-  int32_t uuid() const {
-    return GetField<int32_t>(VT_UUID, 0);
+  const flatbuffers::String *uuid() const {
+    return GetPointer<const flatbuffers::String *>(VT_UUID);
   }
   float rotation() const {
     return GetField<float>(VT_ROTATION, 0.0f);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_UUID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_UUID) &&
+           verifier.Verify(uuid()) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
   }
@@ -2345,8 +2355,8 @@ struct NotifyAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct NotifyAttackBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_uuid(int32_t uuid) {
-    fbb_.AddElement<int32_t>(NotifyAttack::VT_UUID, uuid, 0);
+  void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
+    fbb_.AddOffset(NotifyAttack::VT_UUID, uuid);
   }
   void add_rotation(float rotation) {
     fbb_.AddElement<float>(NotifyAttack::VT_ROTATION, rotation, 0.0f);
@@ -2365,12 +2375,22 @@ struct NotifyAttackBuilder {
 
 inline flatbuffers::Offset<NotifyAttack> CreateNotifyAttack(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0,
+    flatbuffers::Offset<flatbuffers::String> uuid = 0,
     float rotation = 0.0f) {
   NotifyAttackBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
   builder_.add_uuid(uuid);
   return builder_.Finish();
+}
+
+inline flatbuffers::Offset<NotifyAttack> CreateNotifyAttackDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *uuid = nullptr,
+    float rotation = 0.0f) {
+  return CreateNotifyAttack(
+      _fbb,
+      uuid ? _fbb.CreateString(uuid) : 0,
+      rotation);
 }
 
 flatbuffers::Offset<NotifyAttack> CreateNotifyAttack(flatbuffers::FlatBufferBuilder &_fbb, const NotifyAttackT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
@@ -2431,9 +2451,8 @@ flatbuffers::Offset<AppearRemoteCharacter> CreateAppearRemoteCharacter(flatbuffe
 
 struct DisappearRemoteCharacterT : public flatbuffers::NativeTable {
   typedef DisappearRemoteCharacter TableType;
-  int32_t uuid;
-  DisappearRemoteCharacterT()
-      : uuid(0) {
+  std::string uuid;
+  DisappearRemoteCharacterT() {
   }
 };
 
@@ -2442,12 +2461,13 @@ struct DisappearRemoteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::T
   enum {
     VT_UUID = 4
   };
-  int32_t uuid() const {
-    return GetField<int32_t>(VT_UUID, 0);
+  const flatbuffers::String *uuid() const {
+    return GetPointer<const flatbuffers::String *>(VT_UUID);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_UUID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_UUID) &&
+           verifier.Verify(uuid()) &&
            verifier.EndTable();
   }
   DisappearRemoteCharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2458,8 +2478,8 @@ struct DisappearRemoteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::T
 struct DisappearRemoteCharacterBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_uuid(int32_t uuid) {
-    fbb_.AddElement<int32_t>(DisappearRemoteCharacter::VT_UUID, uuid, 0);
+  void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
+    fbb_.AddOffset(DisappearRemoteCharacter::VT_UUID, uuid);
   }
   DisappearRemoteCharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2475,10 +2495,18 @@ struct DisappearRemoteCharacterBuilder {
 
 inline flatbuffers::Offset<DisappearRemoteCharacter> CreateDisappearRemoteCharacter(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t uuid = 0) {
+    flatbuffers::Offset<flatbuffers::String> uuid = 0) {
   DisappearRemoteCharacterBuilder builder_(_fbb);
   builder_.add_uuid(uuid);
   return builder_.Finish();
+}
+
+inline flatbuffers::Offset<DisappearRemoteCharacter> CreateDisappearRemoteCharacterDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *uuid = nullptr) {
+  return CreateDisappearRemoteCharacter(
+      _fbb,
+      uuid ? _fbb.CreateString(uuid) : 0);
 }
 
 flatbuffers::Offset<DisappearRemoteCharacter> CreateDisappearRemoteCharacter(flatbuffers::FlatBufferBuilder &_fbb, const DisappearRemoteCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
@@ -2973,7 +3001,7 @@ inline LocalCharacterT *LocalCharacter::UnPack(const flatbuffers::resolver_funct
 inline void LocalCharacter::UnPackTo(LocalCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = uuid(); _o->uuid = _e; };
+  { auto _e = uuid(); if (_e) _o->uuid = _e->str(); };
   { auto _e = name(); if (_e) _o->name = _e->str(); };
   { auto _e = class_type(); _o->class_type = _e; };
   { auto _e = exp(); _o->exp = _e; };
@@ -2985,7 +3013,7 @@ inline void LocalCharacter::UnPackTo(LocalCharacterT *_o, const flatbuffers::res
   { auto _e = att(); _o->att = _e; };
   { auto _e = def(); _o->def = _e; };
   { auto _e = map_id(); _o->map_id = _e; };
-  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<Vec3>(new Vec3(*_e)); };
+  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<protocol::Vec3>(new protocol::Vec3(*_e)); };
   { auto _e = rotation_y(); _o->rotation_y = _e; };
   { auto _e = speed(); _o->speed = _e; };
 }
@@ -2997,7 +3025,7 @@ inline flatbuffers::Offset<LocalCharacter> LocalCharacter::Pack(flatbuffers::Fla
 inline flatbuffers::Offset<LocalCharacter> CreateLocalCharacter(flatbuffers::FlatBufferBuilder &_fbb, const LocalCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _uuid = _o->uuid;
+  auto _uuid = _o->uuid.size() ? _fbb.CreateString(_o->uuid) : 0;
   auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
   auto _class_type = _o->class_type;
   auto _exp = _o->exp;
@@ -3040,7 +3068,7 @@ inline RemoteCharacterT *RemoteCharacter::UnPack(const flatbuffers::resolver_fun
 inline void RemoteCharacter::UnPackTo(RemoteCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = uuid(); _o->uuid = _e; };
+  { auto _e = uuid(); if (_e) _o->uuid = _e->str(); };
   { auto _e = name(); if (_e) _o->name = _e->str(); };
   { auto _e = class_type(); _o->class_type = _e; };
   { auto _e = level(); _o->level = _e; };
@@ -3048,7 +3076,7 @@ inline void RemoteCharacter::UnPackTo(RemoteCharacterT *_o, const flatbuffers::r
   { auto _e = hp(); _o->hp = _e; };
   { auto _e = max_mp(); _o->max_mp = _e; };
   { auto _e = mp(); _o->mp = _e; };
-  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<Vec3>(new Vec3(*_e)); };
+  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<protocol::Vec3>(new protocol::Vec3(*_e)); };
   { auto _e = rotation_y(); _o->rotation_y = _e; };
 }
 
@@ -3059,7 +3087,7 @@ inline flatbuffers::Offset<RemoteCharacter> RemoteCharacter::Pack(flatbuffers::F
 inline flatbuffers::Offset<RemoteCharacter> CreateRemoteCharacter(flatbuffers::FlatBufferBuilder &_fbb, const RemoteCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _uuid = _o->uuid;
+  auto _uuid = _o->uuid.size() ? _fbb.CreateString(_o->uuid) : 0;
   auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
   auto _class_type = _o->class_type;
   auto _level = _o->level;
@@ -3168,8 +3196,8 @@ inline void ActionMove::UnPackTo(ActionMoveT *_o, const flatbuffers::resolver_fu
   (void)_o;
   (void)_resolver;
   { auto _e = rotation(); _o->rotation = _e; };
-  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<Vec3>(new Vec3(*_e)); };
-  { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<Vec3>(new Vec3(*_e)); };
+  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<protocol::Vec3>(new protocol::Vec3(*_e)); };
+  { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<protocol::Vec3>(new protocol::Vec3(*_e)); };
 }
 
 inline flatbuffers::Offset<ActionMove> ActionMove::Pack(flatbuffers::FlatBufferBuilder &_fbb, const ActionMoveT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -3223,10 +3251,10 @@ inline NotifyMoveT *NotifyMove::UnPack(const flatbuffers::resolver_function_t *_
 inline void NotifyMove::UnPackTo(NotifyMoveT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = uuid(); _o->uuid = _e; };
+  { auto _e = uuid(); if (_e) _o->uuid = _e->str(); };
   { auto _e = rotation(); _o->rotation = _e; };
-  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<Vec3>(new Vec3(*_e)); };
-  { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<Vec3>(new Vec3(*_e)); };
+  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<protocol::Vec3>(new protocol::Vec3(*_e)); };
+  { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<protocol::Vec3>(new protocol::Vec3(*_e)); };
 }
 
 inline flatbuffers::Offset<NotifyMove> NotifyMove::Pack(flatbuffers::FlatBufferBuilder &_fbb, const NotifyMoveT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -3236,7 +3264,7 @@ inline flatbuffers::Offset<NotifyMove> NotifyMove::Pack(flatbuffers::FlatBufferB
 inline flatbuffers::Offset<NotifyMove> CreateNotifyMove(flatbuffers::FlatBufferBuilder &_fbb, const NotifyMoveT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _uuid = _o->uuid;
+  auto _uuid = _o->uuid.size() ? _fbb.CreateString(_o->uuid) : 0;
   auto _rotation = _o->rotation;
   auto _pos = _o->pos ? _o->pos.get() : 0;
   auto _velocity = _o->velocity ? _o->velocity.get() : 0;
@@ -3257,7 +3285,7 @@ inline NotifyAttackT *NotifyAttack::UnPack(const flatbuffers::resolver_function_
 inline void NotifyAttack::UnPackTo(NotifyAttackT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = uuid(); _o->uuid = _e; };
+  { auto _e = uuid(); if (_e) _o->uuid = _e->str(); };
   { auto _e = rotation(); _o->rotation = _e; };
 }
 
@@ -3268,7 +3296,7 @@ inline flatbuffers::Offset<NotifyAttack> NotifyAttack::Pack(flatbuffers::FlatBuf
 inline flatbuffers::Offset<NotifyAttack> CreateNotifyAttack(flatbuffers::FlatBufferBuilder &_fbb, const NotifyAttackT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _uuid = _o->uuid;
+  auto _uuid = _o->uuid.size() ? _fbb.CreateString(_o->uuid) : 0;
   auto _rotation = _o->rotation;
   return CreateNotifyAttack(
       _fbb,
@@ -3310,7 +3338,7 @@ inline DisappearRemoteCharacterT *DisappearRemoteCharacter::UnPack(const flatbuf
 inline void DisappearRemoteCharacter::UnPackTo(DisappearRemoteCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = uuid(); _o->uuid = _e; };
+  { auto _e = uuid(); if (_e) _o->uuid = _e->str(); };
 }
 
 inline flatbuffers::Offset<DisappearRemoteCharacter> DisappearRemoteCharacter::Pack(flatbuffers::FlatBufferBuilder &_fbb, const DisappearRemoteCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -3320,7 +3348,7 @@ inline flatbuffers::Offset<DisappearRemoteCharacter> DisappearRemoteCharacter::P
 inline flatbuffers::Offset<DisappearRemoteCharacter> CreateDisappearRemoteCharacter(flatbuffers::FlatBufferBuilder &_fbb, const DisappearRemoteCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _uuid = _o->uuid;
+  auto _uuid = _o->uuid.size() ? _fbb.CreateString(_o->uuid) : 0;
   return CreateDisappearRemoteCharacter(
       _fbb,
       _uuid);

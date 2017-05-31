@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "GameServer.h"
 #include "World.h"
+#include "Zone.h"
 #include "Character.h"
 #include "DBEntity.h"
 #include "MessageHelper.h"
@@ -12,26 +13,23 @@ namespace db = db_entity;
 class RemoteClient : public std::enable_shared_from_this<RemoteClient>
 {
 public:
-	enum class State
+	enum class WorldState
 	{
-		Connect = 0,	// 연결됨
-		Login,			// 로그인
-		WorldEnter,		// 월드 입장
-		Disconnect,		// 접속 종료
+		None,			// 입장 아님
+		Entering,		// 입장 중
+		Entered,		// 입장 됨
+		Leaving,		// 나가는 중
 	};
 
-	static Ptr<RemoteClient> Create(GameServer* server, const uuid& uuid, const Ptr<net::Session>& net_session)
-	{
-		return std::make_shared<RemoteClient>(server, uuid, net_session);
-	}
+	RemoteClient(const RemoteClient&) = delete;
+	RemoteClient& operator=(const RemoteClient&) = delete;
 
 	RemoteClient(GameServer* server, const uuid& uuid, const Ptr<net::Session>& net_session)
 		: server_(server)
-		, world_(server->GetWorld().get())
 		, uuid_(uuid)
 		, net_session_(net_session)
-		, state_(State::Connect)
-		, dispose_(false)
+		, state_(WorldState::None)
+		, disposed_(false)
 	{
 		assert(server != nullptr);
 		assert(net_session != nullptr);
@@ -52,34 +50,38 @@ public:
 		return net_session_;
 	}
 
+	template <typename T>
+	void Send(fb::FlatBufferBuilder& fbb, fb::Offset<T>& message)
+	{
+		helper::Send(net_session_, fbb, message);
+	}
+
 	template <typename MessageT>
 	void Send(const MessageT& message)
 	{
 		helper::Send(net_session_, message);
 	}
 
-	State GetState() const
+	WorldState GetState() const
 	{
 		return state_;
+	}
+
+	bool IsDisconnected()
+	{
+		return !net_session_->IsOpen();
 	}
 
 	// 연결을 종료한다.
 	void Disconnect()
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-
-		if (net_session_ == nullptr)
-			return;
-
 		net_session_->Close();
 		Dispose();
 	}
 
 	// 클라이언트에서 연결을 끊었을때 callback
-	void OnDisconnect()
+	void OnDisconnected()
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-
 		Dispose();
 	}
 
@@ -88,107 +90,126 @@ public:
 		return db_account_;
 	}
 
-	void SetLogin(Ptr<db::Account> db_account)
+	bool IsAuthentication()
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-
-		db_account_ = db_account;
-		state_ = State::Login;
+		return db_account_ != nullptr;
 	}
 
-	// 게임 입장.
-	void EnterWorld(int character_id)
+	void SetAuthentication(Ptr<db::Account> db_account)
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-			
+		db_account_ = db_account;
+	}
+
+
+
+	// 게임 입장.
+	void SetCharacter(Ptr<Character> character)
+	{
+		state_ = WorldState::Entered;
+		character_ = character;
+	}
+
+	void EnterWorld(World& world, int character_id)
+	{
 		// 플레이어 상태 검사
-		if (state_ != State::Connect)
+		if (GetState() != WorldState::None)
 		{
 			protocol::world::ReplyEnterWorldFailedT reply;
 			reply.error_code = protocol::ErrorCode::ENTER_WORLD_INVALID_STATE;
-			helper::Send(net_session_, reply);
+			helper::Send(GetSession(), reply);
 			return;
 		}
 
 		// 캐릭터 로드
-		auto db_character = db::Character::Fetch(server_->GetDB(), character_id, db_account_->id);
+		auto db_character = db::Character::Fetch(GetDB(), character_id, GetAccount()->id);
 		// 캐릭터 로드 실패
 		if (!db_character)
 		{
 			protocol::world::ReplyEnterWorldFailedT reply;
 			reply.error_code = protocol::ErrorCode::ENTER_WORLD_INVALID_CHARACTER;
-			helper::Send(net_session_, reply);
+			helper::Send(GetSession(), reply);
 			return;
 		}
 
 		// 케릭터 인스턴스 생성
-		auto character = Character::Create();
-		character->db_data_ = db_character.get();
-		character->remote_client_ = this;
+		auto character = std::make_shared<Character>(boost::uuids::random_generator()(), this, db_character);
 
-		if (!world_->EnterCharacter(character))
+		// 입장할 Zone 객체를 얻는다.
+		Zone* field_zone = world.GetFieldZone(character->map_id_);
+		if (!field_zone)
 		{
 			protocol::world::ReplyEnterWorldFailedT reply;
 			reply.error_code = protocol::ErrorCode::ENTER_WORLD_CANNOT_ENTER_ZONE;
-			helper::Send(net_session_, reply);
+			Send(reply);
+			return;
 		}
 
-		db_character_ = db_character;
-		character_ = character;
+		SetState(WorldState::Entering);
+		// Zone 입장
+		field_zone->Post([this, field_zone, character]()
+		{
+			field_zone->EnterCharacter(character);
+			SetState(WorldState::Entered);
+			character_ = character;
+		});
 
-		state_ = State::WorldEnter;
+		// 입장 성공 메시지
+		fb::FlatBufferBuilder fbb;
+		auto local_char = character->Serialize(fbb);
+		auto reply = protocol::world::CreateReplyEnterWorldSuccess(fbb, local_char);
+		Send(fbb, reply);
+	}
 
-		//helper::Send(net_session_, reply);
+	void LeaveWorld()
+	{
+		if (GetState() != WorldState::Entered || !character_)
+			return;
+
+		Zone* zone = character_->GetLocationZone();
+		if (!zone)
+			return;
+
+		// 나감
+		SetState(WorldState::Leaving);
+		zone->Post([this, zone, character = character_]()
+		{
+			zone->LeaveCharacter(character->GetUUID());
+			character->UpdateToDB();
+			character_ = nullptr;
+			SetState(WorldState::None);
+		});
+	}
+
+	// 종료 처리. 상태 저장 등 을 한다.
+	void Dispose()
+	{
+		bool e = false;
+		if (!disposed_.compare_exchange_strong(e, true))
+			return;
+
+		LeaveWorld();
 	}
 
 private:
-	// 세션 종료 처리. 상태 저장 등 을 한다.
-	void Dispose()
+
+	const Ptr<MySQLPool>& GetDB()
 	{
-		if (dispose_)
-			return;
-
-		// 저장
-		UpdateToDB();
-
-		dispose_ = true;
+		return server_->GetDB();
 	}
 
-	// 데이터를 DB에 저장.
-	void UpdateToDB()
+	void SetState(WorldState state)
 	{
-		/*if (!character_)
-			return;
-
-		auto db = server_->GetDB();
-		std::stringstream ss;
-		ss << "UPDATE user_character_tb SET "
-			<< "exp=" << character_->exp_
-			<< "level=" << character_->level_
-			<< "hp=" << character_->hp_
-			<< "mp=" << character_->mp_
-			<< "att=" << character_->att_
-			<< "def=" << character_->def_
-			<< "map_id=" << character_->map_id_
-			<< "pos_x=" << character_->pos_.X
-			<< "pos_y=" << character_->pos_.Y
-			<< "pos_z=" << character_->pos_.Z
-			<< "rotation_y=" << character_->rotation_y
-			<< "WHERE id=" << character_->id_;
-		auto result_set = db->Excute(ss.str());*/
+		state_ = state;
 	}
+	
+	GameServer*             server_;
+	Ptr<net::Session>       net_session_;
+	uuid                    uuid_;
+	
+	Ptr<db::Account>        db_account_;
+	
+	std::atomic<WorldState>	state_;
+	Ptr<Character>          character_ = nullptr;
 
-	std::mutex         mutex_;
-	bool               dispose_;
-
-	GameServer*        server_;
-	Ptr<net::Session>  net_session_;
-		
-	uuid               uuid_;
-	State              state_;
-	Ptr<db::Account>   db_account_;
-	Ptr<db::Character> db_character_;
-		
-	World*             world_ = nullptr;
-	Ptr<Character>     character_ = nullptr;
+	std::atomic<bool>       disposed_;
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include <chrono>
+#include <type_traits>
 #include "Common.h"
 #include "DBEntity.h"
 
@@ -13,6 +14,7 @@ using double_seconds = std::chrono::duration<double>;
 class World;
 class GameObject;
 class Character;
+class Monster;
 
 class Zone : std::enable_shared_from_this<Zone>
 {
@@ -26,56 +28,58 @@ public:
 	// timer type
 	using timer = boost::asio::high_resolution_timer;
 
-	static Ptr<Zone> Create(boost::asio::io_service& ios, World* world)
-	{
-		return std::make_shared<Zone>(boost::uuids::random_generator()(), ios, world);
-	}
+	Zone(const Zone&) = delete;
+	Zone& operator=(const Zone&) = delete;
 
-	Zone(const uuid& uuid, boost::asio::io_service& ios, World* world);
+	Zone(boost::asio::io_service& ios, World* world, Ptr<db::Map> map_data);
 	virtual ~Zone();
 
-	const uuid& GetUUID() const { return uuid_; }
 	boost::asio::strand& GetStrand() { return strand_; }
 
 	void Start();
 
 	void Stop();
 
+	std::map<uuid, Ptr<Character>>& GetCharacters()
+	{
+		return characters_;
+	}
+
+	std::map<uuid, Ptr<Monster>>& GetMonsters()
+	{
+		return monsters_;
+	}
+
 	Ptr<GameObject> GetCharacter(const uuid& uuid);
 
-	const Ptr<db::Map>& GetMap() const { return db_map_; }
-	void SetMap(Ptr<db::Map> map) { db_map_ = map; }
+	const Ptr<db::Map>& GetMapData() const { return map_data_; }
 
 	void EnterCharacter(Ptr<Character> character);
 
 	void LeaveCharacter(const uuid& uuid);
 
+	template <typename Func>
+	void Post(Func&& func)
+	{
+		GetStrand().post(std::forward<Func>(func));
+	}
+
 protected:
 	virtual void Update(double delta_time);
 
-	void Broadcast()
-	{
-		for (auto& e : characters_)
-		{
-
-		}
-	}
-
 private:
-	void AddCharacter(const uuid& uuid, Ptr<Character> c);
-	void RemoveCharacter(const uuid& uuid);
-
 	void ScheduleNextUpdate(const time_point& start_time);
 
 	void HandleNextUpdate(const time_point& start_time);
 
 	boost::asio::strand strand_;
 	Ptr<timer> update_timer_;
-	uuid uuid_;
 
 	World* world_;
 	// 지역에 속한 플레이어
 	std::map<uuid, Ptr<Character>> characters_;
+	// 지역에 속한 몬스터
+	std::map<uuid, Ptr<Monster>> monsters_;
 	// 맵 정보
-	Ptr<db::Map> db_map_;
+	Ptr<db::Map> map_data_;
 };

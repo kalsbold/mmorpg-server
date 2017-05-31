@@ -37,35 +37,30 @@ Ptr<net::IoServiceLoop> World::GetIosLoop()
 	return loop_;
 }
 
-bool World::EnterCharacter(Ptr<Character>& character)
+Zone * World::GetFieldZone(int map_id)
 {
-	// 맵을 찾는다
-	auto iter = find_if(field_zones_.begin(), field_zones_.end(), [&](auto& pair)
+	auto iter = std::find_if(field_zones_.begin(), field_zones_.end(), [map_id](const Ptr<Zone>& var)
 	{
-		return pair.second->GetMap()->id == character->db_data_->map_id;
+		return var->GetMapData()->id == map_id;
 	});
 	if (iter == field_zones_.end())
-		return false;
+		return nullptr;
 
-	Ptr<Zone> zone = iter->second;
-	zone->EnterCharacter(character);
-	return true;
+	return (*iter).get();
 }
 
 void World::CreateFieldZones()
 {
 	// 필드존 생성
-	auto& map_data = MapData::GetInstance().GetAll();
-	for (auto& map : map_data)
+	auto& map_table = MapTable::GetInstance().GetAll();
+	for (auto& map : map_table)
 	{
 		if (map->type == MapType::FIELD)
 		{
-			auto uuid = boost::uuids::random_generator()();
-			auto zone = Zone::Create(loop_->GetIoService(), this);
-			zone->SetMap(map);
+			auto zone = std::make_shared<Zone>(loop_->GetIoService(), this, map);
 			zone->Start();
 
-			field_zones_.insert(make_pair(uuid, zone));
+			field_zones_.push_back(zone);
 		}
 	}
 }

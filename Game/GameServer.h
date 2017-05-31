@@ -38,9 +38,9 @@ public:
 
 	void NotifyUnauthedAccess(const Ptr<net::Session>& session);
 
-	Ptr<World> GetWorld()
+	World& GetWorld()
 	{
-		return world_;
+		return *world_;
 	}
 private:
 	void RegisterHandlers();

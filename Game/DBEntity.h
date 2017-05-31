@@ -4,16 +4,16 @@
 
 namespace db_entity {
 
-class EntityBase
+class DBEntityBase
 {
 public:
-	EntityBase()
+	DBEntityBase()
 		: db_(nullptr)
 	{}
-	explicit EntityBase(Ptr<MySQLPool> db)
+	explicit DBEntityBase(Ptr<MySQLPool> db)
 		: db_(db)
 	{}
-	virtual ~EntityBase() {};
+	virtual ~DBEntityBase() {};
 
 	void SetDB(Ptr<MySQLPool> db)
 	{
@@ -31,10 +31,10 @@ private:
 	Ptr<MySQLPool> db_;
 };
 
-class Account : public EntityBase
+class Account : public DBEntityBase
 {
 public:
-	using EntityBase::EntityBase;
+	using DBEntityBase::DBEntityBase;
 
 	int    id;
 	std::string acc_name;
@@ -93,10 +93,10 @@ public:
 	int       def;
 };
 
-class Character : public EntityBase
+class Character : public DBEntityBase
 {
 public:
-	using EntityBase::EntityBase;
+	using DBEntityBase::DBEntityBase;
 
 	int            id;
 	int            acc_id;

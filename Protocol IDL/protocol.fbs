@@ -27,6 +27,7 @@ enum ErrorCode : int {
     ENTER_WORLD_CANNOT_ENTER_ZONE = 504, // 지역에 들어갈수 없다
 }
 
+// 데이터 스키마 정의===================================================================
 enum ClassType : int {
     NONE = 0,
     Knight = 1,
@@ -38,6 +39,18 @@ enum MapType : int {
     NONE = 0,
     FIELD = 1,
     DUNGEON = 2,
+}
+
+// Vector2
+struct Vec2 {
+  x:float;
+  y:float;
+}
+// Vector3
+struct Vec3 {
+  x:float;
+  y:float;
+  z:float;
 }
 
 // 로그인 하지 않은 유저가 로그인이 선결되어야 하는 요청을 했을때 보내는 경고
@@ -125,22 +138,9 @@ table ReplyDeleteCharacterSuccess{
 
 namespace protocol.world;
 
-// 데이터 스키마 정의===================================================================
-// Vector2
-struct Vec2 {
-  x:float;
-  y:float;
-}
-// Vector3
-struct Vec3 {
-  x:float;
-  y:float;
-  z:float;
-}
-
 // 캐릭터 정보
 table LocalCharacter{
-    uuid:int;
+    uuid:string;
     name:string;
     class_type:ClassType;
     exp:int;
@@ -154,11 +154,10 @@ table LocalCharacter{
     map_id:int;
     pos:Vec3;
     rotation_y:float;
-    speed:float;
 }
 
 table RemoteCharacter{
-    uuid:int;
+    uuid:string;
     name:string;
     class_type:ClassType;
     level:int;
@@ -197,14 +196,14 @@ table ActionAttack{
 
 // 케릭터의 이동 통지
 table NotifyMove{
-    uuid:int;
+    uuid:string;
     rotation:float;
     pos:Vec3;
     velocity:Vec3;
 }
 // 케릭터의 공격 통지
 table NotifyAttack{
-    uuid:int;
+    uuid:string;
     rotation:float;
 }
 
@@ -214,7 +213,7 @@ table AppearRemoteCharacter{
 }
 // 원격 케릭터 삭제
 table DisappearRemoteCharacter{
-    uuid:int;
+    uuid:string;
 }
 
 namespace protocol;

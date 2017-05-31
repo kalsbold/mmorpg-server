@@ -6,10 +6,10 @@
 #include "Character.h"
 #include "StaticCachedData.h"
 
-Zone::Zone(const uuid & uuid, boost::asio::io_service & ios, World * world)
-	: uuid_(uuid)
-	, strand_(ios)
+Zone::Zone(boost::asio::io_service & ios, World * world, Ptr<db::Map> map_data)
+	: strand_(ios)
 	, world_(world)
+	, map_data_(map_data)
 {
 
 }
@@ -48,8 +48,8 @@ Ptr<GameObject> Zone::GetCharacter(const uuid& uuid)
 
 void Zone::EnterCharacter(Ptr<Character> character)
 {
-	AddCharacter(character->GetUUID(), character);
-	character->zone_ = this;
+	characters_.emplace(character->GetUUID(), character);
+	character->SetLocationZone(this);
 
 	for (auto& e : characters_)
 	{
@@ -59,7 +59,7 @@ void Zone::EnterCharacter(Ptr<Character> character)
 
 void Zone::LeaveCharacter(const uuid& uuid)
 {
-
+	characters_.erase(uuid);
 }
 
 void Zone::Update(double delta_time)
@@ -69,16 +69,6 @@ void Zone::Update(double delta_time)
 	{
 		element.second->Update(delta_time);
 	}
-}
-
-void Zone::AddCharacter(const uuid& uuid, Ptr<Character> c)
-{
-	characters_.insert(make_pair(uuid, c));
-}
-
-void Zone::RemoveCharacter(const uuid& uuid)
-{
-	characters_.erase(uuid);
 }
 
 void Zone::ScheduleNextUpdate(const time_point & start_time)

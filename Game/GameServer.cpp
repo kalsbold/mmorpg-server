@@ -3,6 +3,7 @@
 #include "ServerSettings.h"
 #include "RemoteClient.h"
 #include "World.h"
+#include "Zone.h"
 #include "DBEntity.h"
 #include "StaticCachedData.h"
 #include "MessageHelper.h"
@@ -48,8 +49,8 @@ void GameServer::Run()
 	RegisterHandlers();
 
 	// DB 데이터 로드
-	MapData::Load();
-	CharacterAttributeData::Load();
+	MapTable::Load();
+	CharacterAttributeTable::Load();
 
 	// Game World 생성및 시작.
 	world_ = std::make_shared<World>(ios_loop_);
@@ -179,7 +180,7 @@ void GameServer::HandleSessionClosed(const Ptr<net::Session>& session, net::Clos
 		return;
 
 	// 종료 처리
-	remote_client->OnDisconnect();
+	remote_client->OnDisconnected();
 	BOOST_LOG_TRIVIAL(info) << "Logout : " << remote_client->GetAccount()->acc_name;
 
 	// 목록에서 제거
@@ -230,8 +231,8 @@ void GameServer::OnRequestLogin(const Ptr<net::Session>& session, const proto::N
 	}
 
 	// 새 RemoteClient 생성 및 추가
-	auto new_rc = RemoteClient::Create(this, boost::uuids::random_generator()(), session);
-	new_rc->SetLogin(db_account);
+	auto new_rc = std::make_shared<RemoteClient>(this, boost::uuids::random_generator()(), session);
+	new_rc->SetAuthentication(db_account);
 	AddRemoteClient(session->GetID(), new_rc);
 
 	BOOST_LOG_TRIVIAL(info) << "Login : " << db_account->acc_name;
@@ -318,7 +319,7 @@ void GameServer::OnRequestCreateCharacter(const Ptr<net::Session>& session, cons
 
 	// 초기 능력치를 가져온다.
 	const int level = 1;
-	auto attribute = CharacterAttributeData::GetInstance().Get(class_type, level);
+	auto attribute = CharacterAttributeTable::GetInstance().Get(class_type, level);
 	if (!attribute)
 	{
 		proto::login::ReplyCreateCharacterFailedT reply;
@@ -431,19 +432,9 @@ void GameServer::OnRequestEnterWorld(const Ptr<net::Session>& session, const pro
 		return;
 	}
 
-	/*
-	Account acc_info;
-	acc_info.id = acc_id;
-	acc_info.acc_name = result_set->getString("acc_name").c_str();
-	uuid session_id = session->GetID();
-	auto game_user = std::make_shared<GamePlayer>(this, session, acc_info);
-	AddGamePlayer(session_id, game_user);
-	BOOST_LOG_TRIVIAL(info) << "Login success : " << acc_info.acc_name;
-	// 성공
-	auto reply = CreateLoginSuccess(builder,
-	builder.CreateString(boost::uuids::to_string(session->GetID())));
-	Send(session, builder, reply);
-	*/
+	const int character_id = msg->character_id();
+
+	remote_client->EnterWorld(*world_, character_id);
 }
 
 void GameServer::RegisterHandlers()
