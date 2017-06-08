@@ -1,6 +1,5 @@
 #pragma once
 #include "Common.h"
-#include "DBEntity.h"
 
 class Zone;
 class Character;

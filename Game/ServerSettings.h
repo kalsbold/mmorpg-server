@@ -8,6 +8,7 @@
 
 namespace po = boost::program_options;
 
+// 전역 서버 설정
 class ServerSettings : public Singleton<ServerSettings>
 {
 public:
@@ -26,26 +27,24 @@ public:
 	size_t        db_connection_pool;
 
 	template <typename CharT>
-	static bool Load(CharT* filepath)
+	bool Load(CharT* filepath)
 	{
-		ServerSettings& config = ServerSettings::GetInstance();
-
 		// step 1 : 옵션 설명 정의
 		po::options_description desc("Allowed options");
 		desc.add_options()
-			("Server.name", po::value<std::string>(&config.name)->default_value(""))
-			("Server.address", po::value<std::string>(&config.bind_address)->default_value("0.0.0.0"))
+			("Server.name", po::value<std::string>(&name)->default_value(""))
+			("Server.address", po::value<std::string>(&bind_address)->default_value("0.0.0.0"))
 			("Server.port", po::value<uint16_t>())
-			("Server.thread", po::value<size_t>(&config.thread_count)->default_value(std::thread::hardware_concurrency()))
-			("Server.max-session", po::value<size_t>(&config.max_session_count)->default_value(10000))
-			("Server.min-receive-size", po::value<size_t>(&config.min_receive_size)->default_value(1024 * 4))
-			("Server.max-buffer-size", po::value<size_t>(&config.max_receive_buffer_size)->default_value(std::numeric_limits<size_t>::max()))
-			("Server.no-delay", po::value<bool>(&config.no_delay)->default_value(false))
+			("Server.thread", po::value<size_t>(&thread_count)->default_value(std::thread::hardware_concurrency()))
+			("Server.max-session", po::value<size_t>(&max_session_count)->default_value(10000))
+			("Server.min-receive-size", po::value<size_t>(&min_receive_size)->default_value(1024 * 4))
+			("Server.max-buffer-size", po::value<size_t>(&max_receive_buffer_size)->default_value(std::numeric_limits<size_t>::max()))
+			("Server.no-delay", po::value<bool>(&no_delay)->default_value(false))
 			("DB.host", po::value<std::string>())
 			("DB.user", po::value<std::string>())
 			("DB.password", po::value<std::string>())
 			("DB.schema", po::value<std::string>())
-			("DB.conn-pool", po::value<size_t>(&config.db_connection_pool)->default_value(1))
+			("DB.conn-pool", po::value<size_t>(&db_connection_pool)->default_value(1))
 			;
 
 		// step 2 :명령행 옵션 분석
@@ -90,7 +89,7 @@ public:
 		// step 3 : 옵션 처리
 		if (vm.count("Server.port"))
 		{
-			config.bind_port = vm["Server.port"].as<uint16_t>();
+			bind_port = vm["Server.port"].as<uint16_t>();
 		}
 		else
 		{
@@ -100,7 +99,7 @@ public:
 
 		if (vm.count("DB.host"))
 		{
-			config.db_host = vm["DB.host"].as<std::string>();
+			db_host = vm["DB.host"].as<std::string>();
 		}
 		else
 		{
@@ -110,7 +109,7 @@ public:
 
 		if (vm.count("DB.user"))
 		{
-			config.db_user = vm["DB.user"].as<std::string>();
+			db_user = vm["DB.user"].as<std::string>();
 		}
 		else
 		{
@@ -120,7 +119,7 @@ public:
 
 		if (vm.count("DB.password"))
 		{
-			config.db_password = vm["DB.password"].as<std::string>();
+			db_password = vm["DB.password"].as<std::string>();
 		}
 		else
 		{
@@ -130,7 +129,7 @@ public:
 
 		if (vm.count("DB.schema"))
 		{
-			config.db_schema = vm["DB.schema"].as<std::string>();
+			db_schema = vm["DB.schema"].as<std::string>();
 		}
 		else
 		{

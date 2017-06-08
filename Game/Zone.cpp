@@ -1,14 +1,13 @@
 #include "stdafx.h"
 #include "Zone.h"
-#include "World.h"
 #include "GameServer.h"
 #include "GameObject.h"
-#include "Character.h"
+#include "Actor.h"
 #include "StaticCachedData.h"
 
-Zone::Zone(boost::asio::io_service & ios, World * world, Ptr<db::Map> map_data)
+/*
+Zone::Zone(boost::asio::io_service & ios, Ptr<db::Map> map_data)
 	: strand_(ios)
-	, world_(world)
 	, map_data_(map_data)
 {
 
@@ -16,9 +15,10 @@ Zone::Zone(boost::asio::io_service & ios, World * world, Ptr<db::Map> map_data)
 
 Zone::~Zone()
 {
+	Stop();
 }
 
-void Zone::Start()
+void Zone::Start(const UpdateHandler& update_handler)
 {
 	if (update_timer_ != nullptr)
 		return;
@@ -35,6 +35,7 @@ void Zone::Stop()
 		return;
 
 	update_timer_->cancel();
+	update_timer_ = nullptr;
 }
 
 Ptr<GameObject> Zone::GetCharacter(const uuid& uuid)
@@ -46,18 +47,12 @@ Ptr<GameObject> Zone::GetCharacter(const uuid& uuid)
 	return iter->second;
 }
 
-void Zone::EnterCharacter(Ptr<Character> character)
+void Zone::AddCharacter(Ptr<Character> character)
 {
 	characters_.emplace(character->GetUUID(), character);
-	character->SetLocationZone(this);
-
-	for (auto& e : characters_)
-	{
-
-	}
 }
 
-void Zone::LeaveCharacter(const uuid& uuid)
+void Zone::RemoveCharacter(const uuid& uuid)
 {
 	characters_.erase(uuid);
 }
@@ -89,6 +84,4 @@ void Zone::HandleNextUpdate(const time_point & start_time)
 	ScheduleNextUpdate(clock::now());
 	Update(delta_time);
 }
-
-
-
+*/

@@ -160,15 +160,16 @@
   <ItemGroup>
     <ClInclude Include="AccountManager.h" />
     <ClInclude Include="Common.h" />
-    <ClInclude Include="DBEntity.h" />
+    <ClInclude Include="DBSchema.h" />
     <ClInclude Include="GameObject.h" />
-    <ClInclude Include="MessageHelper.h" />
+    <ClInclude Include="Grid.h" />
+    <ClInclude Include="ProtocolHelper.h" />
     <ClInclude Include="GameServer.h" />
     <ClInclude Include="protocol_generated.h" />
     <ClInclude Include="ServerBase.h" />
     <ClInclude Include="StaticCachedData.h" />
     <ClInclude Include="TypeDef.h" />
-    <ClInclude Include="Character.h" />
+    <ClInclude Include="Actor.h" />
     <ClInclude Include="MySQL.h" />
     <ClInclude Include="ServerSettings.h" />
     <ClInclude Include="TestMySQL.h" />
@@ -177,7 +178,6 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="RemoteClient.h" />
     <ClInclude Include="Vector3.h" />
-    <ClInclude Include="World.h" />
     <ClInclude Include="Zone.h" />
   </ItemGroup>
   <ItemGroup>
@@ -191,7 +191,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Vector3.cpp" />
-    <ClCompile Include="World.cpp" />
     <ClCompile Include="Zone.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

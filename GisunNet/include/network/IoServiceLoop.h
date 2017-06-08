@@ -8,8 +8,6 @@
 namespace gisun {
 namespace net {
 
-	using namespace std;
-
 	// Run the io_service object's event processing loop.
 	class IoServiceLoop
 	{
@@ -38,10 +36,10 @@ namespace net {
 			return *io_services_[idx_++ & (io_services_.size() - 1)];
 		}
 
-		atomic<size_t> idx_;
-		vector<unique_ptr<asio::io_service>> io_services_;
-		vector<unique_ptr<asio::io_service::work>> works_;
-		vector<thread> threads_;
+		std::atomic<size_t> idx_;
+		std::vector<std::unique_ptr<asio::io_service>> io_services_;
+		std::vector<std::unique_ptr<asio::io_service::work>> works_;
+		std::vector<std::thread> threads_;
 	};
 
 } // namespace net

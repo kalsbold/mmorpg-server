@@ -283,18 +283,18 @@ inline size_t InlineAlignment(const Type &type) {
 
 struct EnumVal {
   EnumVal(const std::string &_name, int64_t _val)
-    : name(_name), value(_val), struct_def(nullptr) {}
+    : name(_name), value(_val) {}
 
   Offset<reflection::EnumVal> Serialize(FlatBufferBuilder *builder) const;
 
   std::string name;
   std::vector<std::string> doc_comment;
   int64_t value;
-  StructDef *struct_def;  // only set if this is a union
+  Type union_type;
 };
 
 struct EnumDef : public Definition {
-  EnumDef() : is_union(false) {}
+  EnumDef() : is_union(false), uses_type_aliases(false) {}
 
   EnumVal *ReverseLookup(int enum_idx, bool skip_union_default = true) {
     for (auto it = vals.vec.begin() + static_cast<int>(is_union &&
@@ -312,6 +312,7 @@ struct EnumDef : public Definition {
 
   SymbolTable<EnumVal> vals;
   bool is_union;
+  bool uses_type_aliases;
   Type underlying_type;
 };
 
@@ -337,6 +338,7 @@ struct ServiceDef : public Definition {
 struct IDLOptions {
   bool strict_json;
   bool skip_js_exports;
+  bool use_goog_js_export_format;
   bool output_default_scalars_in_json;
   int indent_step;
   bool output_enum_identifiers;
@@ -352,17 +354,41 @@ struct IDLOptions {
   bool escape_proto_identifiers;
   bool generate_object_based_api;
   std::string cpp_object_api_pointer_type;
+  std::string cpp_object_api_string_type;
   bool union_value_namespacing;
   bool allow_non_utf8;
+  std::string include_prefix;
+  bool keep_include_path;
+  bool binary_schema_comments;
+  bool skip_flatbuffers_import;
+  std::string go_namespace;
+  bool reexport_ts_modules;
 
   // Possible options for the more general generator below.
-  enum Language { kJava, kCSharp, kGo, kMAX };
+  enum Language {
+    kJava   = 1 << 0,
+    kCSharp = 1 << 1,
+    kGo     = 1 << 2,
+    kCpp    = 1 << 3,
+    kJs     = 1 << 4,
+    kPython = 1 << 5,
+    kPhp    = 1 << 6,
+    kJson   = 1 << 7,
+    kBinary = 1 << 8,
+    kTs     = 1 << 9,
+    kMAX
+  };
 
   Language lang;
+
+  // The corresponding language bit will be set if a language is included
+  // for code generation.
+  unsigned long lang_to_generate;
 
   IDLOptions()
     : strict_json(false),
       skip_js_exports(false),
+      use_goog_js_export_format(false),
       output_default_scalars_in_json(false),
       indent_step(2),
       output_enum_identifiers(true), prefixed_enums(true), scoped_enums(false),
@@ -378,7 +404,12 @@ struct IDLOptions {
       cpp_object_api_pointer_type("std::unique_ptr"),
       union_value_namespacing(true),
       allow_non_utf8(false),
-      lang(IDLOptions::kJava) {}
+      keep_include_path(false),
+      binary_schema_comments(false),
+      skip_flatbuffers_import(false),
+      reexport_ts_modules(true),
+      lang(IDLOptions::kJava),
+      lang_to_generate(0) {}
 };
 
 // This encapsulates where the parser is in the current source file.
@@ -458,6 +489,7 @@ class Parser : public ParserState {
     known_attributes_["idempotent"] = true;
     known_attributes_["cpp_type"] = true;
     known_attributes_["cpp_ptr_type"] = true;
+    known_attributes_["cpp_str_type"] = true;
     known_attributes_["native_inline"] = true;
     known_attributes_["native_type"] = true;
     known_attributes_["native_default"] = true;
@@ -478,6 +510,8 @@ class Parser : public ParserState {
   // directory.
   // If the source was loaded from a file and isn't an include file,
   // supply its name in source_filename.
+  // All paths specified in this call must be in posix format, if you accept
+  // paths from user input, please call PosixPath on them first.
   bool Parse(const char *_source, const char **include_paths = nullptr,
              const char *source_filename = nullptr);
 
@@ -500,11 +534,11 @@ class Parser : public ParserState {
   // of the schema provided. Returns non-empty error on any problems.
   std::string ConformTo(const Parser &base);
 
-  FLATBUFFERS_CHECKED_ERROR CheckBitsFit(int64_t val, size_t bits);
+  FLATBUFFERS_CHECKED_ERROR CheckInRange(int64_t val, int64_t min, int64_t max);
 
 private:
   FLATBUFFERS_CHECKED_ERROR Error(const std::string &msg);
-  FLATBUFFERS_CHECKED_ERROR ParseHexNum(int nibbles, int64_t *val);
+  FLATBUFFERS_CHECKED_ERROR ParseHexNum(int nibbles, uint64_t *val);
   FLATBUFFERS_CHECKED_ERROR Next();
   FLATBUFFERS_CHECKED_ERROR SkipByteOrderMark();
   bool Is(int t);
@@ -519,6 +553,7 @@ private:
                                      const std::string &name, const Type &type,
                                      FieldDef **dest);
   FLATBUFFERS_CHECKED_ERROR ParseField(StructDef &struct_def);
+  FLATBUFFERS_CHECKED_ERROR ParseString(Value &val);
   FLATBUFFERS_CHECKED_ERROR ParseAnyValue(Value &val, FieldDef *field,
                                           size_t parent_fieldn,
                                           const StructDef *parent_struct_def);
@@ -555,13 +590,15 @@ private:
   FLATBUFFERS_CHECKED_ERROR SkipJsonString();
   FLATBUFFERS_CHECKED_ERROR DoParse(const char *_source,
                                     const char **include_paths,
-                                    const char *source_filename);
+                                    const char *source_filename,
+                                    const char *include_filename);
   FLATBUFFERS_CHECKED_ERROR CheckClash(std::vector<FieldDef*> &fields,
                                        StructDef *struct_def,
                                        const char *suffix,
                                        BaseType baseType);
 
  public:
+  SymbolTable<Type> types_;
   SymbolTable<StructDef> structs_;
   SymbolTable<EnumDef> enums_;
   SymbolTable<ServiceDef> services_;
@@ -573,7 +610,7 @@ private:
   std::string file_identifier_;
   std::string file_extension_;
 
-  std::map<std::string, bool> included_files_;
+  std::map<std::string, std::string> included_files_;
   std::map<std::string, std::set<std::string>> files_included_per_file_;
   std::vector<std::string> native_included_files_;
 
@@ -625,7 +662,7 @@ extern bool GenerateCPP(const Parser &parser,
                         const std::string &path,
                         const std::string &file_name);
 
-// Generate JavaScript code from the definitions in the Parser object.
+// Generate JavaScript or TypeScript code from the definitions in the Parser object.
 // See idl_gen_js.
 extern std::string GenerateJS(const Parser &parser);
 extern bool GenerateJS(const Parser &parser,
@@ -676,7 +713,7 @@ extern bool GenerateFBS(const Parser &parser,
                         const std::string &path,
                         const std::string &file_name);
 
-// Generate a make rule for the generated JavaScript code.
+// Generate a make rule for the generated JavaScript or TypeScript code.
 // See idl_gen_js.cpp.
 extern std::string JSMakeRule(const Parser &parser,
                               const std::string &path,
@@ -721,4 +758,3 @@ bool GenerateGoGRPC(const Parser &parser,
 }  // namespace flatbuffers
 
 #endif  // FLATBUFFERS_IDL_H_
-

@@ -150,9 +150,9 @@ struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_KEY) &&
+           VerifyOffsetRequired(verifier, VT_KEY) &&
            verifier.Verify(key()) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_VALUE) &&
+           VerifyOffset(verifier, VT_VALUE) &&
            verifier.Verify(value()) &&
            verifier.EndTable();
   }
@@ -194,7 +194,7 @@ inline flatbuffers::Offset<KeyValue> CreateKeyValueDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *key = nullptr,
     const char *value = nullptr) {
-  return CreateKeyValue(
+  return reflection::CreateKeyValue(
       _fbb,
       key ? _fbb.CreateString(key) : 0,
       value ? _fbb.CreateString(value) : 0);
@@ -204,7 +204,8 @@ struct EnumVal FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_NAME = 4,
     VT_VALUE = 6,
-    VT_OBJECT = 8
+    VT_OBJECT = 8,
+    VT_UNION_TYPE = 10
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -228,13 +229,18 @@ struct EnumVal FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const Object *object() const {
     return GetPointer<const Object *>(VT_OBJECT);
   }
+  const Type *union_type() const {
+    return GetPointer<const Type *>(VT_UNION_TYPE);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
            VerifyField<int64_t>(verifier, VT_VALUE) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_OBJECT) &&
+           VerifyOffset(verifier, VT_OBJECT) &&
            verifier.VerifyTable(object()) &&
+           VerifyOffset(verifier, VT_UNION_TYPE) &&
+           verifier.VerifyTable(union_type()) &&
            verifier.EndTable();
   }
 };
@@ -251,13 +257,16 @@ struct EnumValBuilder {
   void add_object(flatbuffers::Offset<Object> object) {
     fbb_.AddOffset(EnumVal::VT_OBJECT, object);
   }
+  void add_union_type(flatbuffers::Offset<Type> union_type) {
+    fbb_.AddOffset(EnumVal::VT_UNION_TYPE, union_type);
+  }
   EnumValBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   EnumValBuilder &operator=(const EnumValBuilder &);
   flatbuffers::Offset<EnumVal> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<EnumVal>(end);
     fbb_.Required(o, EnumVal::VT_NAME);
     return o;
@@ -268,9 +277,11 @@ inline flatbuffers::Offset<EnumVal> CreateEnumVal(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     int64_t value = 0,
-    flatbuffers::Offset<Object> object = 0) {
+    flatbuffers::Offset<Object> object = 0,
+    flatbuffers::Offset<Type> union_type = 0) {
   EnumValBuilder builder_(_fbb);
   builder_.add_value(value);
+  builder_.add_union_type(union_type);
   builder_.add_object(object);
   builder_.add_name(name);
   return builder_.Finish();
@@ -280,12 +291,14 @@ inline flatbuffers::Offset<EnumVal> CreateEnumValDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     int64_t value = 0,
-    flatbuffers::Offset<Object> object = 0) {
-  return CreateEnumVal(
+    flatbuffers::Offset<Object> object = 0,
+    flatbuffers::Offset<Type> union_type = 0) {
+  return reflection::CreateEnumVal(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       value,
-      object);
+      object,
+      union_type);
 }
 
 struct Enum FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -294,7 +307,8 @@ struct Enum FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_VALUES = 6,
     VT_IS_UNION = 8,
     VT_UNDERLYING_TYPE = 10,
-    VT_ATTRIBUTES = 12
+    VT_ATTRIBUTES = 12,
+    VT_DOCUMENTATION = 14
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -317,19 +331,25 @@ struct Enum FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<KeyValue>> *>(VT_ATTRIBUTES);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_VALUES) &&
+           VerifyOffsetRequired(verifier, VT_VALUES) &&
            verifier.Verify(values()) &&
            verifier.VerifyVectorOfTables(values()) &&
            VerifyField<uint8_t>(verifier, VT_IS_UNION) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_UNDERLYING_TYPE) &&
+           VerifyOffsetRequired(verifier, VT_UNDERLYING_TYPE) &&
            verifier.VerifyTable(underlying_type()) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_ATTRIBUTES) &&
+           VerifyOffset(verifier, VT_ATTRIBUTES) &&
            verifier.Verify(attributes()) &&
            verifier.VerifyVectorOfTables(attributes()) &&
+           VerifyOffset(verifier, VT_DOCUMENTATION) &&
+           verifier.Verify(documentation()) &&
+           verifier.VerifyVectorOfStrings(documentation()) &&
            verifier.EndTable();
   }
 };
@@ -352,13 +372,16 @@ struct EnumBuilder {
   void add_attributes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes) {
     fbb_.AddOffset(Enum::VT_ATTRIBUTES, attributes);
   }
+  void add_documentation(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> documentation) {
+    fbb_.AddOffset(Enum::VT_DOCUMENTATION, documentation);
+  }
   EnumBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   EnumBuilder &operator=(const EnumBuilder &);
   flatbuffers::Offset<Enum> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_, 6);
     auto o = flatbuffers::Offset<Enum>(end);
     fbb_.Required(o, Enum::VT_NAME);
     fbb_.Required(o, Enum::VT_VALUES);
@@ -373,8 +396,10 @@ inline flatbuffers::Offset<Enum> CreateEnum(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<EnumVal>>> values = 0,
     bool is_union = false,
     flatbuffers::Offset<Type> underlying_type = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> documentation = 0) {
   EnumBuilder builder_(_fbb);
+  builder_.add_documentation(documentation);
   builder_.add_attributes(attributes);
   builder_.add_underlying_type(underlying_type);
   builder_.add_values(values);
@@ -389,14 +414,16 @@ inline flatbuffers::Offset<Enum> CreateEnumDirect(
     const std::vector<flatbuffers::Offset<EnumVal>> *values = nullptr,
     bool is_union = false,
     flatbuffers::Offset<Type> underlying_type = 0,
-    const std::vector<flatbuffers::Offset<KeyValue>> *attributes = nullptr) {
-  return CreateEnum(
+    const std::vector<flatbuffers::Offset<KeyValue>> *attributes = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *documentation = nullptr) {
+  return reflection::CreateEnum(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       values ? _fbb.CreateVector<flatbuffers::Offset<EnumVal>>(*values) : 0,
       is_union,
       underlying_type,
-      attributes ? _fbb.CreateVector<flatbuffers::Offset<KeyValue>>(*attributes) : 0);
+      attributes ? _fbb.CreateVector<flatbuffers::Offset<KeyValue>>(*attributes) : 0,
+      documentation ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*documentation) : 0);
 }
 
 struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -410,7 +437,8 @@ struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_DEPRECATED = 16,
     VT_REQUIRED = 18,
     VT_KEY = 20,
-    VT_ATTRIBUTES = 22
+    VT_ATTRIBUTES = 22,
+    VT_DOCUMENTATION = 24
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -448,11 +476,14 @@ struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<KeyValue>> *>(VT_ATTRIBUTES);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_TYPE) &&
+           VerifyOffsetRequired(verifier, VT_TYPE) &&
            verifier.VerifyTable(type()) &&
            VerifyField<uint16_t>(verifier, VT_ID) &&
            VerifyField<uint16_t>(verifier, VT_OFFSET) &&
@@ -461,9 +492,12 @@ struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_DEPRECATED) &&
            VerifyField<uint8_t>(verifier, VT_REQUIRED) &&
            VerifyField<uint8_t>(verifier, VT_KEY) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_ATTRIBUTES) &&
+           VerifyOffset(verifier, VT_ATTRIBUTES) &&
            verifier.Verify(attributes()) &&
            verifier.VerifyVectorOfTables(attributes()) &&
+           VerifyOffset(verifier, VT_DOCUMENTATION) &&
+           verifier.Verify(documentation()) &&
+           verifier.VerifyVectorOfStrings(documentation()) &&
            verifier.EndTable();
   }
 };
@@ -501,13 +535,16 @@ struct FieldBuilder {
   void add_attributes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes) {
     fbb_.AddOffset(Field::VT_ATTRIBUTES, attributes);
   }
+  void add_documentation(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> documentation) {
+    fbb_.AddOffset(Field::VT_DOCUMENTATION, documentation);
+  }
   FieldBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FieldBuilder &operator=(const FieldBuilder &);
   flatbuffers::Offset<Field> Finish() {
-    const auto end = fbb_.EndTable(start_, 10);
+    const auto end = fbb_.EndTable(start_, 11);
     auto o = flatbuffers::Offset<Field>(end);
     fbb_.Required(o, Field::VT_NAME);
     fbb_.Required(o, Field::VT_TYPE);
@@ -526,10 +563,12 @@ inline flatbuffers::Offset<Field> CreateField(
     bool deprecated = false,
     bool required = false,
     bool key = false,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> documentation = 0) {
   FieldBuilder builder_(_fbb);
   builder_.add_default_real(default_real);
   builder_.add_default_integer(default_integer);
+  builder_.add_documentation(documentation);
   builder_.add_attributes(attributes);
   builder_.add_type(type);
   builder_.add_name(name);
@@ -552,8 +591,9 @@ inline flatbuffers::Offset<Field> CreateFieldDirect(
     bool deprecated = false,
     bool required = false,
     bool key = false,
-    const std::vector<flatbuffers::Offset<KeyValue>> *attributes = nullptr) {
-  return CreateField(
+    const std::vector<flatbuffers::Offset<KeyValue>> *attributes = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *documentation = nullptr) {
+  return reflection::CreateField(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       type,
@@ -564,7 +604,8 @@ inline flatbuffers::Offset<Field> CreateFieldDirect(
       deprecated,
       required,
       key,
-      attributes ? _fbb.CreateVector<flatbuffers::Offset<KeyValue>>(*attributes) : 0);
+      attributes ? _fbb.CreateVector<flatbuffers::Offset<KeyValue>>(*attributes) : 0,
+      documentation ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*documentation) : 0);
 }
 
 struct Object FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -574,7 +615,8 @@ struct Object FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_IS_STRUCT = 8,
     VT_MINALIGN = 10,
     VT_BYTESIZE = 12,
-    VT_ATTRIBUTES = 14
+    VT_ATTRIBUTES = 14,
+    VT_DOCUMENTATION = 16
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -600,19 +642,25 @@ struct Object FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<KeyValue>> *>(VT_ATTRIBUTES);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_NAME) &&
+           VerifyOffsetRequired(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_FIELDS) &&
+           VerifyOffsetRequired(verifier, VT_FIELDS) &&
            verifier.Verify(fields()) &&
            verifier.VerifyVectorOfTables(fields()) &&
            VerifyField<uint8_t>(verifier, VT_IS_STRUCT) &&
            VerifyField<int32_t>(verifier, VT_MINALIGN) &&
            VerifyField<int32_t>(verifier, VT_BYTESIZE) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_ATTRIBUTES) &&
+           VerifyOffset(verifier, VT_ATTRIBUTES) &&
            verifier.Verify(attributes()) &&
            verifier.VerifyVectorOfTables(attributes()) &&
+           VerifyOffset(verifier, VT_DOCUMENTATION) &&
+           verifier.Verify(documentation()) &&
+           verifier.VerifyVectorOfStrings(documentation()) &&
            verifier.EndTable();
   }
 };
@@ -638,13 +686,16 @@ struct ObjectBuilder {
   void add_attributes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes) {
     fbb_.AddOffset(Object::VT_ATTRIBUTES, attributes);
   }
+  void add_documentation(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> documentation) {
+    fbb_.AddOffset(Object::VT_DOCUMENTATION, documentation);
+  }
   ObjectBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   ObjectBuilder &operator=(const ObjectBuilder &);
   flatbuffers::Offset<Object> Finish() {
-    const auto end = fbb_.EndTable(start_, 6);
+    const auto end = fbb_.EndTable(start_, 7);
     auto o = flatbuffers::Offset<Object>(end);
     fbb_.Required(o, Object::VT_NAME);
     fbb_.Required(o, Object::VT_FIELDS);
@@ -659,8 +710,10 @@ inline flatbuffers::Offset<Object> CreateObject(
     bool is_struct = false,
     int32_t minalign = 0,
     int32_t bytesize = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<KeyValue>>> attributes = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> documentation = 0) {
   ObjectBuilder builder_(_fbb);
+  builder_.add_documentation(documentation);
   builder_.add_attributes(attributes);
   builder_.add_bytesize(bytesize);
   builder_.add_minalign(minalign);
@@ -677,15 +730,17 @@ inline flatbuffers::Offset<Object> CreateObjectDirect(
     bool is_struct = false,
     int32_t minalign = 0,
     int32_t bytesize = 0,
-    const std::vector<flatbuffers::Offset<KeyValue>> *attributes = nullptr) {
-  return CreateObject(
+    const std::vector<flatbuffers::Offset<KeyValue>> *attributes = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *documentation = nullptr) {
+  return reflection::CreateObject(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       fields ? _fbb.CreateVector<flatbuffers::Offset<Field>>(*fields) : 0,
       is_struct,
       minalign,
       bytesize,
-      attributes ? _fbb.CreateVector<flatbuffers::Offset<KeyValue>>(*attributes) : 0);
+      attributes ? _fbb.CreateVector<flatbuffers::Offset<KeyValue>>(*attributes) : 0,
+      documentation ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*documentation) : 0);
 }
 
 struct Schema FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -713,17 +768,17 @@ struct Schema FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_OBJECTS) &&
+           VerifyOffsetRequired(verifier, VT_OBJECTS) &&
            verifier.Verify(objects()) &&
            verifier.VerifyVectorOfTables(objects()) &&
-           VerifyFieldRequired<flatbuffers::uoffset_t>(verifier, VT_ENUMS) &&
+           VerifyOffsetRequired(verifier, VT_ENUMS) &&
            verifier.Verify(enums()) &&
            verifier.VerifyVectorOfTables(enums()) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_FILE_IDENT) &&
+           VerifyOffset(verifier, VT_FILE_IDENT) &&
            verifier.Verify(file_ident()) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_FILE_EXT) &&
+           VerifyOffset(verifier, VT_FILE_EXT) &&
            verifier.Verify(file_ext()) &&
-           VerifyField<flatbuffers::uoffset_t>(verifier, VT_ROOT_TABLE) &&
+           VerifyOffset(verifier, VT_ROOT_TABLE) &&
            verifier.VerifyTable(root_table()) &&
            verifier.EndTable();
   }
@@ -784,7 +839,7 @@ inline flatbuffers::Offset<Schema> CreateSchemaDirect(
     const char *file_ident = nullptr,
     const char *file_ext = nullptr,
     flatbuffers::Offset<Object> root_table = 0) {
-  return CreateSchema(
+  return reflection::CreateSchema(
       _fbb,
       objects ? _fbb.CreateVector<flatbuffers::Offset<Object>>(*objects) : 0,
       enums ? _fbb.CreateVector<flatbuffers::Offset<Enum>>(*enums) : 0,

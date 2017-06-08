@@ -17,134 +17,17 @@
 #ifndef FLATBUFFERS_H_
 #define FLATBUFFERS_H_
 
-#include <assert.h>
+#include "flatbuffers/base.h"
 
-#include <cstdint>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <utility>
-#include <type_traits>
-#include <vector>
-#include <set>
-#include <algorithm>
-#include <memory>
-
-#ifdef _STLPORT_VERSION
-  #define FLATBUFFERS_CPP98_STL
-#endif
-#ifndef FLATBUFFERS_CPP98_STL
-  #include <functional>
-#endif
-
-/// @cond FLATBUFFERS_INTERNAL
-#if __cplusplus <= 199711L && \
-    (!defined(_MSC_VER) || _MSC_VER < 1600) && \
-    (!defined(__GNUC__) || \
-      (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__ < 40400))
-  #error A C++11 compatible compiler with support for the auto typing is \
-         required for FlatBuffers.
-  #error __cplusplus _MSC_VER __GNUC__  __GNUC_MINOR__  __GNUC_PATCHLEVEL__
-#endif
-
-#if !defined(__clang__) && \
-    defined(__GNUC__) && \
-    (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__ < 40600)
-  // Backwards compatability for g++ 4.4, and 4.5 which don't have the nullptr
-  // and constexpr keywords. Note the __clang__ check is needed, because clang
-  // presents itself as an older GNUC compiler.
-  #ifndef nullptr_t
-    const class nullptr_t {
-    public:
-      template<class T> inline operator T*() const { return 0; }
-    private:
-      void operator&() const;
-    } nullptr = {};
-  #endif
-  #ifndef constexpr
-    #define constexpr const
-  #endif
-#endif
-
-// The wire format uses a little endian encoding (since that's efficient for
-// the common platforms).
-#if !defined(FLATBUFFERS_LITTLEENDIAN)
-  #if defined(__GNUC__) || defined(__clang__)
-    #ifdef __BIG_ENDIAN__
-      #define FLATBUFFERS_LITTLEENDIAN 0
-    #else
-      #define FLATBUFFERS_LITTLEENDIAN 1
-    #endif // __BIG_ENDIAN__
-  #elif defined(_MSC_VER)
-    #if defined(_M_PPC)
-      #define FLATBUFFERS_LITTLEENDIAN 0
-    #else
-      #define FLATBUFFERS_LITTLEENDIAN 1
-    #endif
-  #else
-    #error Unable to determine endianness, define FLATBUFFERS_LITTLEENDIAN.
-  #endif
-#endif // !defined(FLATBUFFERS_LITTLEENDIAN)
-
-#define FLATBUFFERS_VERSION_MAJOR 1
-#define FLATBUFFERS_VERSION_MINOR 5
-#define FLATBUFFERS_VERSION_REVISION 0
-#define FLATBUFFERS_STRING_EXPAND(X) #X
-#define FLATBUFFERS_STRING(X) FLATBUFFERS_STRING_EXPAND(X)
-
-#if (!defined(_MSC_VER) || _MSC_VER > 1600) && \
-    (!defined(__GNUC__) || (__GNUC__ * 100 + __GNUC_MINOR__ >= 407))
-  #define FLATBUFFERS_FINAL_CLASS final
-#else
-  #define FLATBUFFERS_FINAL_CLASS
-#endif
-
-#if (!defined(_MSC_VER) || _MSC_VER >= 1900) && \
-    (!defined(__GNUC__) || (__GNUC__ * 100 + __GNUC_MINOR__ >= 406))
-  #define FLATBUFFERS_CONSTEXPR constexpr
-#else
-  #define FLATBUFFERS_CONSTEXPR
-#endif
-
-/// @endcond
-
-/// @file
 namespace flatbuffers {
-
-/// @cond FLATBUFFERS_INTERNAL
-// Our default offset / size type, 32bit on purpose on 64bit systems.
-// Also, using a consistent offset type maintains compatibility of serialized
-// offset values between 32bit and 64bit systems.
-typedef uint32_t uoffset_t;
-
-// Signed offsets for references that can go in both directions.
-typedef int32_t soffset_t;
-
-// Offset/index used in v-tables, can be changed to uint8_t in
-// format forks to save a bit of space if desired.
-typedef uint16_t voffset_t;
-
-typedef uintmax_t largest_scalar_t;
-
-// In 32bits, this evaluates to 2GB - 1
-#define FLATBUFFERS_MAX_BUFFER_SIZE ((1ULL << (sizeof(soffset_t) * 8 - 1)) - 1)
-
-// We support aligning the contents of buffers up to this size.
-#define FLATBUFFERS_MAX_ALIGNMENT 16
-
-#ifndef FLATBUFFERS_CPP98_STL
-// Pointer to relinquished memory.
-typedef std::unique_ptr<uint8_t, std::function<void(uint8_t * /* unused */)>>
-          unique_ptr_t;
-#endif
-
 // Wrapper for uoffset_t to allow safe template specialization.
+// Value is allowed to be 0 to indicate a null object (see e.g. AddOffset).
 template<typename T> struct Offset {
   uoffset_t o;
   Offset() : o(0) {}
   Offset(uoffset_t _o) : o(_o) {}
   Offset<void> Union() const { return Offset<void>(o); }
+  bool IsNull() const { return !o; }
 };
 
 inline void EndianCheck() {
@@ -184,22 +67,6 @@ template<typename T> T EndianSwap(T t) {
   } else {
     assert(0);
   }
-}
-
-template<typename T> T EndianScalar(T t) {
-  #if FLATBUFFERS_LITTLEENDIAN
-    return t;
-  #else
-    return EndianSwap(t);
-  #endif
-}
-
-template<typename T> T ReadScalar(const void *p) {
-  return EndianScalar(*reinterpret_cast<const T *>(p));
-}
-
-template<typename T> void WriteScalar(void *p, T t) {
-  *reinterpret_cast<T *>(p) = EndianScalar(t);
 }
 
 template<typename T> size_t AlignOf() {
@@ -260,9 +127,6 @@ public:
   VectorIterator(const uint8_t *data, uoffset_t i) :
       data_(data + IndirectHelper<T>::element_stride * i) {}
   VectorIterator(const VectorIterator &other) : data_(other.data_) {}
-  #ifndef FLATBUFFERS_CPP98_STL
-  VectorIterator(VectorIterator &&other) : data_(std::move(other.data_)) {}
-  #endif
 
   VectorIterator &operator=(const VectorIterator &other) {
     data_ = other.data_;
@@ -276,6 +140,10 @@ public:
 
   bool operator==(const VectorIterator &other) const {
     return data_ == other.data_;
+  }
+
+  bool operator<(const VectorIterator &other) const {
+    return data_ < other.data_;
   }
 
   bool operator!=(const VectorIterator &other) const {
@@ -305,7 +173,7 @@ public:
     return temp;
   }
 
-  VectorIterator operator+(const uoffset_t &offset) {
+  VectorIterator operator+(const uoffset_t &offset) const {
     return VectorIterator(data_ + offset * IndirectHelper<T>::element_stride, 0);
   }
 
@@ -338,6 +206,8 @@ private:
   const uint8_t *data_;
 };
 
+struct String;
+
 // This is used as a helper type for accessing vectors.
 // Vector::data() assumes the vector elements start after the length field.
 template<typename T> class Vector {
@@ -367,6 +237,18 @@ public:
   // type E.
   template<typename E> E GetEnum(uoffset_t i) const {
     return static_cast<E>(Get(i));
+  }
+
+  // If this a vector of unions, this does the cast for you. There's no check
+  // to make sure this is the right type!
+  template<typename U> const U *GetAs(uoffset_t i) const {
+    return reinterpret_cast<const U *>(Get(i));
+  }
+
+  // If this a vector of unions, this does the cast for you. There's no check
+  // to make sure this is actually a string!
+  const String *GetAsString(uoffset_t i) const {
+    return reinterpret_cast<const String *>(Get(i));
   }
 
   const void *GetStructFromOffset(size_t o) const {
@@ -436,6 +318,10 @@ protected:
   uoffset_t length_;
 
 private:
+  // This class is a pointer. Copying will therefore create an invalid object.
+  // Private and unimplemented copy constructor.
+  Vector(const Vector&);
+
   template<typename K> static int KeyCompare(const void *ap, const void *bp) {
     const K *key = reinterpret_cast<const K *>(ap);
     const uint8_t *data = reinterpret_cast<const uint8_t *>(bp);
@@ -463,7 +349,24 @@ protected:
   VectorOfAny();
 
   uoffset_t length_;
+
+private:
+  VectorOfAny(const VectorOfAny&);
 };
+
+#ifndef FLATBUFFERS_CPP98_STL
+template<typename T, typename U>
+Vector<Offset<T>> *VectorCast(Vector<Offset<U>> *ptr) {
+  static_assert(std::is_base_of<T, U>::value, "Unrelated types");
+  return reinterpret_cast<Vector<Offset<T>> *>(ptr);
+}
+
+template<typename T, typename U>
+const Vector<Offset<T>> *VectorCast(const Vector<Offset<U>> *ptr) {
+  static_assert(std::is_base_of<T, U>::value, "Unrelated types");
+  return reinterpret_cast<const Vector<Offset<T>> *>(ptr);
+}
+#endif
 
 // Convenient helper function to get the length of any vector, regardless
 // of wether it is null or not (the field is not set).
@@ -480,13 +383,128 @@ struct String : public Vector<char> {
   }
 };
 
-// Simple indirection for buffer allocation, to allow this to be overridden
-// with custom allocation (see the FlatBufferBuilder constructor).
-class simple_allocator {
+// Allocator interface. This is flatbuffers-specific and meant only for
+// `vector_downward` usage.
+class Allocator {
  public:
-  virtual ~simple_allocator() {}
-  virtual uint8_t *allocate(size_t size) const { return new uint8_t[size]; }
-  virtual void deallocate(uint8_t *p) const { delete[] p; }
+  virtual ~Allocator() {}
+
+  // Allocate `size` bytes of memory.
+  virtual uint8_t *allocate(size_t size) = 0;
+
+  // Deallocate `size` bytes of memory at `p` allocated by this allocator.
+  virtual void deallocate(uint8_t *p, size_t size) = 0;
+
+  // Reallocate `new_size` bytes of memory, replacing the old region of size
+  // `old_size` at `p`. In contrast to a normal realloc, this grows downwards,
+  // and is intended specifcally for `vector_downward` use.
+  virtual uint8_t *reallocate_downward(uint8_t *old_p, size_t old_size,
+                                       size_t new_size) {
+    assert(new_size > old_size);  // vector_downward only grows
+    uint8_t *new_p = allocate(new_size);
+    memcpy(new_p + (new_size - old_size), old_p, old_size);
+    deallocate(old_p, old_size);
+    return new_p;
+  }
+};
+
+// DefaultAllocator uses new/delete to allocate memory regions
+class DefaultAllocator : public Allocator {
+ public:
+  virtual uint8_t *allocate(size_t size) FLATBUFFERS_OVERRIDE {
+    return new uint8_t[size];
+  }
+
+  virtual void deallocate(uint8_t *p, size_t) FLATBUFFERS_OVERRIDE {
+    delete[] p;
+  }
+
+  static DefaultAllocator &instance() {
+    static DefaultAllocator inst;
+    return inst;
+  }
+};
+
+// DetachedBuffer is a finished flatbuffer memory region, detached from its
+// builder. The original memory region and allocator are also stored so that
+// the DetachedBuffer can manage the memory lifetime.
+class DetachedBuffer {
+ public:
+  DetachedBuffer(Allocator *allocator, bool own_allocator, uint8_t *buf,
+                 size_t reserved, uint8_t *cur, size_t sz)
+    : allocator_(allocator), own_allocator_(own_allocator), buf_(buf),
+      reserved_(reserved), cur_(cur), size_(sz) {
+    assert(allocator_);
+  }
+
+  DetachedBuffer(DetachedBuffer &&other)
+    : allocator_(other.allocator_), own_allocator_(other.own_allocator_),
+      buf_(other.buf_), reserved_(other.reserved_), cur_(other.cur_),
+      size_(other.size_) {
+    assert(allocator_);
+    other.allocator_ = nullptr;
+    other.own_allocator_ = false;
+    other.buf_ = nullptr;
+    other.reserved_ = 0;
+    other.cur_ = nullptr;
+    other.size_ = 0;
+  }
+
+  ~DetachedBuffer() {
+    if (buf_ != nullptr) {
+      assert(allocator_ != nullptr);
+      allocator_->deallocate(buf_, reserved_);
+    }
+    if (own_allocator_ && allocator_ != nullptr) {
+      delete allocator_;
+    }
+  }
+
+  const uint8_t *data() const {
+    assert(cur_ != nullptr);
+    return cur_;
+  }
+
+  uint8_t *data() {
+    assert(cur_ != nullptr);
+    return cur_;
+  }
+
+  size_t size() const {
+    assert(cur_ != nullptr);
+    return size_;
+  }
+
+#if 0  // disabled for now due to the ordering of classes in this header
+  template <class T>
+  bool Verify() const {
+    Verifier verifier(data(), size());
+    return verifier.Verify<T>(nullptr);
+  }
+
+  template <class T>
+  const T* GetRoot() const {
+    return flatbuffers::GetRoot<T>(data());
+  }
+
+  template <class T>
+  T* GetRoot() {
+    return flatbuffers::GetRoot<T>(data());
+  }
+#endif
+
+  // These may change access mode, leave these at end of public section
+  FLATBUFFERS_DELETE_FUNC(DetachedBuffer(const DetachedBuffer &other))
+  FLATBUFFERS_DELETE_FUNC(
+      DetachedBuffer &operator=(const DetachedBuffer &other))
+
+ protected:
+  Allocator *allocator_;
+  bool own_allocator_;
+  uint8_t *buf_;
+  size_t reserved_;
+  uint8_t *cur_;
+  size_t size_;
 };
 
 // This is a minimal replication of std::vector<uint8_t> functionality,
@@ -494,44 +512,46 @@ class simple_allocator {
 // in the lowest address in the vector.
 class vector_downward {
  public:
-  explicit vector_downward(size_t initial_size,
-                           const simple_allocator &allocator)
-    : reserved_(initial_size),
-      buf_(allocator.allocate(reserved_)),
-      cur_(buf_ + reserved_),
-      allocator_(allocator) {
-    assert((initial_size & (sizeof(largest_scalar_t) - 1)) == 0);
+  explicit vector_downward(size_t initial_size = 1024,
+                           Allocator *allocator = nullptr,
+                           bool own_allocator = false)
+    : allocator_(allocator ? allocator : &DefaultAllocator::instance()),
+      own_allocator_(own_allocator),
+      reserved_((initial_size + sizeof(largest_scalar_t) - 1) &
+                ~(sizeof(largest_scalar_t) - 1)),
+      buf_(allocator_->allocate(reserved_)), cur_(buf_ + reserved_) {
+    assert(allocator_);
   }
 
   ~vector_downward() {
-    if (buf_)
-      allocator_.deallocate(buf_);
+    if (buf_ != nullptr) {
+      assert(allocator_ != nullptr);
+      allocator_->deallocate(buf_, reserved_);
+    }
+    if (own_allocator_ && allocator_ != nullptr) {
+      delete allocator_;
+    }
   }
 
   void clear() {
-    if (buf_ == nullptr)
-      buf_ = allocator_.allocate(reserved_);
-
+    if (buf_ == nullptr) {
+      assert(allocator_ != nullptr);
+      buf_ = allocator_->allocate(reserved_);
+    }
     cur_ = buf_ + reserved_;
   }
 
-  #ifndef FLATBUFFERS_CPP98_STL
   // Relinquish the pointer to the caller.
-  unique_ptr_t release() {
-    // Actually deallocate from the start of the allocated memory.
-    std::function<void(uint8_t *)> deleter(
-      std::bind(&simple_allocator::deallocate, allocator_, buf_));
-
-    // Point to the desired offset.
-    unique_ptr_t retval(data(), deleter);
-
-    // Don't deallocate when this instance is destroyed.
+  DetachedBuffer release() {
+    DetachedBuffer fb(allocator_, own_allocator_, buf_, reserved_, cur_,
+                      size());
+    allocator_ = nullptr;
+    own_allocator_ = false;
+    reserved_ = 0;
     buf_ = nullptr;
     cur_ = nullptr;
-
-    return retval;
+    return fb;
   }
-  #endif
 
   size_t growth_policy(size_t bytes) {
     return (bytes / 2) & ~(sizeof(largest_scalar_t) - 1);
@@ -560,42 +580,52 @@ class vector_downward {
 
   uint8_t *data_at(size_t offset) const { return buf_ + reserved_ - offset; }
 
-  // push() & fill() are most frequently called with small byte counts (<= 4),
-  // which is why we're using loops rather than calling memcpy/memset.
   void push(const uint8_t *bytes, size_t num) {
     auto dest = make_space(num);
-    for (size_t i = 0; i < num; i++) dest[i] = bytes[i];
+    memcpy(dest, bytes, num);
   }
 
+  // Specialized version of push() that avoids memcpy call for small data.
+  template<typename T> void push_small(const T& little_endian_t) {
+    auto dest = make_space(sizeof(T));
+    *reinterpret_cast<T *>(dest) = little_endian_t;
+  }
+
+  // fill() is most frequently called with small byte counts (<= 4),
+  // which is why we're using loops rather than calling memset.
   void fill(size_t zero_pad_bytes) {
     auto dest = make_space(zero_pad_bytes);
     for (size_t i = 0; i < zero_pad_bytes; i++) dest[i] = 0;
+  }
+
+  // Version for when we know the size is larger.
+  void fill_big(size_t zero_pad_bytes) {
+    auto dest = make_space(zero_pad_bytes);
+    memset(dest, 0, zero_pad_bytes);
   }
 
   void pop(size_t bytes_to_remove) { cur_ += bytes_to_remove; }
 
  private:
   // You shouldn't really be copying instances of this class.
-  vector_downward(const vector_downward &);
-  vector_downward &operator=(const vector_downward &);
+  FLATBUFFERS_DELETE_FUNC(vector_downward(const vector_downward &))
+  FLATBUFFERS_DELETE_FUNC(vector_downward &operator=(const vector_downward &))
 
+  Allocator *allocator_;
+  bool own_allocator_;
   size_t reserved_;
   uint8_t *buf_;
   uint8_t *cur_;  // Points at location between empty (below) and used (above).
-  const simple_allocator &allocator_;
 
   void reallocate(size_t len) {
+    size_t old_reserved = reserved_;
     auto old_size = size();
     auto largest_align = AlignOf<largest_scalar_t>();
     reserved_ += (std::max)(len, growth_policy(reserved_));
     // Round up to avoid undefined behavior from unaligned loads and stores.
     reserved_ = (reserved_ + (largest_align - 1)) & ~(largest_align - 1);
-    auto new_buf = allocator_.allocate(reserved_);
-    auto new_cur = new_buf + reserved_ - old_size;
-    memcpy(new_cur, cur_, old_size);
-    cur_ = new_cur;
-    allocator_.deallocate(buf_);
-    buf_ = new_buf;
+    buf_ = allocator_->reallocate_downward(buf_, old_reserved, reserved_);
+    cur_ = buf_ + reserved_ - old_size;
   }
 };
 
@@ -604,13 +634,6 @@ inline voffset_t FieldIndexToOffset(voffset_t field_id) {
   // Should correspond to what EndTable() below builds up.
   const int fixed_fields = 2;  // Vtable size and Object Size.
   return static_cast<voffset_t>((field_id + fixed_fields) * sizeof(voffset_t));
-}
-
-// Computes how many bytes you'd have to pad to be able to write an
-// "scalar_size" scalar if the buffer had grown to "buf_size" (downwards in
-// memory).
-inline size_t PaddingBytes(size_t buf_size, size_t scalar_size) {
-  return ((~buf_size) + 1) & (scalar_size - 1);
 }
 
 template <typename T> const T* data(const std::vector<T> &v) {
@@ -639,15 +662,17 @@ FLATBUFFERS_FINAL_CLASS
  public:
   /// @brief Default constructor for FlatBufferBuilder.
   /// @param[in] initial_size The initial size of the buffer, in bytes. Defaults
-  /// to`1024`.
-  /// @param[in] allocator A pointer to the `simple_allocator` that should be
-  /// used. Defaults to `nullptr`, which means the `default_allocator` will be
-  /// be used.
+  /// to `1024`.
+  /// @param[in] allocator An `Allocator` to use. Defaults to a new instance of
+  /// a `DefaultAllocator`.
+  /// @param[in] own_allocator Whether the builder/vector should own the
+  /// allocator. Defaults to / `false`.
   explicit FlatBufferBuilder(uoffset_t initial_size = 1024,
-                             const simple_allocator *allocator = nullptr)
-      : buf_(initial_size, allocator ? *allocator : default_allocator),
-        nested(false), finished(false), minalign_(1), force_defaults_(false),
-        dedup_vtables_(true), string_pool(nullptr) {
+                             Allocator *allocator = nullptr,
+                             bool own_allocator = false)
+    : buf_(initial_size, allocator, own_allocator), nested(false),
+      finished(false), minalign_(1), force_defaults_(false),
+      dedup_vtables_(true), string_pool(nullptr) {
     offsetbuf_.reserve(16);  // Avoid first few reallocs.
     vtables_.reserve(16);
     EndianCheck();
@@ -685,18 +710,22 @@ FLATBUFFERS_FINAL_CLASS
   /// @return Returns a `uint8_t` pointer to the unfinished buffer.
   uint8_t *GetCurrentBufferPointer() const { return buf_.data(); }
 
-  #ifndef FLATBUFFERS_CPP98_STL
   /// @brief Get the released pointer to the serialized buffer.
   /// @warning Do NOT attempt to use this FlatBufferBuilder afterwards!
-  /// @return The `unique_ptr` returned has a special allocator that knows how
-  /// to deallocate this pointer (since it points to the middle of an
-  /// allocation). Thus, do not mix this pointer with other `unique_ptr`'s, or
-  /// call `release()`/`reset()` on it.
-  unique_ptr_t ReleaseBufferPointer() {
+  /// @return A `FlatBuffer` that owns the buffer and its allocator and
+  /// behaves similar to a `unique_ptr` with a deleter.
+  /// Deprecated: use Release() instead
+  DetachedBuffer ReleaseBufferPointer() {
     Finished();
     return buf_.release();
   }
-  #endif
+
+  /// @brief Get the released DetachedBuffer.
+  /// @return A `DetachedBuffer` that owns the buffer and its allocator.
+  DetachedBuffer Release() {
+    Finished();
+    return buf_.release();
+  }
 
   /// @brief get the minimum alignment this buffer needs to be accessed
   /// properly. This is only known once all elements have been written (after
@@ -750,10 +779,7 @@ FLATBUFFERS_FINAL_CLASS
   template<typename T> void AssertScalarT() {
     #ifndef FLATBUFFERS_CPP98_STL
     // The code assumes power of 2 sizes and endian-swap-ability.
-    static_assert(std::is_scalar<T>::value
-        // The Offset<T> type is essentially a scalar but fails is_scalar.
-        || sizeof(T) == sizeof(Offset<void>),
-           "T must be a scalar type");
+    static_assert(std::is_scalar<T>::value, "T must be a scalar type");
     #endif
   }
 
@@ -762,7 +788,7 @@ FLATBUFFERS_FINAL_CLASS
     AssertScalarT<T>();
     T litle_endian_element = EndianScalar(element);
     Align(sizeof(T));
-    PushBytes(reinterpret_cast<uint8_t *>(&litle_endian_element), sizeof(T));
+    buf_.push_small(litle_endian_element);
     return GetSize();
   }
 
@@ -787,14 +813,14 @@ FLATBUFFERS_FINAL_CLASS
   }
 
   template<typename T> void AddOffset(voffset_t field, Offset<T> off) {
-    if (!off.o) return;  // An offset of 0 means NULL, don't store.
+    if (off.IsNull()) return;  // Don't store.
     AddElement(field, ReferTo(off.o), static_cast<uoffset_t>(0));
   }
 
   template<typename T> void AddStruct(voffset_t field, const T *structptr) {
     if (!structptr) return;  // Default, don't store.
     Align(AlignOf<T>());
-    PushBytes(reinterpret_cast<const uint8_t *>(structptr), sizeof(T));
+    buf_.push_small(*structptr);
     TrackField(field, GetSize());
   }
 
@@ -845,7 +871,7 @@ FLATBUFFERS_FINAL_CLASS
     // Write a vtable, which consists entirely of voffset_t elements.
     // It starts with the number of offsets, followed by a type id, followed
     // by the offsets themselves. In reverse:
-    buf_.fill(numfields * sizeof(voffset_t));
+    buf_.fill_big(numfields * sizeof(voffset_t));
     auto table_object_size = vtableoffsetloc - start;
     assert(table_object_size < 0x10000);  // Vtable use 16bit offsets.
     PushElement<voffset_t>(static_cast<voffset_t>(table_object_size));
@@ -958,6 +984,15 @@ FLATBUFFERS_FINAL_CLASS
   }
 
   /// @brief Store a string in the buffer, which can contain any binary data.
+  /// @param[in] str A const reference to a std::string like type with support
+  /// of T::c_str() and T::length() to store in the buffer.
+  /// @return Returns the offset in the buffer where the string starts.
+  template<typename T>
+    Offset<String> CreateString(const T &str) {
+    return CreateString(str.c_str(), str.length());
+  }
+
+  /// @brief Store a string in the buffer, which can contain any binary data.
   /// If a string with this exact contents has already been serialized before,
   /// instead simply returns the offset of the existing string.
   /// @param[in] str A const char pointer to the data to be stored as a string.
@@ -1046,8 +1081,12 @@ FLATBUFFERS_FINAL_CLASS
   /// where the vector is stored.
   template<typename T> Offset<Vector<T>> CreateVector(const T *v, size_t len) {
     StartVector(len, sizeof(T));
-    for (auto i = len; i > 0; ) {
-      PushElement(v[--i]);
+    if (sizeof(T) == 1) {
+      PushBytes(reinterpret_cast<const uint8_t *>(v), len);
+    } else {
+      for (auto i = len; i > 0; ) {
+        PushElement(v[--i]);
+      }
     }
     return Offset<Vector<T>>(EndVector(len));
   }
@@ -1116,6 +1155,45 @@ FLATBUFFERS_FINAL_CLASS
     return Offset<Vector<const T *>>(EndVector(len));
   }
 
+  /// @brief Serialize an array of native structs into a FlatBuffer `vector`.
+  /// @tparam T The data type of the struct array elements.
+  /// @tparam S The data type of the native struct array elements.
+  /// @param[in] v A pointer to the array of type `S` to serialize into the
+  /// buffer as a `vector`.
+  /// @param[in] len The number of elements to serialize.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T, typename S> Offset<Vector<const T *>> CreateVectorOfNativeStructs(
+      const S *v, size_t len) {
+    extern T Pack(const S&);
+    typedef T (*Pack_t)(const S&);
+    std::vector<T> vv(len);
+    std::transform(v, v+len, vv.begin(), *(Pack_t)&Pack);
+    return CreateVectorOfStructs<T>(vv.data(), vv.size());
+  }
+
+
+  #ifndef FLATBUFFERS_CPP98_STL
+  /// @brief Serialize an array of structs into a FlatBuffer `vector`.
+  /// @tparam T The data type of the struct array elements.
+  /// @param[in] f A function that takes the current iteration 0..vector_size-1
+  /// and a pointer to the struct that must be filled.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  /// This is mostly useful when flatbuffers are generated with mutation
+  /// accessors.
+  template<typename T> Offset<Vector<const T *>> CreateVectorOfStructs(
+      size_t vector_size, const std::function<void(size_t i, T *)> &filler) {
+    StartVector(vector_size * sizeof(T) / AlignOf<T>(), AlignOf<T>());
+    T *structs = reinterpret_cast<T *>(buf_.make_space(vector_size * sizeof(T)));
+    for (size_t i = 0; i < vector_size; i++) {
+      filler(i, structs);
+      structs++;
+    }
+    return Offset<Vector<const T *>>(EndVector(vector_size));
+  }
+  #endif
+
   /// @brief Serialize a `std::vector` of structs into a FlatBuffer `vector`.
   /// @tparam T The data type of the `std::vector` struct elements.
   /// @param[in]] v A const reference to the `std::vector` of structs to
@@ -1125,6 +1203,88 @@ FLATBUFFERS_FINAL_CLASS
   template<typename T> Offset<Vector<const T *>> CreateVectorOfStructs(
       const std::vector<T> &v) {
     return CreateVectorOfStructs(data(v), v.size());
+  }
+
+  /// @brief Serialize a `std::vector` of native structs into a FlatBuffer `vector`.
+  /// @tparam T The data type of the `std::vector` struct elements.
+  /// @tparam S The data type of the `std::vector` native struct elements.
+  /// @param[in]] v A const reference to the `std::vector` of structs to
+  /// serialize into the buffer as a `vector`.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T, typename S> Offset<Vector<const T *>> CreateVectorOfNativeStructs(
+      const std::vector<S> &v) {
+    return CreateVectorOfNativeStructs<T, S>(data(v), v.size());
+  }
+
+
+  /// @cond FLATBUFFERS_INTERNAL
+  template<typename T>
+  struct StructKeyComparator {
+    bool operator()(const T &a, const T &b) const {
+      return a.KeyCompareLessThan(&b);
+    }
+
+  private:
+    StructKeyComparator& operator= (const StructKeyComparator&);
+  };
+  /// @endcond
+
+  /// @brief Serialize a `std::vector` of structs into a FlatBuffer `vector`
+  /// in sorted order.
+  /// @tparam T The data type of the `std::vector` struct elements.
+  /// @param[in]] v A const reference to the `std::vector` of structs to
+  /// serialize into the buffer as a `vector`.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T> Offset<Vector<const T *>> CreateVectorOfSortedStructs(
+      std::vector<T> *v) {
+    return CreateVectorOfSortedStructs(data(*v), v->size());
+  }
+
+  /// @brief Serialize a `std::vector` of native structs into a FlatBuffer `vector`
+  /// in sorted order.
+  /// @tparam T The data type of the `std::vector` struct elements.
+  /// @tparam S The data type of the `std::vector` native struct elements.
+  /// @param[in]] v A const reference to the `std::vector` of structs to
+  /// serialize into the buffer as a `vector`.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T, typename S> Offset<Vector<const T *>> CreateVectorOfSortedNativeStructs(
+      std::vector<S> *v) {
+    return CreateVectorOfSortedNativeStructs<T, S>(data(*v), v->size());
+  }
+
+  /// @brief Serialize an array of structs into a FlatBuffer `vector` in sorted
+  /// order.
+  /// @tparam T The data type of the struct array elements.
+  /// @param[in] v A pointer to the array of type `T` to serialize into the
+  /// buffer as a `vector`.
+  /// @param[in] len The number of elements to serialize.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T> Offset<Vector<const T *>> CreateVectorOfSortedStructs(
+      T *v, size_t len) {
+    std::sort(v, v + len, StructKeyComparator<T>());
+    return CreateVectorOfStructs(v, len);
+  }
+
+  /// @brief Serialize an array of native structs into a FlatBuffer `vector` in sorted
+  /// order.
+  /// @tparam T The data type of the struct array elements.
+  /// @tparam S The data type of the native struct array elements.
+  /// @param[in] v A pointer to the array of type `S` to serialize into the
+  /// buffer as a `vector`.
+  /// @param[in] len The number of elements to serialize.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T, typename S> Offset<Vector<const T *>> CreateVectorOfSortedNativeStructs(
+      S *v, size_t len) {
+    extern T Pack(const S&);
+    typedef T (*Pack_t)(const S&);
+    std::vector<T> vv(len);
+    std::transform(v, v+len, vv.begin(), *(Pack_t)&Pack);
+    return CreateVectorOfSortedStructs<T>(vv, len);
   }
 
   /// @cond FLATBUFFERS_INTERNAL
@@ -1201,6 +1361,13 @@ FLATBUFFERS_FINAL_CLASS
                                      reinterpret_cast<uint8_t **>(buf));
   }
 
+  /// @brief Write a struct by itself, typically to be part of a union.
+  template<typename T> Offset<const T *> CreateStruct(const T &structobj) {
+    Align(AlignOf<T>());
+    buf_.push_small(structobj);
+    return Offset<const T *>(GetSize());
+  }
+
   /// @brief The length of a FlatBuffer file header.
   static const size_t kFileIdentifierLength = 4;
 
@@ -1239,7 +1406,7 @@ FLATBUFFERS_FINAL_CLASS
              minalign_);
     if (file_identifier) {
       assert(strlen(file_identifier) == kFileIdentifierLength);
-      buf_.push(reinterpret_cast<const uint8_t *>(file_identifier),
+      PushBytes(reinterpret_cast<const uint8_t *>(file_identifier),
                 kFileIdentifierLength);
     }
     PushElement(ReferTo(root));  // Location of root.
@@ -1253,8 +1420,6 @@ FLATBUFFERS_FINAL_CLASS
     uoffset_t off;
     voffset_t id;
   };
-
-  simple_allocator default_allocator;
 
   vector_downward buf_;
 
@@ -1331,8 +1496,8 @@ inline bool BufferHasIdentifier(const void *buf, const char *identifier) {
 // Helper class to verify the integrity of a FlatBuffer
 class Verifier FLATBUFFERS_FINAL_CLASS {
  public:
-  Verifier(const uint8_t *buf, size_t buf_len, size_t _max_depth = 64,
-           size_t _max_tables = 1000000)
+  Verifier(const uint8_t *buf, size_t buf_len, uoffset_t _max_depth = 64,
+           uoffset_t _max_tables = 1000000)
     : buf_(buf), end_(buf + buf_len), depth_(0), max_depth_(_max_depth),
       num_tables_(0), max_tables_(_max_tables)
     #ifdef FLATBUFFERS_TRACK_VERIFIER_BUFFER_SIZE
@@ -1441,8 +1606,9 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
     }
 
     // Call T::Verify, which must be in the generated code for this type.
-    return Verify<uoffset_t>(start) &&
-      reinterpret_cast<const T *>(start + ReadScalar<uoffset_t>(start))->
+    auto o = VerifyOffset(start);
+    return o &&
+      reinterpret_cast<const T *>(start + o)->
         Verify(*this)
         #ifdef FLATBUFFERS_TRACK_VERIFIER_BUFFER_SIZE
           && GetComputedSize()
@@ -1451,6 +1617,10 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
   }
 
   // Verify this whole buffer, starting with root type T.
+  template<typename T> bool VerifyBuffer() {
+    return VerifyBuffer<T>(nullptr);
+  }
+
   template<typename T> bool VerifyBuffer(const char *identifier) {
     return VerifyBufferFromStart<T>(identifier, buf_);
   }
@@ -1459,6 +1629,13 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
     return Verify<uoffset_t>(buf_) &&
            ReadScalar<uoffset_t>(buf_) == end_ - buf_ - sizeof(uoffset_t) &&
            VerifyBufferFromStart<T>(identifier, buf_ + sizeof(uoffset_t));
+  }
+
+  uoffset_t VerifyOffset(const uint8_t *start) const {
+    if (!Verify<uoffset_t>(start)) return false;
+    auto o = ReadScalar<uoffset_t>(start);
+    Check(o != 0);
+    return o;
   }
 
   // Called at the start of a table to increase counters measuring data
@@ -1490,10 +1667,10 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
  private:
   const uint8_t *buf_;
   const uint8_t *end_;
-  size_t depth_;
-  size_t max_depth_;
-  size_t num_tables_;
-  size_t max_tables_;
+  uoffset_t depth_;
+  uoffset_t max_depth_;
+  uoffset_t num_tables_;
+  uoffset_t max_tables_;
 #ifdef FLATBUFFERS_TRACK_VERIFIER_BUFFER_SIZE
   mutable const uint8_t *upper_bound_;
 #endif
@@ -1585,9 +1762,9 @@ class Table {
     return field_offset ? reinterpret_cast<P>(p) : nullptr;
   }
 
-  template<typename T> bool SetField(voffset_t field, T val) {
+  template<typename T> bool SetField(voffset_t field, T val, T def) {
     auto field_offset = GetOptionalFieldOffset(field);
-    if (!field_offset) return false;
+    if (!field_offset) return val == def;
     WriteScalar(data_ + field_offset, val);
     return true;
   }
@@ -1637,10 +1814,22 @@ class Table {
 
   // VerifyField for required fields.
   template<typename T> bool VerifyFieldRequired(const Verifier &verifier,
-                                        voffset_t field) const {
+                                                voffset_t field) const {
     auto field_offset = GetOptionalFieldOffset(field);
     return verifier.Check(field_offset != 0) &&
            verifier.Verify<T>(data_ + field_offset);
+  }
+
+  // Versions for offsets.
+  bool VerifyOffset(const Verifier &verifier, voffset_t field) const {
+    auto field_offset = GetOptionalFieldOffset(field);
+    return !field_offset || verifier.VerifyOffset(data_ + field_offset);
+  }
+
+  bool VerifyOffsetRequired(const Verifier &verifier, voffset_t field) const {
+    auto field_offset = GetOptionalFieldOffset(field);
+    return verifier.Check(field_offset != 0) &&
+           verifier.VerifyOffset(data_ + field_offset);
   }
 
  private:
@@ -1816,5 +2005,9 @@ volatile __attribute__((weak)) const char *flatbuffer_version_string =
     }
 /// @endcond
 }  // namespace flatbuffers
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #endif  // FLATBUFFERS_H_

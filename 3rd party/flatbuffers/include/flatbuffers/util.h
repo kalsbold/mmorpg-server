@@ -40,7 +40,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "flatbuffers/flatbuffers.h"
+#include "flatbuffers/base.h"
+
 
 namespace flatbuffers {
 
@@ -95,7 +96,8 @@ inline std::string IntToStringHex(int i, int xdigits) {
 }
 
 // Portable implementation of strtoll().
-inline int64_t StringToInt(const char *str, char **endptr = nullptr, int base = 10) {
+inline int64_t StringToInt(const char *str, char **endptr = nullptr,
+                           int base = 10) {
   #ifdef _MSC_VER
     return _strtoi64(str, endptr, base);
   #else
@@ -104,7 +106,8 @@ inline int64_t StringToInt(const char *str, char **endptr = nullptr, int base = 
 }
 
 // Portable implementation of strtoull().
-inline int64_t StringToUInt(const char *str, char **endptr = nullptr, int base = 10) {
+inline uint64_t StringToUInt(const char *str, char **endptr = nullptr,
+                             int base = 10) {
   #ifdef _MSC_VER
     return _strtoui64(str, endptr, base);
   #else
@@ -155,16 +158,20 @@ inline bool SaveFile(const char *name, const std::string &buf, bool binary) {
   return SaveFile(name, buf.c_str(), buf.size(), binary);
 }
 
-// Functionality for minimalistic portable path handling:
+// Functionality for minimalistic portable path handling.
 
-static const char kPosixPathSeparator = '/';
-#ifdef _WIN32
-static const char kPathSeparator = '\\';
+// The functions below behave correctly regardless of whether posix ('/') or
+// Windows ('/' or '\\') separators are used.
+
+// Any new separators inserted are always posix.
+
+// We internally store paths in posix format ('/'). Paths supplied
+// by the user should go through PosixPath to ensure correct behavior
+// on Windows when paths are string-compared.
+
+static const char kPathSeparator = '/';
+static const char kPathSeparatorWindows = '\\';
 static const char *PathSeparatorSet = "\\/";  // Intentionally no ':'
-#else
-static const char kPathSeparator = kPosixPathSeparator;
-static const char *PathSeparatorSet = "/";
-#endif // _WIN32
 
 // Returns the path with the extension, if any, removed.
 inline std::string StripExtension(const std::string &filepath) {
@@ -195,11 +202,22 @@ inline std::string StripFileName(const std::string &filepath) {
 inline std::string ConCatPathFileName(const std::string &path,
                                       const std::string &filename) {
   std::string filepath = path;
-  if (path.length() && path[path.size() - 1] != kPathSeparator &&
-                       path[path.size() - 1] != kPosixPathSeparator)
-    filepath += kPathSeparator;
+  if (filepath.length()) {
+    if (filepath.back() == kPathSeparatorWindows) {
+      filepath.back() = kPathSeparator;
+    } else if (filepath.back() != kPathSeparator) {
+      filepath += kPathSeparator;
+    }
+  }
   filepath += filename;
   return filepath;
+}
+
+// Replaces any '\\' separators with '/'
+inline std::string PosixPath(const char *path) {
+  std::string p = path;
+  std::replace(p.begin(), p.end(), '\\', '/');
+  return p;
 }
 
 // This function ensure a directory exists, by recursively

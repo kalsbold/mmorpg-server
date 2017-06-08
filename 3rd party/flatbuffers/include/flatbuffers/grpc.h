@@ -19,6 +19,7 @@
 
 // Helper functionality to glue FlatBuffers and GRPC.
 
+#include "flatbuffers/flatbuffers.h"
 #include "grpc++/support/byte_buffer.h"
 #include "grpc/byte_buffer_reader.h"
 
@@ -37,17 +38,19 @@ class SerializationTraits<T, typename std::enable_if<std::is_base_of<
     auto slice = gpr_slice_from_copied_buffer(
                    reinterpret_cast<const char *>(msg.buf), msg.len);
     *buffer = grpc_raw_byte_buffer_create(&slice, 1);
+    grpc_slice_unref(slice);
     *own_buffer = true;
     return grpc::Status();
   }
 
   // There is no de-serialization step in FlatBuffers, so we just receive
   // the data from GRPC.
-  static grpc::Status Deserialize(grpc_byte_buffer *buffer,
-                                  T *msg,
-                                  int max_message_size) {
+  static grpc::Status Deserialize(grpc_byte_buffer *buffer, T *msg) {
     // TODO(wvo): make this more efficient / zero copy when possible.
     auto len = grpc_byte_buffer_length(buffer);
+    if(msg->buf != nullptr){
+         free(msg->buf);
+    }    
     msg->buf = reinterpret_cast<uint8_t *>(malloc(len));
     msg->len = static_cast<flatbuffers::uoffset_t>(len);
     msg->must_free = true;

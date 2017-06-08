@@ -38,7 +38,7 @@ void TcpServer::Start(uint16_t port)
 	Start("0.0.0.0", port);
 }
 
-void TcpServer::Start(string address, uint16_t port)
+void TcpServer::Start(std::string address, uint16_t port)
 {
 	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(address), port);
 

@@ -3,10 +3,10 @@
 #include "Common.h"
 #include "Singleton.h"
 #include "ServerSettings.h"
-#include "DBEntity.h"
+#include "DBSchema.h"
 #include "MySQL.h"
 
-namespace db = db_entity;
+namespace db = db_schema;
 
 class MapTable : public Singleton<MapTable>
 {

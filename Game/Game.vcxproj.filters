@@ -42,9 +42,6 @@
     <ClInclude Include="ServerBase.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="World.h">
-      <Filter>World</Filter>
-    </ClInclude>
     <ClInclude Include="AccountManager.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -53,12 +50,6 @@
     </ClInclude>
     <ClInclude Include="MySQL.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="DBEntity.h">
-      <Filter>DB</Filter>
-    </ClInclude>
-    <ClInclude Include="Character.h">
-      <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="GameObject.h">
       <Filter>World</Filter>
@@ -72,13 +63,22 @@
     <ClInclude Include="protocol_generated.h">
       <Filter>Protocol</Filter>
     </ClInclude>
-    <ClInclude Include="MessageHelper.h">
-      <Filter>Protocol</Filter>
-    </ClInclude>
     <ClInclude Include="RemoteClient.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="DBSchema.h">
+      <Filter>DB</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="ProtocolHelper.h">
+      <Filter>Protocol</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -93,9 +93,6 @@
       <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="Zone.cpp">
-      <Filter>World</Filter>
-    </ClCompile>
-    <ClCompile Include="World.cpp">
       <Filter>World</Filter>
     </ClCompile>
   </ItemGroup>
