@@ -77,7 +77,6 @@ void TcpSession::Start()
 
 		state_ = State::Opened;
 		Read(min_receive_size_);
-		BOOST_LOG_TRIVIAL(info) << "TcpSession start. id : " << GetID();
 
 		open_handler(shared_from_this());
 	});
@@ -238,8 +237,6 @@ void TcpSession::_Close(CloseReason reason)
 	socket_->shutdown(tcp::socket::shutdown_both, ec);
 	socket_->close();
 	state_ = State::Closed;
-
-	BOOST_LOG_TRIVIAL(info) << "TcpSession Close. id : " << GetID();
 
 	if (close_handler)
 		close_handler(shared_from_this(), reason);

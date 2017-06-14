@@ -9,6 +9,7 @@
 #include "monster_generated.h"
 #include <boost/locale.hpp>
 
+using namespace std;
 using namespace gisun::net;
 using namespace MyGame::Sample;
 

@@ -36,9 +36,13 @@ namespace net {
 		virtual bool IsConnected() const = 0;
 		virtual void Send(const uint8_t* data, size_t size) = 0;
 		virtual void Send(const Buffer& data) = 0;
-		virtual void Send(Ptr<Buffer> message) = 0;
+		virtual void Send(Buffer&& data) = 0;
+		virtual void Send(Ptr<Buffer> data) = 0;
 		virtual void RegisterNetEventHandler(const NetEventHandler& handler) = 0;
 		virtual void RegisterMessageHandler(const MessageHandler& handler) = 0;
+
+		virtual Ptr<IoServiceLoop> GetIoServiceLoop() = 0;
+		virtual asio::strand& GetStrand() = 0;
 
 	protected:
 		NetClient() {};

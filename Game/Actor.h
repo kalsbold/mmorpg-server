@@ -79,7 +79,7 @@ public:
 		db_data_->def = def_;
 		db_data_->map_id = map_id_;
 		db_data_->pos = GetPosition();
-		db_data_->rotation_y = GetRotation();
+		db_data_->rotation = GetRotation();
 
 		db_data_->Update();
 	}
@@ -90,7 +90,7 @@ public:
 	template<>
 	flatbuffers::Offset<protocol::world::PlayerCharacter> SerializeAs<protocol::world::PlayerCharacter>(flatbuffers::FlatBufferBuilder& fbb) const
 	{
-		auto uuid = fbb.CreateString(boost::uuids::to_string(GetUUID()));
+		auto uuid = fbb.CreateString(boost::uuids::to_string(GetEntityID()));
 		auto name = fbb.CreateString(name_);
 		protocol::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
 
@@ -114,7 +114,7 @@ public:
 	template<>
 	flatbuffers::Offset<protocol::world::RemotePC> SerializeAs<protocol::world::RemotePC>(flatbuffers::FlatBufferBuilder& fbb) const
 	{
-		auto uuid = fbb.CreateString(boost::uuids::to_string(GetUUID()));
+		auto uuid = fbb.CreateString(boost::uuids::to_string(GetEntityID()));
 		auto name = fbb.CreateString(name_);
 		protocol::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
 
@@ -135,7 +135,7 @@ public:
 private:
 	void InitAttribute()
 	{
-		character_id_ = db_data_->id;
+		character_id_ = db_data_->uid;
 		name_         = db_data_->name;
 		class_type_   = db_data_->class_type;
 		exp_          = db_data_->exp;
@@ -148,7 +148,7 @@ private:
 		def_          = db_data_->def;
 		map_id_       = db_data_->map_id;
 		SetPosition(db_data_->pos);
-		SetRotation(db_data_->rotation_y);
+		SetRotation(db_data_->rotation);
 	}
 
 	RemoteClient* remote_client_;
@@ -184,7 +184,7 @@ public:
 
 	flatbuffers::Offset<protocol::world::Monster> Serialize(flatbuffers::FlatBufferBuilder& fbb) const
 	{
-		auto uuid = fbb.CreateString(boost::uuids::to_string(GetUUID()));
+		auto uuid = fbb.CreateString(boost::uuids::to_string(GetEntityID()));
 		auto name = fbb.CreateString(name_);
 		protocol::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
 

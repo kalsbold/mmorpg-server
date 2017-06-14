@@ -20,7 +20,7 @@ class GameObject;
 class PlayerCharacter;
 
 // 게임 서버.
-class GameServer : public ServerBase
+class GameServer : public IServer
 {
 public:
 	// The clock type.
@@ -34,6 +34,9 @@ public:
 
 	GameServer(){}
 	~GameServer(){}
+
+	std::string GetName() override { return name_; }
+	void SetName(const std::string& name) override { name_ = name; }
 
 	// 서버 시작
 	void Run() override;
@@ -120,19 +123,16 @@ private:
 	void OnMove(const Ptr<net::Session>& session, const protocol::NetMessage* net_message);
 	void OnAttack(const Ptr<net::Session>& session, const protocol::NetMessage* net_message);
 
+	std::mutex mutex_;
+	std::string name_;
 	Ptr<net::IoServiceLoop> ios_loop_;
 	Ptr<net::NetServer> net_server_;
 	Ptr<MySQLPool> db_conn_;
-
-	std::mutex mutex_;
-
 	// Network message handler type.
 	using MessageHandler = std::function<void(const Ptr<net::Session>&, const protocol::NetMessage* net_message)>;
 	std::map<protocol::MessageT, MessageHandler> message_handlers_;
-	
 	// 로그인 유저
 	std::map<int, Ptr<RemoteClient>> remote_clients_;
-	
 	// Game world
 	Ptr<boost::asio::strand>	strand_;
 	Ptr<timer>					update_timer_;

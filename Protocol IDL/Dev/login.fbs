@@ -1,0 +1,80 @@
+include "common.fbs";
+
+namespace Protocol.Login;
+
+// 데이터 스키마 정의=====================================
+// 간단한 플레이어 캐릭터 정보
+table Character {
+    uid:int;
+    name:string;
+    class_type:ClassType;
+    level:int;
+}
+
+// 메시지 스키마 정의=====================================
+// Login
+// 로그인을 요청.
+table Request_Login {
+    user_name:string;
+    password:string;
+}
+// 로그인 성공.
+table Reply_LoginSuccess {
+    credential:string;
+}
+// 로그인 실패.
+table Reply_LoginFailed {
+    error_code:ErrorCode;
+}
+
+// Join
+// 가입을 요청.
+table Request_Join {
+    user_name:string;
+    password:string;
+}
+// 가입 성공.
+table Reply_JoinSuccess {
+}
+// 가입 실패.
+table Reply_JoinFailed {
+    error_code:ErrorCode;
+}
+
+// Character List
+// 플레이어 캐릭터 리스트를 요청.
+table Request_CharacterList {
+}
+// 캐릭터 리스트 요청 응답.
+table Reply_CharacterList {
+    list:[Character]; // Vector of tables.
+}
+
+// Create Character
+// 새 캐릭터 생성을 요청.
+table Request_CreateCharacter {
+    name:string;
+    class_type:ClassType;
+}
+// 새 캐릭터 생성 성공.
+table Reply_CreateCharacterSuccess {
+    character:Character; // 생성된 캐릭터 정보
+}
+// 새 캐릭터 생성 실패.
+table Reply_CreateCharacterFailed {
+    error_code:ErrorCode;
+}
+
+// Delete Character
+// 캐릭터 제거를 요청.
+table Request_DeleteCharacter {
+    character_uid:int;
+}
+// 캐릭터 제거 성공.
+table Reply_DeleteCharacterSuccess {
+    character_uid:int;
+}
+// 캐릭터 제거 실패.
+table Reply_DeleteCharacterFailed {
+    error_code:ErrorCode;
+}

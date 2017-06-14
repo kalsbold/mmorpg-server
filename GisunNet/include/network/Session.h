@@ -34,6 +34,8 @@ namespace net {
 
 		virtual void Send(const Buffer& data) = 0;
 
+		virtual void Send(Buffer&& data) = 0;
+
 		virtual void Send(Ptr<Buffer> data) = 0;
 
 		virtual void Close() = 0;
@@ -47,18 +49,6 @@ namespace net {
 	protected:
 		Session() {};
 	};
-
-	template <typename Func>
-	void Post(Session& session, Func&& f)
-	{
-		session.GetStrand().post(std::forward<Func>(f));
-	}
-
-	template <typename Func>
-	void Dispatch(Session& session, Func&& f)
-	{
-		session.GetStrand().dispatch(std::forward<Func>(f));
-	}
 
 } // namespace net
 } // namespace gisun

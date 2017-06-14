@@ -9,7 +9,7 @@
 namespace po = boost::program_options;
 
 // 전역 서버 설정
-class ServerSettings : public Singleton<ServerSettings>
+class Settings : public Singleton<Settings>
 {
 public:
 	std::string   name;
@@ -25,6 +25,8 @@ public:
 	std::string   db_password;
 	std::string   db_schema;
 	size_t        db_connection_pool;
+	std::string	  manager_address;
+	uint16_t      manager_port;
 
 	template <typename CharT>
 	bool Load(CharT* filepath)
@@ -33,8 +35,8 @@ public:
 		po::options_description desc("Allowed options");
 		desc.add_options()
 			("Server.name", po::value<std::string>(&name)->default_value(""))
-			("Server.address", po::value<std::string>(&bind_address)->default_value("0.0.0.0"))
-			("Server.port", po::value<uint16_t>())
+			("Server.bind-address", po::value<std::string>(&bind_address)->default_value("0.0.0.0"))
+			("Server.bind-port", po::value<uint16_t>())
 			("Server.thread", po::value<size_t>(&thread_count)->default_value(std::thread::hardware_concurrency()))
 			("Server.max-session", po::value<size_t>(&max_session_count)->default_value(10000))
 			("Server.min-receive-size", po::value<size_t>(&min_receive_size)->default_value(1024 * 4))
@@ -45,6 +47,8 @@ public:
 			("DB.password", po::value<std::string>())
 			("DB.schema", po::value<std::string>())
 			("DB.conn-pool", po::value<size_t>(&db_connection_pool)->default_value(1))
+			("Manager.address", po::value<std::string>(&manager_address)->default_value("0.0.0.0"))
+			("Manager.port", po::value<uint16_t>(&manager_port)->default_value(0))
 			;
 
 		// step 2 :명령행 옵션 분석
@@ -87,13 +91,13 @@ public:
 		po::notify(vm);
 
 		// step 3 : 옵션 처리
-		if (vm.count("Server.port"))
+		if (vm.count("Server.bind-port"))
 		{
-			bind_port = vm["Server.port"].as<uint16_t>();
+			bind_port = vm["Server.bind-port"].as<uint16_t>();
 		}
 		else
 		{
-			std::cerr << "Server.port required" << "\n";
+			std::cerr << "Server.bind-port required" << "\n";
 			return false;
 		}
 

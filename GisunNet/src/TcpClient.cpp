@@ -8,13 +8,15 @@ TcpClient::TcpClient(const ClientConfig & config)
 	, config_(config)
 	, state_(State::Ready)
 {
+	ios_loop_ = config_.io_service_loop;
+
 	// 설정된 io_service_loop 이 없으면 생성.
-	if (config_.io_service_loop.get() == nullptr)
+	if (ios_loop_ == nullptr)
 	{
 		size_t thread_count = 1;
-		config_.io_service_loop = std::make_shared<IoServiceLoop>(thread_count);
+		ios_loop_ = std::make_shared<IoServiceLoop>(thread_count);
 	}
-	ios_loop_ = config_.io_service_loop;
+
 	strand_ = std::make_unique<strand>(ios_loop_->GetIoService());
 }
 
@@ -36,7 +38,6 @@ void TcpClient::Connect(const std::string & host, const std::string & service)
 		tcp::resolver resolver(ios_loop_->GetIoService());
 		auto endpoint_iterator = resolver.resolve({ host, service });
 
-		BOOST_LOG_TRIVIAL(info) << "Connect to : " << host << ":" << service;
 		ConnectStart(endpoint_iterator);
 		state_ = State::Connecting;
 	});
@@ -79,7 +80,7 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 			size_t max_capacity = config_.max_receive_buffer_size;
 			read_buf_ = std::make_shared<Buffer>(initial_capacity, max_capacity);
 			state_ = State::Connected;
-			BOOST_LOG_TRIVIAL(info) << "Client Connected";
+
 			// Read
 			Read(config_.min_receive_size);
 			if (net_event_handler_) net_event_handler_(NetEventType::Opened);
@@ -88,7 +89,6 @@ void TcpClient::ConnectStart(tcp::resolver::iterator endpoint_iterator)
 		{
 			HandleError(error);
 			_Close();
-			BOOST_LOG_TRIVIAL(info) << "Client Connect failed";
 			if (net_event_handler_) net_event_handler_(NetEventType::ConnectFailed);
 		}
 	}));
@@ -190,6 +190,7 @@ inline void TcpClient::Write()
 		return;
 
 	// TO DO : sending_list_.swap(pending_list_);
+
 	// Scatter-Gather I/O
 	std::vector<asio::const_buffer> bufs;
 	for (auto& buffer : pending_list_)
@@ -202,9 +203,9 @@ inline void TcpClient::Write()
 
 	boost::asio::async_write(*socket_, bufs, strand_->wrap(
 		[this](error_code const& ec, std::size_t)
-	{
-		HandleWrite(ec);
-	}));
+		{
+			HandleWrite(ec);
+		}));
 }
 
 inline void TcpClient::HandleWrite(const error_code & error)
@@ -235,7 +236,7 @@ inline void TcpClient::HandleError(const error_code & error)
 		return;
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "Client socket error : " << error.message();
+	BOOST_LOG_TRIVIAL(info) << "TcpClient socket error : " << error.message();
 }
 
 void TcpClient::_Close()
@@ -247,8 +248,6 @@ void TcpClient::_Close()
 	socket_->shutdown(tcp::socket::shutdown_both, ec);
 	socket_->close();
 	state_ = State::Closed;
-
-	BOOST_LOG_TRIVIAL(info) << "Client close";
 }
 
 } // namespace net

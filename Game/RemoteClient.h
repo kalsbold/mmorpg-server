@@ -1,85 +1,42 @@
 #pragma once
 #include "Common.h"
-#include "GameServer.h"
-#include "Zone.h"
-#include "Actor.h"
-#include "DBSchema.h"
-#include "ProtocolHelper.h"
-
-namespace fb = flatbuffers;
-namespace db = db_schema;
 
 class RemoteClient : public std::enable_shared_from_this<RemoteClient>
 {
 public:
-	enum class State
-	{
-		Connected,		// 인증후 초기상태. 월드 입장 아님
-		WorldEntering,	// 월드 입장 중
-		WorldEntered,	// 월드 입장 됨
-		Disconnected,	// 접속 종료
-	};
-
 	RemoteClient(const RemoteClient&) = delete;
 	RemoteClient& operator=(const RemoteClient&) = delete;
 
-	RemoteClient(GameServer* server, const Ptr<net::Session>& net_session)
-		: server_(server)
-		, net_session_(net_session)
-		, state_(State::Connected)
-		, disposed_(false)
+	RemoteClient(const Ptr<net::Session>& net_session)
+		: net_session_(net_session)
 	{
-		assert(server != nullptr);
 		assert(net_session != nullptr);
 		assert(net_session->IsOpen());
 	}
-	~RemoteClient()
+
+	virtual ~RemoteClient()
 	{
-		Dispose();
 	}
 
 	int GetSessionID() const
 	{
-		return GetSession()->GetID();
+		return net_session_->GetID();
 	}
 
-	const Ptr<net::Session> GetSession() const
+	const Ptr<net::Session>& GetSession() const
 	{
 		return net_session_;
 	}
 
-	void Send(fb::FlatBufferBuilder& fbb)
+	void Send(const uint8_t * data, size_t size)
 	{
-		if (net_session_->IsOpen())
-			SendFlatBuffer(net_session_, fbb);
+		net_session_->Send(data, size);
 	}
 
-	template <typename T>
-	void Send(const T& message)
+	template <typename BufferT>
+	void Send(BufferT&& data)
 	{
-		if (net_session_->IsOpen())
-			SendProtocolMessage(net_session_, message);
-	}
-
-	void Send(const Ptr<net::Buffer>& buf)
-	{
-		if (net_session_->IsOpen())
-			net_session_->Send(buf);
-	}
-
-	State GetState() const
-	{
-		return state_;
-	}
-
-	void SetState(State state)
-	{
-		state_ = state;
-	}
-
-	bool IsDispose()
-	{
-		return disposed_;
+		net_session_->Send(std::forward<BufferT>(data));
 	}
 
 	bool IsDisconnected()
@@ -91,81 +48,11 @@ public:
 	void Disconnect()
 	{
 		net_session_->Close();
-		SetState(State::Disconnected);
-		Dispose();
 	}
 
-	// 클라이언트에서 연결을 끊었을때 callback
-	void OnDisconnected()
-	{
-		SetState(State::Disconnected);
-		Dispose();
-	}
-
-	const Ptr<db::Account>& GetAccount() const
-	{
-		return db_account_;
-	}
-
-	void SetAccount(Ptr<db::Account> db_account)
-	{
-		db_account_ = db_account;
-	}
-
-	bool IsAuthentication()
-	{
-		return !auth_key_.is_nil();
-	}
-
-	uuid GetAuthKey()
-	{
-		return auth_key_;
-	}
-
-	void SetAuthentication(uuid auth_key)
-	{
-		auth_key_ = auth_key;
-	}
-
-	const Ptr<PlayerCharacter>& GetCharacter()
-	{
-		return character_;
-	}
-
-	void SetCharacter(Ptr<PlayerCharacter> character)
-	{
-		character_ = character;
-	}
-
-	// 종료 처리. 상태 DB Update 등 을 한다.
-	void Dispose()
-	{
-		bool e = false;
-		if (!disposed_.compare_exchange_strong(e, true))
-			return;
-
-		// 케릭터 상태 DB Update.
-		if (character_)
-		{
-			character_->UpdateToDB();
-		}
-	}
+	// 연결이 끊겼을때 callback
+	virtual void OnDisconnected() = 0;
 
 private:
-
-	const Ptr<MySQLPool>& GetDB()
-	{
-		return server_->GetDB();
-	}
-	
-	GameServer*             server_;
-	Ptr<net::Session>       net_session_;
-	
-	uuid					auth_key_;
-	Ptr<db::Account>        db_account_;
-	
-	std::atomic<State>	state_;
-	Ptr<PlayerCharacter>    character_ = nullptr;
-
-	std::atomic<bool>       disposed_;
+	Ptr<net::Session> net_session_;
 };

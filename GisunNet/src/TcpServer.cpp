@@ -22,7 +22,7 @@ TcpServer::TcpServer(const ServerConfig & config)
 	strand_ = std::make_unique<strand>(ios_loop_->GetIoService());
 
 	// Free session id list 를 만든다. 
-	for (size_t i = 0; i < config_.max_session_count; i++)
+	for (int i = 0; i < config_.max_session_count; i++)
 	{
 		free_session_id_.push_back(i);
 	}

@@ -29,13 +29,21 @@ namespace net {
 			buffer->WriteBytes(data, size);
 			Send(std::move(buffer));
 		}
+
 		virtual void Send(const Buffer & data) override
 		{
-			auto buffer = std::make_shared<Buffer>(data);
-			Send(std::move(buffer));
+			Send(std::make_shared<Buffer>(data));
 		}
+
+		virtual void Send(Buffer&& data) override
+		{
+			Send(std::make_shared<Buffer>(std::move(data)));
+		}
+
 		virtual void Send(Ptr<Buffer> message) override
 		{
+			if (!IsConnected()) return;
+
 			PendWrite(std::move(message));
 		}
 
@@ -43,9 +51,20 @@ namespace net {
 		{
 			net_event_handler_ = handler;
 		}
+
 		virtual void RegisterMessageHandler(const MessageHandler& handler) override
 		{
 			message_handler_ = handler;
+		}
+
+		virtual Ptr<IoServiceLoop> GetIoServiceLoop() override
+		{
+			return ios_loop_;
+		}
+
+		virtual asio::strand& GetStrand() override
+		{
+			return *strand_;
 		}
 
 	private:
@@ -85,7 +104,7 @@ namespace net {
 		{
 			// Make header
 			Header header;
-			header.payload_len = data->ReadableBytes();
+			header.payload_len = (int32_t)data->ReadableBytes();
 
 			// To Do : 암호화나 압축 등..
 

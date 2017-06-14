@@ -109,7 +109,7 @@ namespace net {
 	public:
 		typedef ByteBuffer<Allocator> this_type;
 
-		explicit ByteBuffer(std::size_t initial_capacity, std::size_t max_capacity = std::numeric_limits<size_t>::max(), const Allocator& allocator = Allocator())
+		explicit ByteBuffer(std::size_t initial_capacity = 1024, std::size_t max_capacity = std::numeric_limits<size_t>::max(), const Allocator& allocator = Allocator())
 			: max_capacity_(max_capacity)
 			, r_index_(0)
 			, w_index_(0)
@@ -427,7 +427,7 @@ namespace net {
 		{
 			CheckIndex(index);
 			size_t old_cap = Capacity();
-			int add_length = (index > w_index_) ? (index - w_index_) : 0;
+			size_t add_length = (index > w_index_) ? (index - w_index_) : 0;
 			EnsureWritable(length + add_length);
 			std::memmove(Data() + index + length, Data() + index, old_cap - index);
 			SetBytes(index, src, srcIndex, length);

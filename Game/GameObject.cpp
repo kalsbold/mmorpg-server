@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "GameObject.h"
 
-GameObject::GameObject(const uuid& uuid)
-	: uuid_(uuid)
+GameObject::GameObject(const uuid& entity_id)
+	: entity_id_(entity_id)
 {
 }
 
@@ -10,9 +10,9 @@ GameObject::~GameObject()
 {
 }
 
-const uuid& GameObject::GetUUID() const
+const uuid& GameObject::GetEntityID() const
 {
-	return uuid_;
+	return entity_id_;
 }
 
 void GameObject::SetPosition(const Vector3 & position)
@@ -25,9 +25,9 @@ const Vector3 & GameObject::GetPosition() const
 	return position_;
 }
 
-void GameObject::SetRotation(float y)
+void GameObject::SetRotation(float rotation)
 {
-	rotation_ = y;
+	rotation_ = rotation;
 }
 
 float GameObject::GetRotation() const

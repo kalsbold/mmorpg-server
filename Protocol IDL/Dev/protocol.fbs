@@ -1,0 +1,56 @@
+include "common.fbs";
+include "manager.fbs";
+include "login.fbs";
+include "world.fbs";
+
+namespace Protocol;
+
+// 메시지 타입을 정의 한다 ================================================
+union MessageType {
+    Notify_UnauthedAccess,
+    Login.Request_Login,
+    Login.Reply_LoginSuccess,
+    Login.Reply_LoginFailed,
+    Login.Request_Join,
+    Login.Reply_JoinSuccess,
+    Login.Reply_JoinFailed,
+    Login.Request_CharacterList,
+    Login.Reply_CharacterList,
+    Login.Request_CreateCharacter,
+    Login.Reply_CreateCharacterSuccess,
+    Login.Reply_CreateCharacterFailed,
+    Login.Request_DeleteCharacter,
+    Login.Reply_DeleteCharacterSuccess,
+    Login.Reply_DeleteCharacterFailed,
+    World.Request_EnterWorld,
+    World.Reply_EnterWorldSuccess,
+    World.Reply_EnterWorldFailed,
+    World.Request_EnterWorldNext,
+    World.Reply_EnterWorldNextSuccess,
+    World.Reply_EnterWorldNextFailed,
+    World.Request_Move,
+    World.Request_Attack,
+    World.Notify_EnterZone,
+    World.Notify_AppearActor,
+    World.Notify_DisappearActor,
+    World.Notify_Move,
+    World.Notify_Attack,
+    World.Notify_Damage,
+    Manager.Request_Login,
+    Manager.Reply_LoginSuccess,
+    Manager.Reply_LoginFailed,
+    Manager.Request_CreateCredential,
+    Manager.Reply_CreateCredential,
+    Manager.Request_CheckCredential,
+    Manager.Reply_CheckCredentialSuccess,
+    Manager.Reply_CheckCredentialFailed
+}
+
+// 기본 네트워크 메시지 =================================================================
+table MessageRoot {
+    message:MessageType; // Union
+}
+
+root_type MessageRoot;
+
+file_identifier "PROT";

@@ -19,14 +19,20 @@
     <Filter Include="DB">
       <UniqueIdentifier>{837d0517-62cb-4a9f-9039-8ea0f1442f78}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Server\Login">
+      <UniqueIdentifier>{d19222a1-381f-47e3-86e1-65b3daa972a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Server\Manager">
+      <UniqueIdentifier>{37224581-8778-4c72-83a1-3648a967b39a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Server\World">
+      <UniqueIdentifier>{9141cba4-b8a1-44db-b2c7-68a0eb5cb5eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameServer.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Singleton.h">
@@ -45,46 +51,58 @@
     <ClInclude Include="AccountManager.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="StaticCachedData.h">
-      <Filter>World</Filter>
-    </ClInclude>
     <ClInclude Include="MySQL.h">
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="GameObject.h">
       <Filter>World</Filter>
     </ClInclude>
-    <ClInclude Include="Zone.h">
-      <Filter>World</Filter>
-    </ClInclude>
-    <ClInclude Include="ServerSettings.h">
-      <Filter>Server</Filter>
-    </ClInclude>
-    <ClInclude Include="protocol_generated.h">
-      <Filter>Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="RemoteClient.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="Common.h" />
     <ClInclude Include="DBSchema.h">
       <Filter>DB</Filter>
     </ClInclude>
-    <ClInclude Include="Actor.h">
-      <Filter>World</Filter>
-    </ClInclude>
     <ClInclude Include="Grid.h">
       <Filter>World</Filter>
     </ClInclude>
-    <ClInclude Include="ProtocolHelper.h">
+    <ClInclude Include="ManagerServer.h">
+      <Filter>Server\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol_cs_generated.h">
       <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol_ss_generated.h">
+      <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol_ss_helper.h">
+      <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoteLoginClient.h">
+      <Filter>Server\Login</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoteClient.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoteWorldClient.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="LoginServer.h">
+      <Filter>Server\Login</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol_cs_helper.h">
+      <Filter>Protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="ManagerClient.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Settings.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticCachedData.h">
+      <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="GameServer.cpp">
-      <Filter>Server</Filter>
-    </ClCompile>
     <ClCompile Include="Vector3.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -92,8 +110,14 @@
     <ClCompile Include="GameObject.cpp">
       <Filter>World</Filter>
     </ClCompile>
-    <ClCompile Include="Zone.cpp">
-      <Filter>World</Filter>
+    <ClCompile Include="ManagerServer.cpp">
+      <Filter>Server\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="LoginServer.cpp">
+      <Filter>Server\Login</Filter>
+    </ClCompile>
+    <ClCompile Include="ManagerClient.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -9,6 +9,7 @@
 #include "monster_generated.h"
 #include <boost/locale.hpp>
 
+using namespace std;
 using namespace gisun::net;
 using namespace MyGame::Sample;
 
@@ -72,9 +73,9 @@ int main()
 
 
 		auto weapon_one_name = builder.CreateString("Sword");
-		short weapon_one_damage = 3;
+		short weapon_one_damage = std::numeric_limits<short>::max();// 3;
 		auto weapon_two_name = builder.CreateString("Axe");
-		short weapon_two_damage = 5;
+		short weapon_two_damage = std::numeric_limits<short>::max();// 5;
 		// Use the `CreateWeapon` shortcut to create Weapons with all the fields set.
 		auto sword = CreateWeapon(builder, weapon_one_name, weapon_one_damage);
 		auto axe = CreateWeapon(builder, weapon_two_name, weapon_two_damage);
@@ -93,8 +94,8 @@ int main()
 		auto weapons = builder.CreateVector(weapons_vector);
 
 		// Set his hit points to 300 and his mana to 150.
-		int hp = 300;
-		int mana = 150;
+		int hp = std::numeric_limits<int>::max();//300;
+		int mana = std::numeric_limits<int>::max();//150;
 		Vec3 pos(1.0f, 2.0f, 3.0f);
 		// Finally, create the monster using the `CreateMonster` helper function
 		// to set all fields.
@@ -106,6 +107,7 @@ int main()
 
 		//auto buffer = std::make_shared<Buffer>(str.size());
 		//buffer->WriteBytes((uint8_t*)str.data(), str.size());
+		std::cout << "size : " << builder.GetSize() << std::endl;
 		client->Send(builder.GetBufferPointer(), builder.GetSize());
 		//client->Send(builder.GetBufferPointer(), builder.GetSize());
 		//client->Send(builder.GetBufferPointer(), builder.GetSize());

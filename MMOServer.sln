@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameServer", "Game\Game.vcx
 		{934A6A3B-0413-48EE-ACA8-0834826E7CBC} = {934A6A3B-0413-48EE-ACA8-0834826E7CBC}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyClient", "DummyClient\DummyClient.vcxproj", "{35E91919-11F2-44A3-B8F3-15A4A3328252}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -54,6 +56,14 @@ Global
 		{5AFC3B92-FFB5-4044-B403-0C0013ADDFE4}.Release|x64.Build.0 = Release|x64
 		{5AFC3B92-FFB5-4044-B403-0C0013ADDFE4}.Release|x86.ActiveCfg = Release|Win32
 		{5AFC3B92-FFB5-4044-B403-0C0013ADDFE4}.Release|x86.Build.0 = Release|Win32
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Debug|x64.ActiveCfg = Debug|x64
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Debug|x64.Build.0 = Debug|x64
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Debug|x86.ActiveCfg = Debug|Win32
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Debug|x86.Build.0 = Debug|Win32
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Release|x64.ActiveCfg = Release|x64
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Release|x64.Build.0 = Release|x64
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Release|x86.ActiveCfg = Release|Win32
+		{35E91919-11F2-44A3-B8F3-15A4A3328252}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

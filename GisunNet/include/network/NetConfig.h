@@ -10,7 +10,6 @@ namespace net {
 
 	struct ServerConfig
 	{
-	public:
 		// execution
 		Ptr<IoServiceLoop>  io_service_loop = nullptr;
 		std::size_t			thread_count = std::thread::hardware_concurrency(); // io_service_loop 이 설정되어 있으면 이값은 무시.
@@ -24,7 +23,6 @@ namespace net {
 
 	struct ClientConfig
 	{
-	public:
 		// execution
 		Ptr<IoServiceLoop>	io_service_loop = nullptr;
 		// session

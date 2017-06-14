@@ -134,7 +134,7 @@ void GameServer::ProcessRemoteClientDisconnected(const Ptr<RemoteClient>& rc)
 	// 목록에서 제거
 	RemoveRemoteClient(rc);
 
-	BOOST_LOG_TRIVIAL(info) << "Logout : " << rc->GetAccount()->acc_name;
+	BOOST_LOG_TRIVIAL(info) << "Logout : " << rc->GetAccount()->user_name;
 
 	// Process leave the game world
 	strand_->post([this, rc]()
@@ -460,7 +460,7 @@ void GameServer::OnLogin(const Ptr<net::Session>& session, const proto::NetMessa
 	new_rc->SetAccount(db_account);
 	AddRemoteClient(session->GetID(), new_rc);
 
-	BOOST_LOG_TRIVIAL(info) << "Login : " << db_account->acc_name;
+	BOOST_LOG_TRIVIAL(info) << "Login : " << db_account->user_name;
 
 	proto::login::Reply_LoginSuccessT reply;
 	reply.auth_key = boost::uuids::to_string(new_rc->GetAuthKey());
@@ -535,7 +535,7 @@ void GameServer::OnCreateCharacter(const Ptr<net::Session>& session, const proto
 	BOOST_LOG_TRIVIAL(info) << "Create Character : " << db_character->name;
 
 	auto character = std::make_unique<proto::login::CharacterT>();
-	character->id = db_character->id;
+	character->id = db_character->uid;
 	character->name = db_character->name;
 	character->class_type = (proto::ClassType)db_character->class_type;
 	character->level = db_character->level;

@@ -1,72 +1,44 @@
 #pragma once
 #include "Common.h"
+#include "TypeDef.h"
 #include "MySQL.h"
 
 namespace db_schema {
 
-class DBSchemaBase
+class Account
 {
 public:
-	DBSchemaBase()
-		: db_(nullptr)
-	{}
-	explicit DBSchemaBase(Ptr<MySQLPool> db)
-		: db_(db)
-	{}
-	virtual ~DBSchemaBase() {};
-
-	void SetDB(Ptr<MySQLPool> db)
-	{
-		db_ = db;
-	}
-	Ptr<MySQLPool> GetDB()
-	{
-		return db_;
-	}
-
-	virtual bool Update() { return true; }
-	virtual bool Delete() { return true; }
-
-private:
-	Ptr<MySQLPool> db_;
-};
-
-class Account : public DBSchemaBase
-{
-public:
-	using DBSchemaBase::DBSchemaBase;
-
-	int    id;
-	std::string acc_name;
+	int         uid;
+	std::string user_name;
 	std::string password;
 
-	static Ptr<Account> Create(Ptr<MySQLPool> db, const std::string& acc_name, const std::string& password)
+	static Ptr<Account> Create(Ptr<MySQLPool> db, const std::string& user_name, const std::string& password)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"INSERT INTO account_tb(acc_name, password) VALUES(?,?)"));
-		pstmt->setString(1, acc_name.c_str());
+			"INSERT INTO account_tb(user_name, password) VALUES(?,?)"));
+		pstmt->setString(1, user_name.c_str());
 		pstmt->setString(2, password.c_str());
 
 		if (pstmt->executeUpdate() == 0)
 			return nullptr;
 
-		return Fetch(db, acc_name);
+		return Fetch(db, user_name);
 	}
 
-	static Ptr<Account> Fetch(Ptr<MySQLPool> db, const std::string& acc_name)
+	static Ptr<Account> Fetch(Ptr<MySQLPool> db, const std::string& user_name)
 	{
 		ConnectionPtr conn = db->GetConnection();
-		PstmtPtr pstmt(conn->prepareStatement("SELECT id, acc_name, password FROM account_tb WHERE acc_name=?"));
-		pstmt->setString(1, acc_name.c_str());
+		PstmtPtr pstmt(conn->prepareStatement("SELECT uid, user_name, password FROM account_tb WHERE user_name=?"));
+		pstmt->setString(1, user_name.c_str());
 		
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
 			return nullptr;
 
-		auto account = std::make_shared<Account>(db);
-		account->id = result_set->getInt("id");
-		account->acc_name = result_set->getString("acc_name").c_str();
+		auto account = std::make_shared<Account>();
+		account->uid = result_set->getInt("uid");
+		account->user_name = result_set->getString("user_name").c_str();
 		account->password = result_set->getString("password").c_str();
 		return account;
 	}
@@ -93,13 +65,11 @@ public:
 	int       def;
 };
 
-class Character : public DBSchemaBase
+class Character
 {
 public:
-	using DBSchemaBase::DBSchemaBase;
-
-	int            id;
-	int            acc_id;
+	int            uid;
+	int            account_uid;
 	std::string    name;
 	ClassType      class_type;
 	int            exp;
@@ -112,36 +82,35 @@ public:
 	int            def;
 	int            map_id;
 	Vector3        pos;
-	float          rotation_y;
-	bool           first_play;
+	float          rotation;
 
-	static Ptr<Character> Create(Ptr<MySQLPool> db, int account_id, const std::string& name, ClassType class_type)
+	static Ptr<Character> Create(Ptr<MySQLPool> db, int account_uid, const std::string& name, ClassType class_type)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"INSERT INTO  character_tb (acc_id, name, class_type) VALUES(?,?,?)"));
-		pstmt->setInt(1, account_id);
+			"INSERT INTO  character_tb (account_uid, name, class_type) VALUES(?,?,?)"));
+		pstmt->setInt(1, account_uid);
 		pstmt->setString(2, name.c_str());
 		pstmt->setInt(3, (int)class_type);
 
 		if (pstmt->executeUpdate() == 0)
 			return nullptr;
 
-		return Fetch(db, account_id, name);
+		return Fetch(db, account_uid, name);
 	}
 
-	static std::vector<Ptr<Character>> Fetch(Ptr<MySQLPool> db, int account_id)
+	static std::vector<Ptr<Character>> Fetch(Ptr<MySQLPool> db, int account_uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE acc_id=?"));
-		pstmt->setInt(1, account_id);
+			"SELECT * FROM character_tb WHERE account_uid=?"));
+		pstmt->setInt(1, account_uid);
 
 		ResultSetPtr result_set(pstmt->executeQuery());
 		std::vector<Ptr<Character>> characters;
 		while (result_set->next())
 		{
-			auto c = std::make_shared<Character>(db);
+			auto c = std::make_shared<Character>();
 			Set(c, result_set);
 			characters.push_back(std::move(c));
 		}
@@ -149,36 +118,36 @@ public:
 		return characters;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int account_id, const std::string& name)
+	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int account_uid, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE acc_id=? AND name=?"));
-		pstmt->setInt(1, account_id);
+			"SELECT * FROM character_tb WHERE account_uid=? AND name=?"));
+		pstmt->setInt(1, account_uid);
 		pstmt->setString(2, name.c_str());
 
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
 			return nullptr;
 
-		auto c = std::make_shared<Character>(db);
+		auto c = std::make_shared<Character>();
 		Set(c, result_set);
 		return c;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int character_id, int account_id)
+	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int uid, int account_uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE id=? AND acc_id=?"));
-		pstmt->setInt(1, character_id);
-		pstmt->setInt(2, account_id);
+			"SELECT * FROM character_tb WHERE uid=? AND account_uid=?"));
+		pstmt->setInt(1, uid);
+		pstmt->setInt(2, account_uid);
 
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
 			return nullptr;
 
-		auto c = std::make_shared<Character>(db);
+		auto c = std::make_shared<Character>();
 		Set(c, result_set);
 		return c;
 	}
@@ -194,14 +163,13 @@ public:
 		if (!result_set->next())
 			return nullptr;
 
-		auto c = std::make_shared<Character>(db);
+		auto c = std::make_shared<Character>();
 		Set(c, result_set);
 		return c;
 	}
 
-	bool Update() override
+	bool Update(Ptr<MySQLPool> db)
 	{
-		auto db = GetDB();
 		if (!db) return false;
 
 		ConnectionPtr conn = db->GetConnection();
@@ -221,23 +189,21 @@ public:
 			<< ",pos_x=" << pos.X
 			<< ",pos_y=" << pos.Y
 			<< ",pos_z=" << pos.Z
-			<< ",rotation_y=" << rotation_y
-			<< ",first_play=" << first_play
-			<< " WHERE id=" << id;
+			<< ",rotation=" << rotation
+			<< " WHERE uid=" << uid;
 
 		return stmt->execute(ss.str().c_str());
 	}
 
-	bool Delete() override
+	bool Delete(Ptr<MySQLPool> db)
 	{
-		auto db = GetDB();
 		if (!db) return false;
 
 		ConnectionPtr conn = db->GetConnection();
 		StmtPtr stmt(conn->createStatement());
 
 		std::stringstream ss;
-		ss << "DELETE FROM character_tb WHERE id=" << id;
+		ss << "DELETE FROM character_tb WHERE uid=" << uid;
 
 		return stmt->execute(ss.str().c_str());
 	}
@@ -256,8 +222,8 @@ public:
 private:
 	static void Set(Ptr<Character>& c, ResultSetPtr& result_set)
 	{
-		c->id = result_set->getInt("id");
-		c->acc_id = result_set->getInt("acc_id");
+		c->uid = result_set->getInt("uid");
+		c->account_uid = result_set->getInt("account_uid");
 		c->name = result_set->getString("name").c_str();
 		c->class_type = (ClassType)result_set->getInt("class_type");
 		c->exp = result_set->getInt("exp");
@@ -272,8 +238,7 @@ private:
 		c->pos.X = (float)result_set->getDouble("pos_x");
 		c->pos.Y = (float)result_set->getDouble("pos_y");
 		c->pos.Z = (float)result_set->getDouble("pos_z");
-		c->rotation_y = (float)result_set->getDouble("rotation_y");
-		c->first_play = result_set->getBoolean("first_play");
+		c->rotation = (float)result_set->getDouble("rotation");
 	}
 };
 

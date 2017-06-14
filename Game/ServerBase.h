@@ -1,18 +1,12 @@
 #pragma once
 #include <iostream>
 
-class ServerBase
+class IServer
 {
 public:
-	ServerBase() {}
-	virtual ~ServerBase() {}
-
-	std::string GetName() { return name_; }
-	void SetName(const std::string& name) { name_ = name; }
-		
-	virtual void Run() {}
-	virtual void Stop() {};
-
-private:
-	std::string name_;
+	virtual ~IServer() {};
+	virtual std::string GetName() = 0;
+	virtual void SetName(const std::string& name) = 0;
+	virtual void Run() = 0;
+	virtual void Stop() = 0;
 };

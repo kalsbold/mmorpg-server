@@ -34,16 +34,24 @@ namespace net {
 
 			Send(std::move(buffer));
 		}
+
 		virtual void Send(const Buffer& data) override
 		{
-			auto buffer = std::make_shared<Buffer>(data);
+			Send(std::make_shared<Buffer>(data));
+		}
 
-			Send(std::move(buffer));
-		}
-		virtual void Send(Ptr<Buffer> message) override
+		virtual void Send(Buffer&& data) override
 		{
-			PendWrite(std::move(message));
+			Send(std::make_shared<Buffer>(std::move(data)));
 		}
+
+		virtual void Send(Ptr<Buffer> data) override
+		{
+			if (!IsOpen()) return;
+
+			PendWrite(std::move(data));
+		}
+
 		virtual asio::strand& GetStrand() override
 		{
 			return *strand_;
@@ -90,7 +98,7 @@ namespace net {
 		{
 			// Make Header
 			Header header;
-			header.payload_len = data->ReadableBytes();
+			header.payload_len = (int32_t)data->ReadableBytes();
 
 			// To Do : 암호화나 압축 등..
 
