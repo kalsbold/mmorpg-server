@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <chrono>
 #include "Common.h"
-#include "ServerBase.h"
+#include "IServer.h"
 #include "RemoteClient.h"
 #include "ManagerClient.h"
 #include "MySQL.h"

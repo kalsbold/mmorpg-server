@@ -13,9 +13,6 @@
     <Filter Include="Protocol">
       <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="World">
-      <UniqueIdentifier>{70476592-46d7-45ad-9480-06b616b315af}</UniqueIdentifier>
-    </Filter>
     <Filter Include="DB">
       <UniqueIdentifier>{837d0517-62cb-4a9f-9039-8ea0f1442f78}</UniqueIdentifier>
     </Filter>
@@ -27,6 +24,9 @@
     </Filter>
     <Filter Include="Server\World">
       <UniqueIdentifier>{9141cba4-b8a1-44db-b2c7-68a0eb5cb5eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Client">
+      <UniqueIdentifier>{5678a30c-5c70-4f00-8b3a-d3478b7a155c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,24 +45,15 @@
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="TypeDef.h" />
-    <ClInclude Include="ServerBase.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="AccountManager.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="MySQL.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>World</Filter>
-    </ClInclude>
     <ClInclude Include="Common.h" />
     <ClInclude Include="DBSchema.h">
       <Filter>DB</Filter>
-    </ClInclude>
-    <ClInclude Include="Grid.h">
-      <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="ManagerServer.h">
       <Filter>Server\Manager</Filter>
@@ -91,14 +82,35 @@
     <ClInclude Include="protocol_cs_helper.h">
       <Filter>Protocol</Filter>
     </ClInclude>
-    <ClInclude Include="ManagerClient.h">
-      <Filter>Server</Filter>
-    </ClInclude>
     <ClInclude Include="Settings.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="StaticCachedData.h">
       <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Zone.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="ManagerClient.h">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="IServer.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldServer.h">
+      <Filter>Server\World</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -107,17 +119,26 @@
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="GameObject.cpp">
-      <Filter>World</Filter>
-    </ClCompile>
     <ClCompile Include="ManagerServer.cpp">
       <Filter>Server\Manager</Filter>
     </ClCompile>
     <ClCompile Include="LoginServer.cpp">
       <Filter>Server\Login</Filter>
     </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Server\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Zone.cpp">
+      <Filter>Server\World</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Server\World</Filter>
+    </ClCompile>
     <ClCompile Include="ManagerClient.cpp">
-      <Filter>Server</Filter>
+      <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldServer.cpp">
+      <Filter>Server\World</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

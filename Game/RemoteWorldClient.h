@@ -1,13 +1,13 @@
 #pragma once
-/*
+
 #include "Common.h"
+#include "RemoteClient.h"
 #include "GameServer.h"
 #include "Zone.h"
 #include "Actor.h"
 #include "DBSchema.h"
-#include "ProtocolHelper.h"
 
-class RemoteWorldClient : public std::enable_shared_from_this<RemoteWorldClient>
+class RemoteWorldClient : public RemoteClient
 {
 public:
 	enum class State
@@ -18,9 +18,9 @@ public:
 		Disconnected,	// 접속 종료
 	};
 
-	RemoteWorldClient(GameServer* server, const Ptr<net::Session>& net_session)
-		: server_(server)
-		, net_session_(net_session)
+	RemoteWorldClient(const Ptr<net::Session>& net_session, WorldServer* owner)
+		: RemoteClient(net_session)
+		, owner_(owner)
 		, state_(State::Connected)
 		, disposed_(false)
 	{
@@ -31,35 +31,6 @@ public:
 	~RemoteWorldClient()
 	{
 		Dispose();
-	}
-
-	int GetSessionID() const
-	{
-		return GetSession()->GetID();
-	}
-
-	const Ptr<net::Session> GetSession() const
-	{
-		return net_session_;
-	}
-
-	void Send(fb::FlatBufferBuilder& fbb)
-	{
-		if (net_session_->IsOpen())
-			SendFlatBuffer(net_session_, fbb);
-	}
-
-	template <typename T>
-	void Send(const T& message)
-	{
-		if (net_session_->IsOpen())
-			SendProtocolMessage(net_session_, message);
-	}
-
-	void Send(const Ptr<net::Buffer>& buf)
-	{
-		if (net_session_->IsOpen())
-			net_session_->Send(buf);
 	}
 
 	State GetState() const
@@ -77,26 +48,6 @@ public:
 		return disposed_;
 	}
 
-	bool IsDisconnected()
-	{
-		return !net_session_->IsOpen();
-	}
-
-	// 연결을 종료한다.
-	void Disconnect()
-	{
-		net_session_->Close();
-		SetState(State::Disconnected);
-		Dispose();
-	}
-
-	// 클라이언트에서 연결을 끊었을때 callback
-	void OnDisconnected()
-	{
-		SetState(State::Disconnected);
-		Dispose();
-	}
-
 	const Ptr<db::Account>& GetAccount() const
 	{
 		return db_account_;
@@ -107,19 +58,19 @@ public:
 		db_account_ = db_account;
 	}
 
-	bool IsAuthentication()
+	bool IsAuthenticated() const
 	{
-		return !auth_key_.is_nil();
+		return !credential_.is_nil();
 	}
 
-	uuid GetAuthKey()
+	void Authenticate(uuid credential)
 	{
-		return auth_key_;
+		credential_ = credential;
 	}
 
-	void Authenticate(uuid auth_key)
+	const uuid& GetCredential() const
 	{
-		auth_key_ = auth_key;
+		return credential_;
 	}
 
 	const Ptr<PlayerCharacter>& GetCharacter()
@@ -135,8 +86,8 @@ public:
 	// 종료 처리. 상태 DB Update 등 을 한다.
 	void Dispose()
 	{
-		bool e = false;
-		if (!disposed_.compare_exchange_strong(e, true))
+		bool exp = false;
+		if (!disposed_.compare_exchange_strong(exp, true))
 			return;
 
 		// 케릭터 상태 DB Update.
@@ -146,22 +97,28 @@ public:
 		}
 	}
 
+	// 클라이언트에서 연결을 끊었을때 callback
+	virtual void OnDisconnected() override
+	{
+		SetState(State::Disconnected);
+		Dispose();
+	}
+
 private:
 
 	const Ptr<MySQLPool>& GetDB()
 	{
-		return server_->GetDB();
+		return owner_->GetDB();
 	}
 
-	GameServer*             server_;
-	Ptr<net::Session>       net_session_;
+	std::atomic<bool>       disposed_;
 
-	uuid					auth_key_;
+	WorldServer*            owner_;
 	Ptr<db::Account>        db_account_;
-
-	std::atomic<State>	state_;
+	uuid					credential_;
+	
+	std::atomic<State>		state_;
 	Ptr<PlayerCharacter>    character_ = nullptr;
 
-	std::atomic<bool>       disposed_;
+	
 };
-*/
