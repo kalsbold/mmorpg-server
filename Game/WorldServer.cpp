@@ -228,47 +228,6 @@ void WorldServer::HandleSessionClosed(const Ptr<net::Session>& session, net::Clo
 	ProcessRemoteClientDisconnected(remote_client);
 }
 
-// Join ================================================================================================================
-void WorldServer::OnJoin(const Ptr<net::Session>& session, const PCS::Login::Request_Join * message)
-{
-	if (message == nullptr) return;
-
-	const char* user_name = message->user_name()->c_str();
-	const char* password = message->password()->c_str();
-
-	// 문자열 검사
-	std::regex pattern(R"([^A-Za-z0-9_]+)");
-	std::cmatch m;
-	if (std::regex_search(user_name, m, pattern))
-	{
-		PCS::Login::Reply_JoinFailedT reply;
-		reply.error_code = PCS::ErrorCode::INVALID_STRING;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	if (db::Account::Fetch(db_conn_, user_name))
-	{
-		PCS::Login::Reply_JoinFailedT reply;
-		reply.error_code = PCS::ErrorCode::JOIN_ACC_NAME_ALREADY;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	if (!db::Account::Create(db_conn_, user_name, password))
-	{
-		PCS::Login::Reply_JoinFailedT reply;
-		reply.error_code = PCS::ErrorCode::JOIN_CANNOT_ACC_CREATE;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	BOOST_LOG_TRIVIAL(info) << "Join : " << user_name;
-
-	PCS::Login::Reply_JoinSuccessT reply;
-	PCS::Send(*session, reply);
-}
-
 // Login ================================================================================================================
 void WorldServer::OnLogin(const Ptr<net::Session>& session, const PCS::Login::Request_Login* message)
 {
@@ -331,153 +290,10 @@ void WorldServer::OnLogin(const Ptr<net::Session>& session, const PCS::Login::Re
 	manager_client_->RequestGenerateCredential(session->GetID(), db_account->uid);
 }
 
-// Create Character ================================================================================================================
-void WorldServer::OnCreateCharacter(const Ptr<net::Session>& session, const PCS::Login::Request_CreateCharacter* message)
-{
-	if (message == nullptr) return;
-
-	// 로그인 체크
-	auto rc = GetAuthedRemoteClient(session->GetID());
-	if (!rc)
-	{
-		NotifyUnauthedAccess(session);
-		return;
-	}
-
-	const char* name = message->name()->c_str();
-	const ClassType class_type = (ClassType)message->class_type();
-
-	// 문자열 검사
-	std::regex pattern(R"([^A-Za-z0-9_]+)");
-	std::cmatch m;
-	if (std::regex_search(name, m, pattern))
-	{
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::INVALID_STRING;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	if (db::Character::Fetch(db_conn_, name))
-	{
-		// 이미 있는 이름.
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_CHARACTER_NAME_ALREADY;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	// 초기 능력치를 가져온다.
-	const int level = 1;
-	auto attribute = CharacterAttributeTable::GetInstance().Get(class_type, level);
-	if (!attribute)
-	{
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	//생성
-	auto db_character = db::Character::Create(db_conn_, rc->GetAccount()->uid, name, class_type);
-	if (!db_character)
-	{
-		// 생성 된게 없다.
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_CHARACTER_CANNOT_CREATE;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	// 초기 능력치로 셋.
-	db_character->SetAttribute(*attribute);
-	db_character->map_id = 1001;	// 시작맵
-	db_character->pos = Vector3(100.0f, 0.0f, 100.0f); // 시작 좌표
-	db_character->Update(GetDB());
-
-	BOOST_LOG_TRIVIAL(info) << "Create Character : " << db_character->name;
-
-	auto character = std::make_unique<PCS::Login::CharacterT>();
-	character->uid = db_character->uid;
-	character->name = db_character->name;
-	character->class_type = (PCS::ClassType)db_character->class_type;
-	character->level = db_character->level;
-
-	PCS::Login::Reply_CreateCharacterSuccessT reply;
-	reply.character = std::move(character);
-	PCS::Send(*session, reply);
-}
-
-// Character List ================================================================================================================
-void WorldServer::OnCharacterList(const Ptr<net::Session>& session, const PCS::Login::Request_CharacterList* message)
-{
-	if (message == nullptr) return;
-
-	// 로그인 체크
-	auto rc = GetAuthedRemoteClient(session->GetID());
-	if (!rc)
-	{
-		NotifyUnauthedAccess(session);
-		return;
-	}
-
-	auto db_char_list = db::Character::Fetch(db_conn_, rc->GetAccount()->uid);
-
-	PCS::Login::Reply_CharacterListT reply;
-	for (auto& var : db_char_list)
-	{
-		auto character = std::make_unique<PCS::Login::CharacterT>();
-		character->uid = var->uid;
-		character->name = var->name;
-		character->class_type = (PCS::ClassType)var->class_type;
-		character->level = var->level;
-		reply.list.emplace_back(std::move(character));
-	}
-
-	PCS::Send(*session, reply);
-}
-
-// Delete Character ==========================================================================================================
-void WorldServer::OnDeleteCharacter(const Ptr<net::Session>& session, const PCS::Login::Request_DeleteCharacter* message)
-{
-	if (message == nullptr) return;
-
-	// 로그인 체크
-	auto rc = GetAuthedRemoteClient(session->GetID());
-	if (!rc)
-	{
-		NotifyUnauthedAccess(session);
-		return;
-	}
-
-	const int character_uid = message->character_uid();
-
-	auto db_character = db::Character::Fetch(db_conn_, character_uid, rc->GetAccount()->uid);
-	if (!db_character)
-	{
-		PCS::Login::Reply_DeleteCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::DELETE_CHARACTER_NOT_EXIST;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	// 삭제
-	db_character->Delete(GetDB());
-
-	BOOST_LOG_TRIVIAL(info) << "Delete Character : " << db_character->name;
-
-	PCS::Login::Reply_DeleteCharacterSuccessT reply;
-	reply.character_uid = character_uid;
-	PCS::Send(*session, reply);
-}
-
 void WorldServer::RegisterHandlers()
 {
 	RegisterMessageHandler<PCS::Login::Request_Join>([this](auto& session, auto* msg) { OnJoin(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_Login>([this](auto& session, auto* msg) { OnLogin(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_CreateCharacter>([this](auto& session, auto* msg) { OnCreateCharacter(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_CharacterList>([this](auto& session, auto* msg) { OnCharacterList(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_DeleteCharacter>([this](auto& session, auto* msg) { OnDeleteCharacter(session, msg); });
+	
 }
 
 void WorldServer::RegisterManagerClientHandlers()
@@ -501,7 +317,7 @@ void WorldServer::RegisterManagerClientHandlers()
 		Stop();
 	};
 
-	manager_client_->OnReplyGenerateCredential = [this](const uuid& credential, int session_id) {
+	manager_client_->OnReplyVerifyCredential = [this](PSS::ErrorCode ec, int session_id) {
 		auto rc = GetRemoteClient(session_id);
 		if (!rc)
 			return;

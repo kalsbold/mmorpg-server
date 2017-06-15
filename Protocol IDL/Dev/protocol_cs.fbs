@@ -65,7 +65,7 @@ table Notify_UnauthedAccess {
 
 }
 
-
+//======================================================================================================================
 namespace ProtocolCS.Login;
 
 // 데이터 스키마 정의=====================================
@@ -145,7 +145,7 @@ table Reply_DeleteCharacterFailed {
     error_code:ErrorCode;
 }
 
-
+//==================================================================================================================================
 namespace ProtocolCS.World;
 
 // 데이터 스키마 정의============================
@@ -162,6 +162,7 @@ table PlayerCharacter {
     mp:int;
     att:int;
     def:int;
+    map_id:int;
     pos:Vec3;
     rotation:float;
 }
@@ -215,37 +216,16 @@ table DamageData {
 
 // 메시지 스키마 정의============================
 // Credential 로그인.
-table Request_LoginCredential {
+table Request_Login {
     credential:string;
-}
-// 로그인 성공.
-table Reply_LoginCredentialSuccess {
-}
-// 로그인 실패.
-table Reply_LoginCredentialFailed {
-    error_code:ErrorCode;
-}
-
-// Enter World
-// 게임 입장 요청 첫번째 시퀀스
-table Request_EnterWorld {
     character_uid:int;
 }
-// 게임 입장 성공
-table Reply_EnterWorldSuccess {
-}
-// 게임 입장 실패
-table Reply_EnterWorldFailed {
-    error_code:ErrorCode;
-}
-
-// 게임 입장 요청 두번째 시퀀스. 클라이언트에서 world 씬 로드가 완료되면 보낸다.
-table Request_EnterWorldNext {
-}
-table Reply_EnterWorldNextSuccess {
+// 로그인 성공.
+table Reply_LoginSuccess {
     character:PlayerCharacter;
 }
-table Reply_EnterWorldNextFailed {
+// 로그인 실패.
+table Reply_LoginFailed {
     error_code:ErrorCode;
 }
 
@@ -292,7 +272,7 @@ table Notify_Damage {
 
 namespace ProtocolCS;
 
-// 메시지 타입을 정의 한다 ================================================
+// 메시지 타입을 정의 한다 ========================================================================================================================
 union MessageType {
     Notify_UnauthedAccess,
     Login.Request_Login,

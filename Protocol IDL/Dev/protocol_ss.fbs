@@ -49,6 +49,7 @@ table Request_VerifyCredential {
 table Reply_VerifyCredential {
     error_code:ErrorCode;
     session_id:int;
+    credential:string;
 }
 // 인증키가 제거됨 통보
 //table Notify_RemoveCredential {
