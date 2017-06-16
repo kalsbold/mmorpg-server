@@ -51,8 +51,8 @@ public:
 
 	std::function<void(PSS::ErrorCode error)> OnLoginManagerServer;
 	std::function<void()> OnDisconnectManagerServer;
-	std::function<void(const uuid& credential, int session_id)> OnReplyGenerateCredential;
-	std::function<void(PSS::ErrorCode error, int session_id)> OnReplyVerifyCredential;
+	std::function<void(int session_id, const uuid& credential)> OnReplyGenerateCredential;
+	std::function<void(PSS::ErrorCode error, int session_id, const uuid& credential, int account_uid)> OnReplyVerifyCredential;
 
 private:
 	void HandleConnected(bool success);

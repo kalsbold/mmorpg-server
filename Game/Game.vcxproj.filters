@@ -25,8 +25,11 @@
     <Filter Include="Server\World">
       <UniqueIdentifier>{9141cba4-b8a1-44db-b2c7-68a0eb5cb5eb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Client">
+    <Filter Include="Server\Manager\Client">
       <UniqueIdentifier>{5678a30c-5c70-4f00-8b3a-d3478b7a155c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Server\World\Actor">
+      <UniqueIdentifier>{a96a5743-8ef6-4571-b994-6fb316528514}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -88,29 +91,35 @@
     <ClInclude Include="StaticCachedData.h">
       <Filter>Server</Filter>
     </ClInclude>
-    <ClInclude Include="Actor.h">
-      <Filter>Server\World</Filter>
-    </ClInclude>
     <ClInclude Include="World.h">
       <Filter>Server\World</Filter>
     </ClInclude>
     <ClInclude Include="Zone.h">
       <Filter>Server\World</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>Server\World</Filter>
-    </ClInclude>
     <ClInclude Include="Grid.h">
       <Filter>Server\World</Filter>
     </ClInclude>
     <ClInclude Include="ManagerClient.h">
-      <Filter>Client</Filter>
+      <Filter>Server\Manager\Client</Filter>
     </ClInclude>
     <ClInclude Include="IServer.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="WorldServer.h">
       <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>Server\World\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Server\World</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerCharacter.h">
+      <Filter>Server\World\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Monster.h">
+      <Filter>Server\World\Actor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -131,14 +140,17 @@
     <ClCompile Include="Zone.cpp">
       <Filter>Server\World</Filter>
     </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>Server\World</Filter>
-    </ClCompile>
     <ClCompile Include="ManagerClient.cpp">
-      <Filter>Client</Filter>
+      <Filter>Server\Manager\Client</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">
       <Filter>Server\World</Filter>
     </ClCompile>
+    <ClCompile Include="RemoteWorldClient.cpp" />
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Server\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Monster.cpp" />
+    <ClCompile Include="PlayerCharacter.cpp" />
   </ItemGroup>
 </Project>

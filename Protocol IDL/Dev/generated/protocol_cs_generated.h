@@ -84,26 +84,14 @@ struct AttackDataT;
 struct DamageData;
 struct DamageDataT;
 
-struct Request_EnterWorld;
-struct Request_EnterWorldT;
+struct Request_Login;
+struct Request_LoginT;
 
-struct Reply_EnterWorldSuccess;
-struct Reply_EnterWorldSuccessT;
+struct Reply_LoginSuccess;
+struct Reply_LoginSuccessT;
 
-struct Reply_EnterWorldFailed;
-struct Reply_EnterWorldFailedT;
-
-struct Request_EnterWorldNext;
-struct Request_EnterWorldNextT;
-
-struct Reply_EnterWorldNextSuccess;
-struct Reply_EnterWorldNextSuccessT;
-
-struct Reply_EnterWorldNextFailed;
-struct Reply_EnterWorldNextFailedT;
-
-struct Notify_EnterZone;
-struct Notify_EnterZoneT;
+struct Reply_LoginFailed;
+struct Reply_LoginFailedT;
 
 struct Request_Move;
 struct Request_MoveT;
@@ -126,6 +114,15 @@ struct Notify_AttackT;
 struct Notify_Damage;
 struct Notify_DamageT;
 
+struct Request_MoveZone;
+struct Request_MoveZoneT;
+
+struct Reply_MoveZoneSuccess;
+struct Reply_MoveZoneSuccessT;
+
+struct Reply_MoveZoneFailed;
+struct Reply_MoveZoneFailedT;
+
 }  // namespace World
 
 struct MessageRoot;
@@ -140,23 +137,23 @@ enum class ErrorCode : int32_t {
   LOGIN_INCORRECT_ACC_NAME = 100,
   LOGIN_INCORRECT_ACC_PASSWORD = 101,
   LOGIN_DUPLICATION = 102,
-  JOIN_ACC_NAME_ALREADY = 200,
-  JOIN_CANNOT_ACC_CREATE = 201,
-  CREATE_CHARACTER_NAME_ALREADY = 300,
-  CREATE_CHARACTER_CANNOT_CREATE = 301,
-  CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST = 302,
-  DELETE_CHARACTER_NOT_EXIST = 400,
-  DELETE_CHARACTER_CANNOT_DELETE = 401,
-  ENTER_WORLD_INVALID_CHARACTER = 500,
-  ENTER_WORLD_INVALID_STATE = 501,
-  ENTER_WORLD_CANNOT_ENTER_ZONE = 502,
-  ENTER_WORLD_NEXT_INVALID_STATE = 510,
-  ENTER_WORLD_NEXT_CHARACTER_NOT_LOADED = 511,
-  ENTER_WORLD_NEXT_CANNOT_FIND_ZONE = 512,
-  WORLD_LOGIC_INVALID_STATE = 600,
-  WORLD_LOGIC_ENTER_ZONE_FAILED = 603,
+  JOIN_ACC_NAME_ALREADY = 103,
+  JOIN_CANNOT_ACC_CREATE = 104,
+  CREATE_CHARACTER_NAME_ALREADY = 105,
+  CREATE_CHARACTER_CANNOT_CREATE = 106,
+  CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST = 107,
+  DELETE_CHARACTER_NOT_EXIST = 108,
+  DELETE_CHARACTER_CANNOT_DELETE = 109,
+  WORLD_LOGIN_INVALID_CREDENTIAL = 200,
+  WORLD_LOGIN_INVALID_ACCOUNT = 201,
+  WORLD_LOGIN_INVALID_CHARACTER = 202,
+  WORLD_LOGIN_INVALID_STATE = 203,
+  WORLD_CANNOT_ENTER_ZONE = 204,
+  WORLD_NEXT_INVALID_STATE = 205,
+  WORLD_CANNOT_LOAD_CHARACTER = 206,
+  WORLD_CANNOT_FIND_ZONE = 207,
   MIN = OK,
-  MAX = WORLD_LOGIC_ENTER_ZONE_FAILED
+  MAX = WORLD_CANNOT_FIND_ZONE
 };
 
 enum class ClassType : int32_t {
@@ -224,22 +221,21 @@ enum class MessageType : uint8_t {
   Login_Request_DeleteCharacter = 13,
   Login_Reply_DeleteCharacterSuccess = 14,
   Login_Reply_DeleteCharacterFailed = 15,
-  World_Request_EnterWorld = 16,
-  World_Reply_EnterWorldSuccess = 17,
-  World_Reply_EnterWorldFailed = 18,
-  World_Request_EnterWorldNext = 19,
-  World_Reply_EnterWorldNextSuccess = 20,
-  World_Reply_EnterWorldNextFailed = 21,
-  World_Request_Move = 22,
-  World_Request_Attack = 23,
-  World_Notify_EnterZone = 24,
-  World_Notify_AppearActor = 25,
-  World_Notify_DisappearActor = 26,
-  World_Notify_Move = 27,
-  World_Notify_Attack = 28,
-  World_Notify_Damage = 29,
+  World_Request_Login = 16,
+  World_Reply_LoginSuccess = 17,
+  World_Reply_LoginFailed = 18,
+  World_Request_Move = 19,
+  World_Request_Attack = 20,
+  World_Notify_AppearActor = 21,
+  World_Notify_DisappearActor = 22,
+  World_Notify_Move = 23,
+  World_Notify_Attack = 24,
+  World_Notify_Damage = 25,
+  World_Request_MoveZone = 26,
+  World_Reply_MoveZoneSuccess = 27,
+  World_Reply_MoveZoneFailed = 28,
   MIN = NONE,
-  MAX = World_Notify_Damage
+  MAX = World_Reply_MoveZoneFailed
 };
 
 inline const char **EnumNamesMessageType() {
@@ -260,20 +256,19 @@ inline const char **EnumNamesMessageType() {
     "Login_Request_DeleteCharacter",
     "Login_Reply_DeleteCharacterSuccess",
     "Login_Reply_DeleteCharacterFailed",
-    "World_Request_EnterWorld",
-    "World_Reply_EnterWorldSuccess",
-    "World_Reply_EnterWorldFailed",
-    "World_Request_EnterWorldNext",
-    "World_Reply_EnterWorldNextSuccess",
-    "World_Reply_EnterWorldNextFailed",
+    "World_Request_Login",
+    "World_Reply_LoginSuccess",
+    "World_Reply_LoginFailed",
     "World_Request_Move",
     "World_Request_Attack",
-    "World_Notify_EnterZone",
     "World_Notify_AppearActor",
     "World_Notify_DisappearActor",
     "World_Notify_Move",
     "World_Notify_Attack",
     "World_Notify_Damage",
+    "World_Request_MoveZone",
+    "World_Reply_MoveZoneSuccess",
+    "World_Reply_MoveZoneFailed",
     nullptr
   };
   return names;
@@ -348,28 +343,16 @@ template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_DeleteCharacterFail
   static const MessageType enum_value = MessageType::Login_Reply_DeleteCharacterFailed;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Request_EnterWorld> {
-  static const MessageType enum_value = MessageType::World_Request_EnterWorld;
+template<> struct MessageTypeTraits<ProtocolCS::World::Request_Login> {
+  static const MessageType enum_value = MessageType::World_Request_Login;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Reply_EnterWorldSuccess> {
-  static const MessageType enum_value = MessageType::World_Reply_EnterWorldSuccess;
+template<> struct MessageTypeTraits<ProtocolCS::World::Reply_LoginSuccess> {
+  static const MessageType enum_value = MessageType::World_Reply_LoginSuccess;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Reply_EnterWorldFailed> {
-  static const MessageType enum_value = MessageType::World_Reply_EnterWorldFailed;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Request_EnterWorldNext> {
-  static const MessageType enum_value = MessageType::World_Request_EnterWorldNext;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Reply_EnterWorldNextSuccess> {
-  static const MessageType enum_value = MessageType::World_Reply_EnterWorldNextSuccess;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Reply_EnterWorldNextFailed> {
-  static const MessageType enum_value = MessageType::World_Reply_EnterWorldNextFailed;
+template<> struct MessageTypeTraits<ProtocolCS::World::Reply_LoginFailed> {
+  static const MessageType enum_value = MessageType::World_Reply_LoginFailed;
 };
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Request_Move> {
@@ -378,10 +361,6 @@ template<> struct MessageTypeTraits<ProtocolCS::World::Request_Move> {
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Request_Attack> {
   static const MessageType enum_value = MessageType::World_Request_Attack;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Notify_EnterZone> {
-  static const MessageType enum_value = MessageType::World_Notify_EnterZone;
 };
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Notify_AppearActor> {
@@ -402,6 +381,18 @@ template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Attack> {
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Damage> {
   static const MessageType enum_value = MessageType::World_Notify_Damage;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Request_MoveZone> {
+  static const MessageType enum_value = MessageType::World_Request_MoveZone;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Reply_MoveZoneSuccess> {
+  static const MessageType enum_value = MessageType::World_Reply_MoveZoneSuccess;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Reply_MoveZoneFailed> {
+  static const MessageType enum_value = MessageType::World_Reply_MoveZoneFailed;
 };
 
 struct MessageTypeUnion {
@@ -493,29 +484,17 @@ struct MessageTypeUnion {
     return type == MessageType::Login_Reply_DeleteCharacterFailed ?
       reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(value) : nullptr;
   }
-  ProtocolCS::World::Request_EnterWorldT *AsWorld_Request_EnterWorld() {
-    return type == MessageType::World_Request_EnterWorld ?
-      reinterpret_cast<ProtocolCS::World::Request_EnterWorldT *>(value) : nullptr;
+  ProtocolCS::World::Request_LoginT *AsWorld_Request_Login() {
+    return type == MessageType::World_Request_Login ?
+      reinterpret_cast<ProtocolCS::World::Request_LoginT *>(value) : nullptr;
   }
-  ProtocolCS::World::Reply_EnterWorldSuccessT *AsWorld_Reply_EnterWorldSuccess() {
-    return type == MessageType::World_Reply_EnterWorldSuccess ?
-      reinterpret_cast<ProtocolCS::World::Reply_EnterWorldSuccessT *>(value) : nullptr;
+  ProtocolCS::World::Reply_LoginSuccessT *AsWorld_Reply_LoginSuccess() {
+    return type == MessageType::World_Reply_LoginSuccess ?
+      reinterpret_cast<ProtocolCS::World::Reply_LoginSuccessT *>(value) : nullptr;
   }
-  ProtocolCS::World::Reply_EnterWorldFailedT *AsWorld_Reply_EnterWorldFailed() {
-    return type == MessageType::World_Reply_EnterWorldFailed ?
-      reinterpret_cast<ProtocolCS::World::Reply_EnterWorldFailedT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Request_EnterWorldNextT *AsWorld_Request_EnterWorldNext() {
-    return type == MessageType::World_Request_EnterWorldNext ?
-      reinterpret_cast<ProtocolCS::World::Request_EnterWorldNextT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Reply_EnterWorldNextSuccessT *AsWorld_Reply_EnterWorldNextSuccess() {
-    return type == MessageType::World_Reply_EnterWorldNextSuccess ?
-      reinterpret_cast<ProtocolCS::World::Reply_EnterWorldNextSuccessT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Reply_EnterWorldNextFailedT *AsWorld_Reply_EnterWorldNextFailed() {
-    return type == MessageType::World_Reply_EnterWorldNextFailed ?
-      reinterpret_cast<ProtocolCS::World::Reply_EnterWorldNextFailedT *>(value) : nullptr;
+  ProtocolCS::World::Reply_LoginFailedT *AsWorld_Reply_LoginFailed() {
+    return type == MessageType::World_Reply_LoginFailed ?
+      reinterpret_cast<ProtocolCS::World::Reply_LoginFailedT *>(value) : nullptr;
   }
   ProtocolCS::World::Request_MoveT *AsWorld_Request_Move() {
     return type == MessageType::World_Request_Move ?
@@ -524,10 +503,6 @@ struct MessageTypeUnion {
   ProtocolCS::World::Request_AttackT *AsWorld_Request_Attack() {
     return type == MessageType::World_Request_Attack ?
       reinterpret_cast<ProtocolCS::World::Request_AttackT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Notify_EnterZoneT *AsWorld_Notify_EnterZone() {
-    return type == MessageType::World_Notify_EnterZone ?
-      reinterpret_cast<ProtocolCS::World::Notify_EnterZoneT *>(value) : nullptr;
   }
   ProtocolCS::World::Notify_AppearActorT *AsWorld_Notify_AppearActor() {
     return type == MessageType::World_Notify_AppearActor ?
@@ -548,6 +523,18 @@ struct MessageTypeUnion {
   ProtocolCS::World::Notify_DamageT *AsWorld_Notify_Damage() {
     return type == MessageType::World_Notify_Damage ?
       reinterpret_cast<ProtocolCS::World::Notify_DamageT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Request_MoveZoneT *AsWorld_Request_MoveZone() {
+    return type == MessageType::World_Request_MoveZone ?
+      reinterpret_cast<ProtocolCS::World::Request_MoveZoneT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Reply_MoveZoneSuccessT *AsWorld_Reply_MoveZoneSuccess() {
+    return type == MessageType::World_Reply_MoveZoneSuccess ?
+      reinterpret_cast<ProtocolCS::World::Reply_MoveZoneSuccessT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Reply_MoveZoneFailedT *AsWorld_Reply_MoveZoneFailed() {
+    return type == MessageType::World_Reply_MoveZoneFailed ?
+      reinterpret_cast<ProtocolCS::World::Reply_MoveZoneFailedT *>(value) : nullptr;
   }
 };
 
@@ -1655,6 +1642,7 @@ struct PlayerCharacterT : public flatbuffers::NativeTable {
   int32_t mp;
   int32_t att;
   int32_t def;
+  int32_t map_id;
   std::unique_ptr<ProtocolCS::Vec3> pos;
   float rotation;
   PlayerCharacterT()
@@ -1667,6 +1655,7 @@ struct PlayerCharacterT : public flatbuffers::NativeTable {
         mp(0),
         att(0),
         def(0),
+        map_id(0),
         rotation(0.0f) {
   }
 };
@@ -1685,8 +1674,9 @@ struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_MP = 20,
     VT_ATT = 22,
     VT_DEF = 24,
-    VT_POS = 26,
-    VT_ROTATION = 28
+    VT_MAP_ID = 26,
+    VT_POS = 28,
+    VT_ROTATION = 30
   };
   const flatbuffers::String *entity_id() const {
     return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
@@ -1754,6 +1744,12 @@ struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool mutate_def(int32_t _def) {
     return SetField<int32_t>(VT_DEF, _def, 0);
   }
+  int32_t map_id() const {
+    return GetField<int32_t>(VT_MAP_ID, 0);
+  }
+  bool mutate_map_id(int32_t _map_id) {
+    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
+  }
   const ProtocolCS::Vec3 *pos() const {
     return GetStruct<const ProtocolCS::Vec3 *>(VT_POS);
   }
@@ -1781,6 +1777,7 @@ struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_MP) &&
            VerifyField<int32_t>(verifier, VT_ATT) &&
            VerifyField<int32_t>(verifier, VT_DEF) &&
+           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
            VerifyField<ProtocolCS::Vec3>(verifier, VT_POS) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
@@ -1826,6 +1823,9 @@ struct PlayerCharacterBuilder {
   void add_def(int32_t def) {
     fbb_.AddElement<int32_t>(PlayerCharacter::VT_DEF, def, 0);
   }
+  void add_map_id(int32_t map_id) {
+    fbb_.AddElement<int32_t>(PlayerCharacter::VT_MAP_ID, map_id, 0);
+  }
   void add_pos(const ProtocolCS::Vec3 *pos) {
     fbb_.AddStruct(PlayerCharacter::VT_POS, pos);
   }
@@ -1838,7 +1838,7 @@ struct PlayerCharacterBuilder {
   }
   PlayerCharacterBuilder &operator=(const PlayerCharacterBuilder &);
   flatbuffers::Offset<PlayerCharacter> Finish() {
-    const auto end = fbb_.EndTable(start_, 13);
+    const auto end = fbb_.EndTable(start_, 14);
     auto o = flatbuffers::Offset<PlayerCharacter>(end);
     return o;
   }
@@ -1857,11 +1857,13 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
     int32_t mp = 0,
     int32_t att = 0,
     int32_t def = 0,
+    int32_t map_id = 0,
     const ProtocolCS::Vec3 *pos = 0,
     float rotation = 0.0f) {
   PlayerCharacterBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
   builder_.add_pos(pos);
+  builder_.add_map_id(map_id);
   builder_.add_def(def);
   builder_.add_att(att);
   builder_.add_mp(mp);
@@ -1889,6 +1891,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
     int32_t mp = 0,
     int32_t att = 0,
     int32_t def = 0,
+    int32_t map_id = 0,
     const ProtocolCS::Vec3 *pos = 0,
     float rotation = 0.0f) {
   return ProtocolCS::World::CreatePlayerCharacter(
@@ -1904,6 +1907,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
       mp,
       att,
       def,
+      map_id,
       pos,
       rotation);
 }
@@ -2622,19 +2626,27 @@ inline flatbuffers::Offset<DamageData> CreateDamageDataDirect(
 
 flatbuffers::Offset<DamageData> CreateDamageData(flatbuffers::FlatBufferBuilder &_fbb, const DamageDataT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_EnterWorldT : public flatbuffers::NativeTable {
-  typedef Request_EnterWorld TableType;
+struct Request_LoginT : public flatbuffers::NativeTable {
+  typedef Request_Login TableType;
+  std::string credential;
   int32_t character_uid;
-  Request_EnterWorldT()
+  Request_LoginT()
       : character_uid(0) {
   }
 };
 
-struct Request_EnterWorld FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_EnterWorldT NativeTableType;
+struct Request_Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_LoginT NativeTableType;
   enum {
-    VT_CHARACTER_UID = 4
+    VT_CREDENTIAL = 4,
+    VT_CHARACTER_UID = 6
   };
+  const flatbuffers::String *credential() const {
+    return GetPointer<const flatbuffers::String *>(VT_CREDENTIAL);
+  }
+  flatbuffers::String *mutable_credential() {
+    return GetPointer<flatbuffers::String *>(VT_CREDENTIAL);
+  }
   int32_t character_uid() const {
     return GetField<int32_t>(VT_CHARACTER_UID, 0);
   }
@@ -2643,188 +2655,68 @@ struct Request_EnterWorld FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_CREDENTIAL) &&
+           verifier.Verify(credential()) &&
            VerifyField<int32_t>(verifier, VT_CHARACTER_UID) &&
            verifier.EndTable();
   }
-  Request_EnterWorldT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_EnterWorldT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_EnterWorld> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Request_LoginT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_LoginT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_Login> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_LoginT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Request_EnterWorldBuilder {
+struct Request_LoginBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
+  void add_credential(flatbuffers::Offset<flatbuffers::String> credential) {
+    fbb_.AddOffset(Request_Login::VT_CREDENTIAL, credential);
+  }
   void add_character_uid(int32_t character_uid) {
-    fbb_.AddElement<int32_t>(Request_EnterWorld::VT_CHARACTER_UID, character_uid, 0);
+    fbb_.AddElement<int32_t>(Request_Login::VT_CHARACTER_UID, character_uid, 0);
   }
-  Request_EnterWorldBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Request_LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Request_EnterWorldBuilder &operator=(const Request_EnterWorldBuilder &);
-  flatbuffers::Offset<Request_EnterWorld> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Request_EnterWorld>(end);
+  Request_LoginBuilder &operator=(const Request_LoginBuilder &);
+  flatbuffers::Offset<Request_Login> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<Request_Login>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Request_EnterWorld> CreateRequest_EnterWorld(
+inline flatbuffers::Offset<Request_Login> CreateRequest_Login(
     flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> credential = 0,
     int32_t character_uid = 0) {
-  Request_EnterWorldBuilder builder_(_fbb);
+  Request_LoginBuilder builder_(_fbb);
   builder_.add_character_uid(character_uid);
+  builder_.add_credential(credential);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Request_EnterWorld> CreateRequest_EnterWorld(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Reply_EnterWorldSuccessT : public flatbuffers::NativeTable {
-  typedef Reply_EnterWorldSuccess TableType;
-  Reply_EnterWorldSuccessT() {
-  }
-};
-
-struct Reply_EnterWorldSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_EnterWorldSuccessT NativeTableType;
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           verifier.EndTable();
-  }
-  Reply_EnterWorldSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_EnterWorldSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_EnterWorldSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Reply_EnterWorldSuccessBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  Reply_EnterWorldSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Reply_EnterWorldSuccessBuilder &operator=(const Reply_EnterWorldSuccessBuilder &);
-  flatbuffers::Offset<Reply_EnterWorldSuccess> Finish() {
-    const auto end = fbb_.EndTable(start_, 0);
-    auto o = flatbuffers::Offset<Reply_EnterWorldSuccess>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Reply_EnterWorldSuccess> CreateReply_EnterWorldSuccess(
-    flatbuffers::FlatBufferBuilder &_fbb) {
-  Reply_EnterWorldSuccessBuilder builder_(_fbb);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Reply_EnterWorldSuccess> CreateReply_EnterWorldSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Reply_EnterWorldFailedT : public flatbuffers::NativeTable {
-  typedef Reply_EnterWorldFailed TableType;
-  ProtocolCS::ErrorCode error_code;
-  Reply_EnterWorldFailedT()
-      : error_code(ProtocolCS::ErrorCode::OK) {
-  }
-};
-
-struct Reply_EnterWorldFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_EnterWorldFailedT NativeTableType;
-  enum {
-    VT_ERROR_CODE = 4
-  };
-  ProtocolCS::ErrorCode error_code() const {
-    return static_cast<ProtocolCS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
-  }
-  bool mutate_error_code(ProtocolCS::ErrorCode _error_code) {
-    return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
-           verifier.EndTable();
-  }
-  Reply_EnterWorldFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_EnterWorldFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_EnterWorldFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Reply_EnterWorldFailedBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_error_code(ProtocolCS::ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(Reply_EnterWorldFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
-  }
-  Reply_EnterWorldFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Reply_EnterWorldFailedBuilder &operator=(const Reply_EnterWorldFailedBuilder &);
-  flatbuffers::Offset<Reply_EnterWorldFailed> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_EnterWorldFailed>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Reply_EnterWorldFailed> CreateReply_EnterWorldFailed(
+inline flatbuffers::Offset<Request_Login> CreateRequest_LoginDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
-  Reply_EnterWorldFailedBuilder builder_(_fbb);
-  builder_.add_error_code(error_code);
-  return builder_.Finish();
+    const char *credential = nullptr,
+    int32_t character_uid = 0) {
+  return ProtocolCS::World::CreateRequest_Login(
+      _fbb,
+      credential ? _fbb.CreateString(credential) : 0,
+      character_uid);
 }
 
-flatbuffers::Offset<Reply_EnterWorldFailed> CreateReply_EnterWorldFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Request_Login> CreateRequest_Login(flatbuffers::FlatBufferBuilder &_fbb, const Request_LoginT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_EnterWorldNextT : public flatbuffers::NativeTable {
-  typedef Request_EnterWorldNext TableType;
-  Request_EnterWorldNextT() {
-  }
-};
-
-struct Request_EnterWorldNext FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_EnterWorldNextT NativeTableType;
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           verifier.EndTable();
-  }
-  Request_EnterWorldNextT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_EnterWorldNextT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_EnterWorldNext> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldNextT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Request_EnterWorldNextBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  Request_EnterWorldNextBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Request_EnterWorldNextBuilder &operator=(const Request_EnterWorldNextBuilder &);
-  flatbuffers::Offset<Request_EnterWorldNext> Finish() {
-    const auto end = fbb_.EndTable(start_, 0);
-    auto o = flatbuffers::Offset<Request_EnterWorldNext>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Request_EnterWorldNext> CreateRequest_EnterWorldNext(
-    flatbuffers::FlatBufferBuilder &_fbb) {
-  Request_EnterWorldNextBuilder builder_(_fbb);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Request_EnterWorldNext> CreateRequest_EnterWorldNext(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldNextT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Reply_EnterWorldNextSuccessT : public flatbuffers::NativeTable {
-  typedef Reply_EnterWorldNextSuccess TableType;
+struct Reply_LoginSuccessT : public flatbuffers::NativeTable {
+  typedef Reply_LoginSuccess TableType;
   std::unique_ptr<PlayerCharacterT> character;
-  Reply_EnterWorldNextSuccessT() {
+  Reply_LoginSuccessT() {
   }
 };
 
-struct Reply_EnterWorldNextSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_EnterWorldNextSuccessT NativeTableType;
+struct Reply_LoginSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_LoginSuccessT NativeTableType;
   enum {
     VT_CHARACTER = 4
   };
@@ -2840,49 +2732,49 @@ struct Reply_EnterWorldNextSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers
            verifier.VerifyTable(character()) &&
            verifier.EndTable();
   }
-  Reply_EnterWorldNextSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_EnterWorldNextSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_EnterWorldNextSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_LoginSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_LoginSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_LoginSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_EnterWorldNextSuccessBuilder {
+struct Reply_LoginSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_character(flatbuffers::Offset<PlayerCharacter> character) {
-    fbb_.AddOffset(Reply_EnterWorldNextSuccess::VT_CHARACTER, character);
+    fbb_.AddOffset(Reply_LoginSuccess::VT_CHARACTER, character);
   }
-  Reply_EnterWorldNextSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_LoginSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_EnterWorldNextSuccessBuilder &operator=(const Reply_EnterWorldNextSuccessBuilder &);
-  flatbuffers::Offset<Reply_EnterWorldNextSuccess> Finish() {
+  Reply_LoginSuccessBuilder &operator=(const Reply_LoginSuccessBuilder &);
+  flatbuffers::Offset<Reply_LoginSuccess> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_EnterWorldNextSuccess>(end);
+    auto o = flatbuffers::Offset<Reply_LoginSuccess>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_EnterWorldNextSuccess> CreateReply_EnterWorldNextSuccess(
+inline flatbuffers::Offset<Reply_LoginSuccess> CreateReply_LoginSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<PlayerCharacter> character = 0) {
-  Reply_EnterWorldNextSuccessBuilder builder_(_fbb);
+  Reply_LoginSuccessBuilder builder_(_fbb);
   builder_.add_character(character);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Reply_EnterWorldNextSuccess> CreateReply_EnterWorldNextSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_LoginSuccess> CreateReply_LoginSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Reply_EnterWorldNextFailedT : public flatbuffers::NativeTable {
-  typedef Reply_EnterWorldNextFailed TableType;
+struct Reply_LoginFailedT : public flatbuffers::NativeTable {
+  typedef Reply_LoginFailed TableType;
   ProtocolCS::ErrorCode error_code;
-  Reply_EnterWorldNextFailedT()
+  Reply_LoginFailedT()
       : error_code(ProtocolCS::ErrorCode::OK) {
   }
 };
 
-struct Reply_EnterWorldNextFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_EnterWorldNextFailedT NativeTableType;
+struct Reply_LoginFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_LoginFailedT NativeTableType;
   enum {
     VT_ERROR_CODE = 4
   };
@@ -2897,124 +2789,38 @@ struct Reply_EnterWorldNextFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers:
            VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
            verifier.EndTable();
   }
-  Reply_EnterWorldNextFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_EnterWorldNextFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_EnterWorldNextFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_LoginFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_LoginFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_LoginFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_EnterWorldNextFailedBuilder {
+struct Reply_LoginFailedBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_error_code(ProtocolCS::ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(Reply_EnterWorldNextFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+    fbb_.AddElement<int32_t>(Reply_LoginFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
   }
-  Reply_EnterWorldNextFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_LoginFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_EnterWorldNextFailedBuilder &operator=(const Reply_EnterWorldNextFailedBuilder &);
-  flatbuffers::Offset<Reply_EnterWorldNextFailed> Finish() {
+  Reply_LoginFailedBuilder &operator=(const Reply_LoginFailedBuilder &);
+  flatbuffers::Offset<Reply_LoginFailed> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_EnterWorldNextFailed>(end);
+    auto o = flatbuffers::Offset<Reply_LoginFailed>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_EnterWorldNextFailed> CreateReply_EnterWorldNextFailed(
+inline flatbuffers::Offset<Reply_LoginFailed> CreateReply_LoginFailed(
     flatbuffers::FlatBufferBuilder &_fbb,
     ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
-  Reply_EnterWorldNextFailedBuilder builder_(_fbb);
+  Reply_LoginFailedBuilder builder_(_fbb);
   builder_.add_error_code(error_code);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Reply_EnterWorldNextFailed> CreateReply_EnterWorldNextFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Notify_EnterZoneT : public flatbuffers::NativeTable {
-  typedef Notify_EnterZone TableType;
-  int32_t map_id;
-  std::unique_ptr<ProtocolCS::Vec3> position;
-  float rotation;
-  Notify_EnterZoneT()
-      : map_id(0),
-        rotation(0.0f) {
-  }
-};
-
-struct Notify_EnterZone FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Notify_EnterZoneT NativeTableType;
-  enum {
-    VT_MAP_ID = 4,
-    VT_POSITION = 6,
-    VT_ROTATION = 8
-  };
-  int32_t map_id() const {
-    return GetField<int32_t>(VT_MAP_ID, 0);
-  }
-  bool mutate_map_id(int32_t _map_id) {
-    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
-  }
-  const ProtocolCS::Vec3 *position() const {
-    return GetStruct<const ProtocolCS::Vec3 *>(VT_POSITION);
-  }
-  ProtocolCS::Vec3 *mutable_position() {
-    return GetStruct<ProtocolCS::Vec3 *>(VT_POSITION);
-  }
-  float rotation() const {
-    return GetField<float>(VT_ROTATION, 0.0f);
-  }
-  bool mutate_rotation(float _rotation) {
-    return SetField<float>(VT_ROTATION, _rotation, 0.0f);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
-           VerifyField<ProtocolCS::Vec3>(verifier, VT_POSITION) &&
-           VerifyField<float>(verifier, VT_ROTATION) &&
-           verifier.EndTable();
-  }
-  Notify_EnterZoneT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Notify_EnterZoneT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Notify_EnterZone> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterZoneT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Notify_EnterZoneBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_map_id(int32_t map_id) {
-    fbb_.AddElement<int32_t>(Notify_EnterZone::VT_MAP_ID, map_id, 0);
-  }
-  void add_position(const ProtocolCS::Vec3 *position) {
-    fbb_.AddStruct(Notify_EnterZone::VT_POSITION, position);
-  }
-  void add_rotation(float rotation) {
-    fbb_.AddElement<float>(Notify_EnterZone::VT_ROTATION, rotation, 0.0f);
-  }
-  Notify_EnterZoneBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Notify_EnterZoneBuilder &operator=(const Notify_EnterZoneBuilder &);
-  flatbuffers::Offset<Notify_EnterZone> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
-    auto o = flatbuffers::Offset<Notify_EnterZone>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Notify_EnterZone> CreateNotify_EnterZone(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t map_id = 0,
-    const ProtocolCS::Vec3 *position = 0,
-    float rotation = 0.0f) {
-  Notify_EnterZoneBuilder builder_(_fbb);
-  builder_.add_rotation(rotation);
-  builder_.add_position(position);
-  builder_.add_map_id(map_id);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Notify_EnterZone> CreateNotify_EnterZone(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterZoneT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_LoginFailed> CreateReply_LoginFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Request_MoveT : public flatbuffers::NativeTable {
   typedef Request_Move TableType;
@@ -3506,6 +3312,206 @@ inline flatbuffers::Offset<Notify_Damage> CreateNotify_DamageDirect(
 
 flatbuffers::Offset<Notify_Damage> CreateNotify_Damage(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DamageT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
+struct Request_MoveZoneT : public flatbuffers::NativeTable {
+  typedef Request_MoveZone TableType;
+  int32_t map_id;
+  Request_MoveZoneT()
+      : map_id(0) {
+  }
+};
+
+struct Request_MoveZone FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_MoveZoneT NativeTableType;
+  enum {
+    VT_MAP_ID = 4
+  };
+  int32_t map_id() const {
+    return GetField<int32_t>(VT_MAP_ID, 0);
+  }
+  bool mutate_map_id(int32_t _map_id) {
+    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
+           verifier.EndTable();
+  }
+  Request_MoveZoneT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_MoveZoneT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_MoveZone> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Request_MoveZoneBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_map_id(int32_t map_id) {
+    fbb_.AddElement<int32_t>(Request_MoveZone::VT_MAP_ID, map_id, 0);
+  }
+  Request_MoveZoneBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Request_MoveZoneBuilder &operator=(const Request_MoveZoneBuilder &);
+  flatbuffers::Offset<Request_MoveZone> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Request_MoveZone>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Request_MoveZone> CreateRequest_MoveZone(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t map_id = 0) {
+  Request_MoveZoneBuilder builder_(_fbb);
+  builder_.add_map_id(map_id);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Request_MoveZone> CreateRequest_MoveZone(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Reply_MoveZoneSuccessT : public flatbuffers::NativeTable {
+  typedef Reply_MoveZoneSuccess TableType;
+  int32_t map_id;
+  std::unique_ptr<ProtocolCS::Vec3> position;
+  float rotation;
+  Reply_MoveZoneSuccessT()
+      : map_id(0),
+        rotation(0.0f) {
+  }
+};
+
+struct Reply_MoveZoneSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_MoveZoneSuccessT NativeTableType;
+  enum {
+    VT_MAP_ID = 4,
+    VT_POSITION = 6,
+    VT_ROTATION = 8
+  };
+  int32_t map_id() const {
+    return GetField<int32_t>(VT_MAP_ID, 0);
+  }
+  bool mutate_map_id(int32_t _map_id) {
+    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
+  }
+  const ProtocolCS::Vec3 *position() const {
+    return GetStruct<const ProtocolCS::Vec3 *>(VT_POSITION);
+  }
+  ProtocolCS::Vec3 *mutable_position() {
+    return GetStruct<ProtocolCS::Vec3 *>(VT_POSITION);
+  }
+  float rotation() const {
+    return GetField<float>(VT_ROTATION, 0.0f);
+  }
+  bool mutate_rotation(float _rotation) {
+    return SetField<float>(VT_ROTATION, _rotation, 0.0f);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
+           VerifyField<ProtocolCS::Vec3>(verifier, VT_POSITION) &&
+           VerifyField<float>(verifier, VT_ROTATION) &&
+           verifier.EndTable();
+  }
+  Reply_MoveZoneSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_MoveZoneSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_MoveZoneSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Reply_MoveZoneSuccessBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_map_id(int32_t map_id) {
+    fbb_.AddElement<int32_t>(Reply_MoveZoneSuccess::VT_MAP_ID, map_id, 0);
+  }
+  void add_position(const ProtocolCS::Vec3 *position) {
+    fbb_.AddStruct(Reply_MoveZoneSuccess::VT_POSITION, position);
+  }
+  void add_rotation(float rotation) {
+    fbb_.AddElement<float>(Reply_MoveZoneSuccess::VT_ROTATION, rotation, 0.0f);
+  }
+  Reply_MoveZoneSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Reply_MoveZoneSuccessBuilder &operator=(const Reply_MoveZoneSuccessBuilder &);
+  flatbuffers::Offset<Reply_MoveZoneSuccess> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<Reply_MoveZoneSuccess>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Reply_MoveZoneSuccess> CreateReply_MoveZoneSuccess(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t map_id = 0,
+    const ProtocolCS::Vec3 *position = 0,
+    float rotation = 0.0f) {
+  Reply_MoveZoneSuccessBuilder builder_(_fbb);
+  builder_.add_rotation(rotation);
+  builder_.add_position(position);
+  builder_.add_map_id(map_id);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Reply_MoveZoneSuccess> CreateReply_MoveZoneSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Reply_MoveZoneFailedT : public flatbuffers::NativeTable {
+  typedef Reply_MoveZoneFailed TableType;
+  ProtocolCS::ErrorCode error_code;
+  Reply_MoveZoneFailedT()
+      : error_code(ProtocolCS::ErrorCode::OK) {
+  }
+};
+
+struct Reply_MoveZoneFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_MoveZoneFailedT NativeTableType;
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ProtocolCS::ErrorCode error_code() const {
+    return static_cast<ProtocolCS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool mutate_error_code(ProtocolCS::ErrorCode _error_code) {
+    return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+  Reply_MoveZoneFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_MoveZoneFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_MoveZoneFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Reply_MoveZoneFailedBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ProtocolCS::ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(Reply_MoveZoneFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  Reply_MoveZoneFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Reply_MoveZoneFailedBuilder &operator=(const Reply_MoveZoneFailedBuilder &);
+  flatbuffers::Offset<Reply_MoveZoneFailed> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Reply_MoveZoneFailed>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
+  Reply_MoveZoneFailedBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
 }  // namespace World
 
 struct MessageRootT : public flatbuffers::NativeTable {
@@ -3576,32 +3582,20 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const ProtocolCS::Login::Reply_DeleteCharacterFailed *message_as_Login_Reply_DeleteCharacterFailed() const {
     return message_type() == MessageType::Login_Reply_DeleteCharacterFailed ? static_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailed *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Request_EnterWorld *message_as_World_Request_EnterWorld() const {
-    return message_type() == MessageType::World_Request_EnterWorld ? static_cast<const ProtocolCS::World::Request_EnterWorld *>(message()) : nullptr;
+  const ProtocolCS::World::Request_Login *message_as_World_Request_Login() const {
+    return message_type() == MessageType::World_Request_Login ? static_cast<const ProtocolCS::World::Request_Login *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Reply_EnterWorldSuccess *message_as_World_Reply_EnterWorldSuccess() const {
-    return message_type() == MessageType::World_Reply_EnterWorldSuccess ? static_cast<const ProtocolCS::World::Reply_EnterWorldSuccess *>(message()) : nullptr;
+  const ProtocolCS::World::Reply_LoginSuccess *message_as_World_Reply_LoginSuccess() const {
+    return message_type() == MessageType::World_Reply_LoginSuccess ? static_cast<const ProtocolCS::World::Reply_LoginSuccess *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Reply_EnterWorldFailed *message_as_World_Reply_EnterWorldFailed() const {
-    return message_type() == MessageType::World_Reply_EnterWorldFailed ? static_cast<const ProtocolCS::World::Reply_EnterWorldFailed *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Request_EnterWorldNext *message_as_World_Request_EnterWorldNext() const {
-    return message_type() == MessageType::World_Request_EnterWorldNext ? static_cast<const ProtocolCS::World::Request_EnterWorldNext *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Reply_EnterWorldNextSuccess *message_as_World_Reply_EnterWorldNextSuccess() const {
-    return message_type() == MessageType::World_Reply_EnterWorldNextSuccess ? static_cast<const ProtocolCS::World::Reply_EnterWorldNextSuccess *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Reply_EnterWorldNextFailed *message_as_World_Reply_EnterWorldNextFailed() const {
-    return message_type() == MessageType::World_Reply_EnterWorldNextFailed ? static_cast<const ProtocolCS::World::Reply_EnterWorldNextFailed *>(message()) : nullptr;
+  const ProtocolCS::World::Reply_LoginFailed *message_as_World_Reply_LoginFailed() const {
+    return message_type() == MessageType::World_Reply_LoginFailed ? static_cast<const ProtocolCS::World::Reply_LoginFailed *>(message()) : nullptr;
   }
   const ProtocolCS::World::Request_Move *message_as_World_Request_Move() const {
     return message_type() == MessageType::World_Request_Move ? static_cast<const ProtocolCS::World::Request_Move *>(message()) : nullptr;
   }
   const ProtocolCS::World::Request_Attack *message_as_World_Request_Attack() const {
     return message_type() == MessageType::World_Request_Attack ? static_cast<const ProtocolCS::World::Request_Attack *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Notify_EnterZone *message_as_World_Notify_EnterZone() const {
-    return message_type() == MessageType::World_Notify_EnterZone ? static_cast<const ProtocolCS::World::Notify_EnterZone *>(message()) : nullptr;
   }
   const ProtocolCS::World::Notify_AppearActor *message_as_World_Notify_AppearActor() const {
     return message_type() == MessageType::World_Notify_AppearActor ? static_cast<const ProtocolCS::World::Notify_AppearActor *>(message()) : nullptr;
@@ -3617,6 +3611,15 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const ProtocolCS::World::Notify_Damage *message_as_World_Notify_Damage() const {
     return message_type() == MessageType::World_Notify_Damage ? static_cast<const ProtocolCS::World::Notify_Damage *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Request_MoveZone *message_as_World_Request_MoveZone() const {
+    return message_type() == MessageType::World_Request_MoveZone ? static_cast<const ProtocolCS::World::Request_MoveZone *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Reply_MoveZoneSuccess *message_as_World_Reply_MoveZoneSuccess() const {
+    return message_type() == MessageType::World_Reply_MoveZoneSuccess ? static_cast<const ProtocolCS::World::Reply_MoveZoneSuccess *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Reply_MoveZoneFailed *message_as_World_Reply_MoveZoneFailed() const {
+    return message_type() == MessageType::World_Reply_MoveZoneFailed ? static_cast<const ProtocolCS::World::Reply_MoveZoneFailed *>(message()) : nullptr;
   }
   void *mutable_message() {
     return GetPointer<void *>(VT_MESSAGE);
@@ -3693,28 +3696,16 @@ template<> inline const ProtocolCS::Login::Reply_DeleteCharacterFailed *MessageR
   return message_as_Login_Reply_DeleteCharacterFailed();
 }
 
-template<> inline const ProtocolCS::World::Request_EnterWorld *MessageRoot::message_as<ProtocolCS::World::Request_EnterWorld>() const {
-  return message_as_World_Request_EnterWorld();
+template<> inline const ProtocolCS::World::Request_Login *MessageRoot::message_as<ProtocolCS::World::Request_Login>() const {
+  return message_as_World_Request_Login();
 }
 
-template<> inline const ProtocolCS::World::Reply_EnterWorldSuccess *MessageRoot::message_as<ProtocolCS::World::Reply_EnterWorldSuccess>() const {
-  return message_as_World_Reply_EnterWorldSuccess();
+template<> inline const ProtocolCS::World::Reply_LoginSuccess *MessageRoot::message_as<ProtocolCS::World::Reply_LoginSuccess>() const {
+  return message_as_World_Reply_LoginSuccess();
 }
 
-template<> inline const ProtocolCS::World::Reply_EnterWorldFailed *MessageRoot::message_as<ProtocolCS::World::Reply_EnterWorldFailed>() const {
-  return message_as_World_Reply_EnterWorldFailed();
-}
-
-template<> inline const ProtocolCS::World::Request_EnterWorldNext *MessageRoot::message_as<ProtocolCS::World::Request_EnterWorldNext>() const {
-  return message_as_World_Request_EnterWorldNext();
-}
-
-template<> inline const ProtocolCS::World::Reply_EnterWorldNextSuccess *MessageRoot::message_as<ProtocolCS::World::Reply_EnterWorldNextSuccess>() const {
-  return message_as_World_Reply_EnterWorldNextSuccess();
-}
-
-template<> inline const ProtocolCS::World::Reply_EnterWorldNextFailed *MessageRoot::message_as<ProtocolCS::World::Reply_EnterWorldNextFailed>() const {
-  return message_as_World_Reply_EnterWorldNextFailed();
+template<> inline const ProtocolCS::World::Reply_LoginFailed *MessageRoot::message_as<ProtocolCS::World::Reply_LoginFailed>() const {
+  return message_as_World_Reply_LoginFailed();
 }
 
 template<> inline const ProtocolCS::World::Request_Move *MessageRoot::message_as<ProtocolCS::World::Request_Move>() const {
@@ -3723,10 +3714,6 @@ template<> inline const ProtocolCS::World::Request_Move *MessageRoot::message_as
 
 template<> inline const ProtocolCS::World::Request_Attack *MessageRoot::message_as<ProtocolCS::World::Request_Attack>() const {
   return message_as_World_Request_Attack();
-}
-
-template<> inline const ProtocolCS::World::Notify_EnterZone *MessageRoot::message_as<ProtocolCS::World::Notify_EnterZone>() const {
-  return message_as_World_Notify_EnterZone();
 }
 
 template<> inline const ProtocolCS::World::Notify_AppearActor *MessageRoot::message_as<ProtocolCS::World::Notify_AppearActor>() const {
@@ -3747,6 +3734,18 @@ template<> inline const ProtocolCS::World::Notify_Attack *MessageRoot::message_a
 
 template<> inline const ProtocolCS::World::Notify_Damage *MessageRoot::message_as<ProtocolCS::World::Notify_Damage>() const {
   return message_as_World_Notify_Damage();
+}
+
+template<> inline const ProtocolCS::World::Request_MoveZone *MessageRoot::message_as<ProtocolCS::World::Request_MoveZone>() const {
+  return message_as_World_Request_MoveZone();
+}
+
+template<> inline const ProtocolCS::World::Reply_MoveZoneSuccess *MessageRoot::message_as<ProtocolCS::World::Reply_MoveZoneSuccess>() const {
+  return message_as_World_Reply_MoveZoneSuccess();
+}
+
+template<> inline const ProtocolCS::World::Reply_MoveZoneFailed *MessageRoot::message_as<ProtocolCS::World::Reply_MoveZoneFailed>() const {
+  return message_as_World_Reply_MoveZoneFailed();
 }
 
 struct MessageRootBuilder {
@@ -4217,6 +4216,7 @@ inline void PlayerCharacter::UnPackTo(PlayerCharacterT *_o, const flatbuffers::r
   { auto _e = mp(); _o->mp = _e; };
   { auto _e = att(); _o->att = _e; };
   { auto _e = def(); _o->def = _e; };
+  { auto _e = map_id(); _o->map_id = _e; };
   { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
   { auto _e = rotation(); _o->rotation = _e; };
 }
@@ -4239,6 +4239,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::F
   auto _mp = _o->mp;
   auto _att = _o->att;
   auto _def = _o->def;
+  auto _map_id = _o->map_id;
   auto _pos = _o->pos ? _o->pos.get() : 0;
   auto _rotation = _o->rotation;
   return ProtocolCS::World::CreatePlayerCharacter(
@@ -4254,6 +4255,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::F
       _mp,
       _att,
       _def,
+      _map_id,
       _pos,
       _rotation);
 }
@@ -4452,179 +4454,82 @@ inline flatbuffers::Offset<DamageData> CreateDamageData(flatbuffers::FlatBufferB
       _damage);
 }
 
-inline Request_EnterWorldT *Request_EnterWorld::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_EnterWorldT();
+inline Request_LoginT *Request_Login::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_LoginT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Request_EnterWorld::UnPackTo(Request_EnterWorldT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Request_Login::UnPackTo(Request_LoginT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
+  { auto _e = credential(); if (_e) _o->credential = _e->str(); };
   { auto _e = character_uid(); _o->character_uid = _e; };
 }
 
-inline flatbuffers::Offset<Request_EnterWorld> Request_EnterWorld::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_EnterWorld(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Request_Login> Request_Login::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_LoginT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_Login(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Request_EnterWorld> CreateRequest_EnterWorld(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Request_Login> CreateRequest_Login(flatbuffers::FlatBufferBuilder &_fbb, const Request_LoginT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
+  auto _credential = _o->credential.size() ? _fbb.CreateString(_o->credential) : 0;
   auto _character_uid = _o->character_uid;
-  return ProtocolCS::World::CreateRequest_EnterWorld(
+  return ProtocolCS::World::CreateRequest_Login(
       _fbb,
+      _credential,
       _character_uid);
 }
 
-inline Reply_EnterWorldSuccessT *Reply_EnterWorldSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_EnterWorldSuccessT();
+inline Reply_LoginSuccessT *Reply_LoginSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_LoginSuccessT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_EnterWorldSuccess::UnPackTo(Reply_EnterWorldSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-}
-
-inline flatbuffers::Offset<Reply_EnterWorldSuccess> Reply_EnterWorldSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_EnterWorldSuccess(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Reply_EnterWorldSuccess> CreateReply_EnterWorldSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  return ProtocolCS::World::CreateReply_EnterWorldSuccess(
-      _fbb);
-}
-
-inline Reply_EnterWorldFailedT *Reply_EnterWorldFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_EnterWorldFailedT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Reply_EnterWorldFailed::UnPackTo(Reply_EnterWorldFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = error_code(); _o->error_code = _e; };
-}
-
-inline flatbuffers::Offset<Reply_EnterWorldFailed> Reply_EnterWorldFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_EnterWorldFailed(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Reply_EnterWorldFailed> CreateReply_EnterWorldFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _error_code = _o->error_code;
-  return ProtocolCS::World::CreateReply_EnterWorldFailed(
-      _fbb,
-      _error_code);
-}
-
-inline Request_EnterWorldNextT *Request_EnterWorldNext::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_EnterWorldNextT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Request_EnterWorldNext::UnPackTo(Request_EnterWorldNextT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-}
-
-inline flatbuffers::Offset<Request_EnterWorldNext> Request_EnterWorldNext::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldNextT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_EnterWorldNext(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Request_EnterWorldNext> CreateRequest_EnterWorldNext(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterWorldNextT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  return ProtocolCS::World::CreateRequest_EnterWorldNext(
-      _fbb);
-}
-
-inline Reply_EnterWorldNextSuccessT *Reply_EnterWorldNextSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_EnterWorldNextSuccessT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Reply_EnterWorldNextSuccess::UnPackTo(Reply_EnterWorldNextSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_LoginSuccess::UnPackTo(Reply_LoginSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = character(); if (_e) _o->character = std::unique_ptr<PlayerCharacterT>(_e->UnPack(_resolver)); };
 }
 
-inline flatbuffers::Offset<Reply_EnterWorldNextSuccess> Reply_EnterWorldNextSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_EnterWorldNextSuccess(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_LoginSuccess> Reply_LoginSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_LoginSuccess(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_EnterWorldNextSuccess> CreateReply_EnterWorldNextSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_LoginSuccess> CreateReply_LoginSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _character = _o->character ? CreatePlayerCharacter(_fbb, _o->character.get(), _rehasher) : 0;
-  return ProtocolCS::World::CreateReply_EnterWorldNextSuccess(
+  return ProtocolCS::World::CreateReply_LoginSuccess(
       _fbb,
       _character);
 }
 
-inline Reply_EnterWorldNextFailedT *Reply_EnterWorldNextFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_EnterWorldNextFailedT();
+inline Reply_LoginFailedT *Reply_LoginFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_LoginFailedT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_EnterWorldNextFailed::UnPackTo(Reply_EnterWorldNextFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_LoginFailed::UnPackTo(Reply_LoginFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = error_code(); _o->error_code = _e; };
 }
 
-inline flatbuffers::Offset<Reply_EnterWorldNextFailed> Reply_EnterWorldNextFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_EnterWorldNextFailed(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_LoginFailed> Reply_LoginFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_LoginFailed(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_EnterWorldNextFailed> CreateReply_EnterWorldNextFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterWorldNextFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_LoginFailed> CreateReply_LoginFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _error_code = _o->error_code;
-  return ProtocolCS::World::CreateReply_EnterWorldNextFailed(
+  return ProtocolCS::World::CreateReply_LoginFailed(
       _fbb,
       _error_code);
-}
-
-inline Notify_EnterZoneT *Notify_EnterZone::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Notify_EnterZoneT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Notify_EnterZone::UnPackTo(Notify_EnterZoneT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = map_id(); _o->map_id = _e; };
-  { auto _e = position(); if (_e) _o->position = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
-  { auto _e = rotation(); _o->rotation = _e; };
-}
-
-inline flatbuffers::Offset<Notify_EnterZone> Notify_EnterZone::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterZoneT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateNotify_EnterZone(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Notify_EnterZone> CreateNotify_EnterZone(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterZoneT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _map_id = _o->map_id;
-  auto _position = _o->position ? _o->position.get() : 0;
-  auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreateNotify_EnterZone(
-      _fbb,
-      _map_id,
-      _position,
-      _rotation);
 }
 
 inline Request_MoveT *Request_Move::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -4811,6 +4716,87 @@ inline flatbuffers::Offset<Notify_Damage> CreateNotify_Damage(flatbuffers::FlatB
       _damage_list);
 }
 
+inline Request_MoveZoneT *Request_MoveZone::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_MoveZoneT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Request_MoveZone::UnPackTo(Request_MoveZoneT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = map_id(); _o->map_id = _e; };
+}
+
+inline flatbuffers::Offset<Request_MoveZone> Request_MoveZone::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_MoveZone(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Request_MoveZone> CreateRequest_MoveZone(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _map_id = _o->map_id;
+  return ProtocolCS::World::CreateRequest_MoveZone(
+      _fbb,
+      _map_id);
+}
+
+inline Reply_MoveZoneSuccessT *Reply_MoveZoneSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_MoveZoneSuccessT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Reply_MoveZoneSuccess::UnPackTo(Reply_MoveZoneSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = map_id(); _o->map_id = _e; };
+  { auto _e = position(); if (_e) _o->position = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
+  { auto _e = rotation(); _o->rotation = _e; };
+}
+
+inline flatbuffers::Offset<Reply_MoveZoneSuccess> Reply_MoveZoneSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_MoveZoneSuccess(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Reply_MoveZoneSuccess> CreateReply_MoveZoneSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _map_id = _o->map_id;
+  auto _position = _o->position ? _o->position.get() : 0;
+  auto _rotation = _o->rotation;
+  return ProtocolCS::World::CreateReply_MoveZoneSuccess(
+      _fbb,
+      _map_id,
+      _position,
+      _rotation);
+}
+
+inline Reply_MoveZoneFailedT *Reply_MoveZoneFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_MoveZoneFailedT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Reply_MoveZoneFailed::UnPackTo(Reply_MoveZoneFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = error_code(); _o->error_code = _e; };
+}
+
+inline flatbuffers::Offset<Reply_MoveZoneFailed> Reply_MoveZoneFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_MoveZoneFailed(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _error_code = _o->error_code;
+  return ProtocolCS::World::CreateReply_MoveZoneFailed(
+      _fbb,
+      _error_code);
+}
+
 }  // namespace World
 
 inline MessageRootT *MessageRoot::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -4906,28 +4892,16 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
       auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Request_EnterWorld: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterWorld *>(obj);
+    case MessageType::World_Request_Login: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Login *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Reply_EnterWorldSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldSuccess *>(obj);
+    case MessageType::World_Reply_LoginSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginSuccess *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Reply_EnterWorldFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldFailed *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Request_EnterWorldNext: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterWorldNext *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Reply_EnterWorldNextSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldNextSuccess *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Reply_EnterWorldNextFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldNextFailed *>(obj);
+    case MessageType::World_Reply_LoginFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MessageType::World_Request_Move: {
@@ -4936,10 +4910,6 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
     }
     case MessageType::World_Request_Attack: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Attack *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Notify_EnterZone: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterZone *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MessageType::World_Notify_AppearActor: {
@@ -4960,6 +4930,18 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Damage *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Request_MoveZone: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveZone *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Reply_MoveZoneSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneSuccess *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Reply_MoveZoneFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -5039,28 +5021,16 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailed *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Request_EnterWorld: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterWorld *>(obj);
+    case MessageType::World_Request_Login: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Login *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Reply_EnterWorldSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldSuccess *>(obj);
+    case MessageType::World_Reply_LoginSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginSuccess *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Reply_EnterWorldFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldFailed *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Request_EnterWorldNext: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterWorldNext *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Reply_EnterWorldNextSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldNextSuccess *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Reply_EnterWorldNextFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldNextFailed *>(obj);
+    case MessageType::World_Reply_LoginFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginFailed *>(obj);
       return ptr->UnPack(resolver);
     }
     case MessageType::World_Request_Move: {
@@ -5069,10 +5039,6 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
     }
     case MessageType::World_Request_Attack: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Attack *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Notify_EnterZone: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterZone *>(obj);
       return ptr->UnPack(resolver);
     }
     case MessageType::World_Notify_AppearActor: {
@@ -5093,6 +5059,18 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Damage *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Request_MoveZone: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveZone *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Reply_MoveZoneSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneSuccess *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Reply_MoveZoneFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneFailed *>(obj);
       return ptr->UnPack(resolver);
     }
     default: return nullptr;
@@ -5161,29 +5139,17 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(value);
       return CreateReply_DeleteCharacterFailed(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Request_EnterWorld: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterWorldT *>(value);
-      return CreateRequest_EnterWorld(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Request_Login: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_LoginT *>(value);
+      return CreateRequest_Login(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Reply_EnterWorldSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldSuccessT *>(value);
-      return CreateReply_EnterWorldSuccess(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Reply_LoginSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginSuccessT *>(value);
+      return CreateReply_LoginSuccess(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Reply_EnterWorldFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldFailedT *>(value);
-      return CreateReply_EnterWorldFailed(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Request_EnterWorldNext: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterWorldNextT *>(value);
-      return CreateRequest_EnterWorldNext(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Reply_EnterWorldNextSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldNextSuccessT *>(value);
-      return CreateReply_EnterWorldNextSuccess(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Reply_EnterWorldNextFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterWorldNextFailedT *>(value);
-      return CreateReply_EnterWorldNextFailed(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Reply_LoginFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginFailedT *>(value);
+      return CreateReply_LoginFailed(_fbb, ptr, _rehasher).Union();
     }
     case MessageType::World_Request_Move: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveT *>(value);
@@ -5192,10 +5158,6 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
     case MessageType::World_Request_Attack: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_AttackT *>(value);
       return CreateRequest_Attack(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Notify_EnterZone: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterZoneT *>(value);
-      return CreateNotify_EnterZone(_fbb, ptr, _rehasher).Union();
     }
     case MessageType::World_Notify_AppearActor: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_AppearActorT *>(value);
@@ -5216,6 +5178,18 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_DamageT *>(value);
       return CreateNotify_Damage(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Request_MoveZone: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveZoneT *>(value);
+      return CreateRequest_MoveZone(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Reply_MoveZoneSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneSuccessT *>(value);
+      return CreateReply_MoveZoneSuccess(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Reply_MoveZoneFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneFailedT *>(value);
+      return CreateReply_MoveZoneFailed(_fbb, ptr, _rehasher).Union();
     }
     default: return 0;
   }
@@ -5283,28 +5257,16 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       value = new ProtocolCS::Login::Reply_DeleteCharacterFailedT(*reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(u.value));
       break;
     }
-    case MessageType::World_Request_EnterWorld: {
-      value = new ProtocolCS::World::Request_EnterWorldT(*reinterpret_cast<ProtocolCS::World::Request_EnterWorldT *>(u.value));
+    case MessageType::World_Request_Login: {
+      value = new ProtocolCS::World::Request_LoginT(*reinterpret_cast<ProtocolCS::World::Request_LoginT *>(u.value));
       break;
     }
-    case MessageType::World_Reply_EnterWorldSuccess: {
-      value = new ProtocolCS::World::Reply_EnterWorldSuccessT(*reinterpret_cast<ProtocolCS::World::Reply_EnterWorldSuccessT *>(u.value));
+    case MessageType::World_Reply_LoginSuccess: {
+      assert(false);  // ProtocolCS::World::Reply_LoginSuccessT not copyable.
       break;
     }
-    case MessageType::World_Reply_EnterWorldFailed: {
-      value = new ProtocolCS::World::Reply_EnterWorldFailedT(*reinterpret_cast<ProtocolCS::World::Reply_EnterWorldFailedT *>(u.value));
-      break;
-    }
-    case MessageType::World_Request_EnterWorldNext: {
-      value = new ProtocolCS::World::Request_EnterWorldNextT(*reinterpret_cast<ProtocolCS::World::Request_EnterWorldNextT *>(u.value));
-      break;
-    }
-    case MessageType::World_Reply_EnterWorldNextSuccess: {
-      assert(false);  // ProtocolCS::World::Reply_EnterWorldNextSuccessT not copyable.
-      break;
-    }
-    case MessageType::World_Reply_EnterWorldNextFailed: {
-      value = new ProtocolCS::World::Reply_EnterWorldNextFailedT(*reinterpret_cast<ProtocolCS::World::Reply_EnterWorldNextFailedT *>(u.value));
+    case MessageType::World_Reply_LoginFailed: {
+      value = new ProtocolCS::World::Reply_LoginFailedT(*reinterpret_cast<ProtocolCS::World::Reply_LoginFailedT *>(u.value));
       break;
     }
     case MessageType::World_Request_Move: {
@@ -5313,10 +5275,6 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
     }
     case MessageType::World_Request_Attack: {
       value = new ProtocolCS::World::Request_AttackT(*reinterpret_cast<ProtocolCS::World::Request_AttackT *>(u.value));
-      break;
-    }
-    case MessageType::World_Notify_EnterZone: {
-      assert(false);  // ProtocolCS::World::Notify_EnterZoneT not copyable.
       break;
     }
     case MessageType::World_Notify_AppearActor: {
@@ -5337,6 +5295,18 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
     }
     case MessageType::World_Notify_Damage: {
       assert(false);  // ProtocolCS::World::Notify_DamageT not copyable.
+      break;
+    }
+    case MessageType::World_Request_MoveZone: {
+      value = new ProtocolCS::World::Request_MoveZoneT(*reinterpret_cast<ProtocolCS::World::Request_MoveZoneT *>(u.value));
+      break;
+    }
+    case MessageType::World_Reply_MoveZoneSuccess: {
+      assert(false);  // ProtocolCS::World::Reply_MoveZoneSuccessT not copyable.
+      break;
+    }
+    case MessageType::World_Reply_MoveZoneFailed: {
+      value = new ProtocolCS::World::Reply_MoveZoneFailedT(*reinterpret_cast<ProtocolCS::World::Reply_MoveZoneFailedT *>(u.value));
       break;
     }
     default:
@@ -5421,33 +5391,18 @@ inline void MessageTypeUnion::Reset() {
       delete ptr;
       break;
     }
-    case MessageType::World_Request_EnterWorld: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Request_EnterWorldT *>(value);
+    case MessageType::World_Request_Login: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Request_LoginT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Reply_EnterWorldSuccess: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_EnterWorldSuccessT *>(value);
+    case MessageType::World_Reply_LoginSuccess: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_LoginSuccessT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Reply_EnterWorldFailed: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_EnterWorldFailedT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Request_EnterWorldNext: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Request_EnterWorldNextT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Reply_EnterWorldNextSuccess: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_EnterWorldNextSuccessT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Reply_EnterWorldNextFailed: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_EnterWorldNextFailedT *>(value);
+    case MessageType::World_Reply_LoginFailed: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_LoginFailedT *>(value);
       delete ptr;
       break;
     }
@@ -5458,11 +5413,6 @@ inline void MessageTypeUnion::Reset() {
     }
     case MessageType::World_Request_Attack: {
       auto ptr = reinterpret_cast<ProtocolCS::World::Request_AttackT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Notify_EnterZone: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_EnterZoneT *>(value);
       delete ptr;
       break;
     }
@@ -5488,6 +5438,21 @@ inline void MessageTypeUnion::Reset() {
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<ProtocolCS::World::Notify_DamageT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Request_MoveZone: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Request_MoveZoneT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Reply_MoveZoneSuccess: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_MoveZoneSuccessT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Reply_MoveZoneFailed: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_MoveZoneFailedT *>(value);
       delete ptr;
       break;
     }

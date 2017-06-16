@@ -7,6 +7,8 @@
 #include "StaticCachedData.h"
 #include "protocol_ss_helper.h"
 #include "protocol_cs_helper.h"
+#include "World.h"
+#include "PlayerCharacter.h"
 
 namespace fb = flatbuffers;
 namespace db = db_schema;
@@ -56,6 +58,9 @@ void WorldServer::Run()
 	// 필요한 데이터 로딩.
 	CharacterAttributeTable::Load(db_conn_);
 	MapTable::Load(db_conn_);
+	// 게임 로직을 처리하는 World 시작.
+	world_ = std::make_shared<World>(ios_loop_->GetIoService());
+	world_->Start();
 
 	// Frame Update 시작.
 	strand_ = std::make_shared<boost::asio::strand>(ios_loop_->GetIoService());
@@ -229,70 +234,31 @@ void WorldServer::HandleSessionClosed(const Ptr<net::Session>& session, net::Clo
 }
 
 // Login ================================================================================================================
-void WorldServer::OnLogin(const Ptr<net::Session>& session, const PCS::Login::Request_Login* message)
+void WorldServer::OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message)
 {
 	if (message == nullptr) return;
-
-	const std::string user_name = message->user_name()->str();
-	const std::string password = message->password()->str();
-
-	auto db_account = db::Account::Fetch(db_conn_, user_name);
-	// 계정이 없다.
-	if (!db_account)
-	{
-		PCS::Login::Reply_LoginFailedT reply;
-		reply.error_code = PCS::ErrorCode::LOGIN_INCORRECT_ACC_NAME;
-		PCS::Send(*session, reply);
-		return;
-	}
-	// 비번이 다르다.
-	if (db_account->password != password)
-	{
-		PCS::Login::Reply_LoginFailedT reply;
-		reply.error_code = PCS::ErrorCode::LOGIN_INCORRECT_ACC_PASSWORD;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	// TO DO : 분산 서버에서 중복 로그인 처리가?
-	//// 중복 로그인 처리.
-	//if (auto rc = GetRemoteClientByAccountID(db_account->id))
-	//{
-	//	PCS::Login::Reply_LoginFailedT reply;
-	//	reply.error_code = PCS::ErrorCode::LOGIN_DUPLICATION;
-
-	//	// RemoteClient 접속을 끊어준다.
-	//	rc->Send(reply);
-	//	rc->Disconnect();
-	//	// 종료처리를 바로 해준다.
-	//	ProcessRemoteClientDisconnected(rc);
-
-	//	// 같은 세션이 아니었으면 신규 세션도 접속을 끊어준다.
-	//	if (rc->GetSession() != session)
-	//	{
-	//		PCS::Send(session, reply);
-	//		session->Close();
-	//	}
-	//	return;
-	//}
 
 	auto rc = GetRemoteClient(session->GetID());
 	if (!rc)
 	{
 		// RemoteWorldClient 생성 및 추가.
-		rc = std::make_shared<RemoteWorldClient>(session, db_account);
+		rc = std::make_shared<RemoteWorldClient>(session, this);
 		AddRemoteClient(session->GetID(), rc);
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "Login. account_uid: " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+	// 입장전 상태가 아니면 리턴
+	if (rc->GetState() != RemoteWorldClient::State::Connected) return;
 
-	// Manager 서버에 인증키 요청.
-	manager_client_->RequestGenerateCredential(session->GetID(), db_account->uid);
+	// 입장하려는 케릭터 uid 임시 저장.
+	rc->selected_character_uid_ = message->character_uid();
+
+	// Manager 서버에 인증키 검증 요청.
+	manager_client_->RequestVerifyCredential(session->GetID(), boost::uuids::string_generator()(message->credential()->c_str()));
 }
 
 void WorldServer::RegisterHandlers()
 {
-	RegisterMessageHandler<PCS::Login::Request_Join>([this](auto& session, auto* msg) { OnJoin(session, msg); });
+	RegisterMessageHandler<PCS::World::Request_Login>([this](auto& session, auto* msg) { OnLogin(session, msg); });
 	
 }
 
@@ -317,17 +283,80 @@ void WorldServer::RegisterManagerClientHandlers()
 		Stop();
 	};
 
-	manager_client_->OnReplyVerifyCredential = [this](PSS::ErrorCode ec, int session_id) {
+	manager_client_->OnReplyVerifyCredential = [this](PSS::ErrorCode error_code, int session_id, const uuid& credential, int account_uid) {
+		
 		auto rc = GetRemoteClient(session_id);
-		if (!rc)
-			return;
+		if (!rc) return;
 
-		rc->Authenticate(credential);
+		rc->Dispatch([=]() {
+			// 실패
+			if (error_code != PSS::ErrorCode::OK)
+			{
+				PCS::World::Reply_LoginFailedT reply_msg;
+				reply_msg.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_CREDENTIAL;
+				PCS::Send(*rc, reply_msg);
+				return;
+			}
 
-		BOOST_LOG_TRIVIAL(info) << "Authenticate. account_uid: " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+			rc->Authenticate(credential);
 
-		PCS::Login::Reply_LoginSuccessT reply_msg;
-		reply_msg.credential = boost::uuids::to_string(credential);
-		PCS::Send(*rc, reply_msg);
+			// 입장전 상태가 아님
+			if (rc->GetState() != RemoteWorldClient::State::Connected)
+			{
+				PCS::World::Reply_LoginFailedT reply_msg;
+				reply_msg.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_STATE;
+				PCS::Send(*rc, reply_msg);
+				return;
+			}
+
+			// 계정 정보를 불러온다.
+			auto db_account = db::Account::Fetch(db_conn_, account_uid);
+			// 계정이 없다.
+			if (!db_account)
+			{
+				PCS::Login::Reply_LoginFailedT reply;
+				reply.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_ACCOUNT;
+				PCS::Send(*rc, reply);
+				return;
+			}
+			rc->SetAccount(db_account);
+
+			// 캐릭터 로드
+			auto db_character = db::Character::Fetch(GetDB(), rc->selected_character_uid_, rc->GetAccount()->uid);
+			// 캐릭터 로드 실패
+			if (!db_character)
+			{
+				PCS::Login::Reply_LoginFailedT reply;
+				reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_CHARACTER;
+				PCS::Send(*rc, reply);
+				return;
+			}
+
+			Zone* zone = world_->FindFieldZone(db_character->map_id);
+			if (zone == nullptr)
+			{
+				PCS::Login::Reply_LoginFailedT reply;
+				reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
+				PCS::Send(*rc, reply);
+				return;
+			}
+
+			// 케릭터 인스턴스 생성
+			auto character = std::make_shared<PlayerCharacter>(random_generator()(), rc.get(), *db_character);
+			rc->SetCharacter(character);
+
+			// 월드 입장
+			world_->Dispatch([zone, character] {
+				zone->Enter(character);
+			});
+
+			BOOST_LOG_TRIVIAL(info) << "World Login Success. account_uid : " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+
+			// 케릭터 정보를 전송한다.
+			fb::FlatBufferBuilder fbb;
+			auto char_offset = character->SerializeAs<PCS::World::PlayerCharacter>(fbb);
+			auto reply_offset = PCS::World::CreateReply_LoginSuccess(fbb, char_offset);
+			PCS::Send(*rc, fbb, reply_offset);
+		});
 	};
 }

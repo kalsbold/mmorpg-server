@@ -42,6 +42,23 @@ public:
 		account->password = result_set->getString("password").c_str();
 		return account;
 	}
+
+	static Ptr<Account> Fetch(Ptr<MySQLPool> db, int uid)
+	{
+		ConnectionPtr conn = db->GetConnection();
+		PstmtPtr pstmt(conn->prepareStatement("SELECT uid, user_name, password FROM account_tb WHERE uid=?"));
+		pstmt->setInt(1, uid);
+
+		ResultSetPtr result_set(pstmt->executeQuery());
+		if (!result_set->next())
+			return nullptr;
+
+		auto account = std::make_shared<Account>();
+		account->uid = result_set->getInt("uid");
+		account->user_name = result_set->getString("user_name").c_str();
+		account->password = result_set->getString("password").c_str();
+		return account;
+	}
 };
 
 class Map

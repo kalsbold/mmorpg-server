@@ -2,10 +2,12 @@
 
 #include "Common.h"
 #include "RemoteClient.h"
-#include "GameServer.h"
-#include "Zone.h"
-#include "Actor.h"
 #include "DBSchema.h"
+
+namespace db = db_schema;
+
+class WorldServer;
+class PlayerCharacter;
 
 class RemoteWorldClient : public RemoteClient
 {
@@ -18,20 +20,8 @@ public:
 		Disconnected,	// 접속 종료
 	};
 
-	RemoteWorldClient(const Ptr<net::Session>& net_session, WorldServer* owner)
-		: RemoteClient(net_session)
-		, owner_(owner)
-		, state_(State::Connected)
-		, disposed_(false)
-	{
-		assert(server != nullptr);
-		assert(net_session != nullptr);
-		assert(net_session->IsOpen());
-	}
-	~RemoteWorldClient()
-	{
-		Dispose();
-	}
+	RemoteWorldClient(const Ptr<net::Session>& net_session, WorldServer* owner);
+	~RemoteWorldClient();
 
 	State GetState() const
 	{
@@ -83,19 +73,10 @@ public:
 		character_ = character;
 	}
 
-	// 종료 처리. 상태 DB Update 등 을 한다.
-	void Dispose()
-	{
-		bool exp = false;
-		if (!disposed_.compare_exchange_strong(exp, true))
-			return;
+	void UpdateToDB();
 
-		// 케릭터 상태 DB Update.
-		if (character_)
-		{
-			character_->UpdateToDB();
-		}
-	}
+	// 종료 처리. 상태 DB Update 등 을 한다.
+	void Dispose();
 
 	// 클라이언트에서 연결을 끊었을때 callback
 	virtual void OnDisconnected() override
@@ -104,12 +85,11 @@ public:
 		Dispose();
 	}
 
-private:
+public:
+	int selected_character_uid_;
 
-	const Ptr<MySQLPool>& GetDB()
-	{
-		return owner_->GetDB();
-	}
+private:
+	const Ptr<MySQLPool>& GetDB();
 
 	std::atomic<bool>       disposed_;
 
@@ -119,6 +99,4 @@ private:
 	
 	std::atomic<State>		state_;
 	Ptr<PlayerCharacter>    character_ = nullptr;
-
-	
 };

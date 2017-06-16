@@ -163,9 +163,14 @@ void ManagerClient::RegisterHandlers()
 	});
 	RegisterMessageHandler<Reply_GenerateCredential>([this](const Reply_GenerateCredential* message) {
 		uuid credential = boost::uuids::string_generator()(message->credential()->c_str());
-		OnReplyGenerateCredential(credential, message->session_id());
+		OnReplyGenerateCredential(message->session_id(), credential);
 	});
 	RegisterMessageHandler<Reply_VerifyCredential>([this](const Reply_VerifyCredential* message) {
-		OnReplyVerifyCredential(message->error_code(), message->session_id());
+		OnReplyVerifyCredential(
+			message->error_code(),
+			message->session_id(),
+			boost::uuids::string_generator()(message->credential()->c_str()),
+			message->account_uid()
+		);
 	});
 }

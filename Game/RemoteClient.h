@@ -28,6 +28,13 @@ public:
 		return net_session_;
 	}
 
+	// 직렬화 실행
+	template <typename Handler>
+	void Dispatch(Handler&& handler)
+	{
+		net_session_->GetStrand().dispatch(std::forward<Handler>(handler));
+	}
+
 	void Send(const uint8_t * data, size_t size)
 	{
 		net_session_->Send(data, size);

@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <map>
 #include <mutex>
 #include <type_traits>
@@ -13,6 +12,7 @@ namespace PCS = ProtocolCS;
 
 class ManagerClient;
 class RemoteWorldClient;
+class World;
 
 // 게임 월드 서버.
 class WorldServer : public IServer
@@ -57,7 +57,10 @@ private:
 	}
 
 	// 프레임 업데이트
-	void DoUpdate(double delta_time) {}
+	void DoUpdate(double delta_time)
+	{
+
+	}
 
 	void AddRemoteClient(int session_id, Ptr<RemoteWorldClient> remote_client);
 	void RemoveRemoteClient(int session_id);
@@ -74,7 +77,7 @@ private:
 	void HandleSessionOpened(const Ptr<net::Session>& session);
 	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);
 
-	//void OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message);
+	void OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();
@@ -92,4 +95,6 @@ private:
 	std::string name_;
 	std::map<PCS::MessageType, MessageHandler> message_handlers_;
 	std::map<int, Ptr<RemoteWorldClient>> remote_clients_;
+
+	Ptr<World> world_;
 };

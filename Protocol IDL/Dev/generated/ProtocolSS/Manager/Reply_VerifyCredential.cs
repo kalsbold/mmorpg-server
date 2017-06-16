@@ -21,19 +21,29 @@ public struct Reply_VerifyCredential : IFlatbufferObject
   public bool MutateErrorCode(ProtocolSS.ErrorCode error_code) { int o = __p.__offset(4); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, (int)error_code); return true; } else { return false; } }
   public int SessionId { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public bool MutateSessionId(int session_id) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, session_id); return true; } else { return false; } }
+  public string Credential { get { int o = __p.__offset(8); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+  public ArraySegment<byte>? GetCredentialBytes() { return __p.__vector_as_arraysegment(8); }
+  public int AccountUid { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public bool MutateAccountUid(int account_uid) { int o = __p.__offset(10); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, account_uid); return true; } else { return false; } }
 
   public static Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(FlatBufferBuilder builder,
       ProtocolSS.ErrorCode error_code = ProtocolSS.ErrorCode.OK,
-      int session_id = 0) {
-    builder.StartObject(2);
+      int session_id = 0,
+      StringOffset credentialOffset = default(StringOffset),
+      int account_uid = 0) {
+    builder.StartObject(4);
+    Reply_VerifyCredential.AddAccountUid(builder, account_uid);
+    Reply_VerifyCredential.AddCredential(builder, credentialOffset);
     Reply_VerifyCredential.AddSessionId(builder, session_id);
     Reply_VerifyCredential.AddErrorCode(builder, error_code);
     return Reply_VerifyCredential.EndReply_VerifyCredential(builder);
   }
 
-  public static void StartReply_VerifyCredential(FlatBufferBuilder builder) { builder.StartObject(2); }
+  public static void StartReply_VerifyCredential(FlatBufferBuilder builder) { builder.StartObject(4); }
   public static void AddErrorCode(FlatBufferBuilder builder, ProtocolSS.ErrorCode errorCode) { builder.AddInt(0, (int)errorCode, 0); }
   public static void AddSessionId(FlatBufferBuilder builder, int sessionId) { builder.AddInt(1, sessionId, 0); }
+  public static void AddCredential(FlatBufferBuilder builder, StringOffset credentialOffset) { builder.AddOffset(2, credentialOffset.Value, 0); }
+  public static void AddAccountUid(FlatBufferBuilder builder, int accountUid) { builder.AddInt(3, accountUid, 0); }
   public static Offset<Reply_VerifyCredential> EndReply_VerifyCredential(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Reply_VerifyCredential>(o);

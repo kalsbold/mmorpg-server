@@ -2,6 +2,12 @@
 #include <iostream>
 #include <chrono>
 #include <type_traits>
+#include <algorithm>
+#include <vector>
+#include <list>
+#include <map>
+#include <unordered_map>
+#include <tuple>
 #include <GisunNet.h>
 #include <flatbuffers\flatbuffers.h>
 
@@ -25,3 +31,6 @@ using duration = clock_type::duration;
 using time_point = clock_type::time_point;
 // Timer type
 using timer = boost::asio::high_resolution_timer;
+
+using boost::asio::strand;
+using boost::uuids::random_generator;

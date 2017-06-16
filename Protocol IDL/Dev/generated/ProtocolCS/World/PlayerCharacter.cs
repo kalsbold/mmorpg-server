@@ -39,11 +39,13 @@ public struct PlayerCharacter : IFlatbufferObject
   public bool MutateAtt(int att) { int o = __p.__offset(22); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, att); return true; } else { return false; } }
   public int Def { get { int o = __p.__offset(24); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public bool MutateDef(int def) { int o = __p.__offset(24); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, def); return true; } else { return false; } }
-  public ProtocolCS.Vec3? Pos { get { int o = __p.__offset(26); return o != 0 ? (ProtocolCS.Vec3?)(new ProtocolCS.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
-  public float Rotation { get { int o = __p.__offset(28); return o != 0 ? __p.bb.GetFloat(o + __p.bb_pos) : (float)0.0f; } }
-  public bool MutateRotation(float rotation) { int o = __p.__offset(28); if (o != 0) { __p.bb.PutFloat(o + __p.bb_pos, rotation); return true; } else { return false; } }
+  public int MapId { get { int o = __p.__offset(26); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public bool MutateMapId(int map_id) { int o = __p.__offset(26); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, map_id); return true; } else { return false; } }
+  public ProtocolCS.Vec3? Pos { get { int o = __p.__offset(28); return o != 0 ? (ProtocolCS.Vec3?)(new ProtocolCS.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
+  public float Rotation { get { int o = __p.__offset(30); return o != 0 ? __p.bb.GetFloat(o + __p.bb_pos) : (float)0.0f; } }
+  public bool MutateRotation(float rotation) { int o = __p.__offset(30); if (o != 0) { __p.bb.PutFloat(o + __p.bb_pos, rotation); return true; } else { return false; } }
 
-  public static void StartPlayerCharacter(FlatBufferBuilder builder) { builder.StartObject(13); }
+  public static void StartPlayerCharacter(FlatBufferBuilder builder) { builder.StartObject(14); }
   public static void AddEntityId(FlatBufferBuilder builder, StringOffset entityIdOffset) { builder.AddOffset(0, entityIdOffset.Value, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddClassType(FlatBufferBuilder builder, ProtocolCS.ClassType classType) { builder.AddInt(2, (int)classType, 0); }
@@ -55,8 +57,9 @@ public struct PlayerCharacter : IFlatbufferObject
   public static void AddMp(FlatBufferBuilder builder, int mp) { builder.AddInt(8, mp, 0); }
   public static void AddAtt(FlatBufferBuilder builder, int att) { builder.AddInt(9, att, 0); }
   public static void AddDef(FlatBufferBuilder builder, int def) { builder.AddInt(10, def, 0); }
-  public static void AddPos(FlatBufferBuilder builder, Offset<ProtocolCS.Vec3> posOffset) { builder.AddStruct(11, posOffset.Value, 0); }
-  public static void AddRotation(FlatBufferBuilder builder, float rotation) { builder.AddFloat(12, rotation, 0.0f); }
+  public static void AddMapId(FlatBufferBuilder builder, int mapId) { builder.AddInt(11, mapId, 0); }
+  public static void AddPos(FlatBufferBuilder builder, Offset<ProtocolCS.Vec3> posOffset) { builder.AddStruct(12, posOffset.Value, 0); }
+  public static void AddRotation(FlatBufferBuilder builder, float rotation) { builder.AddFloat(13, rotation, 0.0f); }
   public static Offset<PlayerCharacter> EndPlayerCharacter(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<PlayerCharacter>(o);

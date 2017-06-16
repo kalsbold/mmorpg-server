@@ -9,28 +9,27 @@ enum ErrorCode : int {
     INVALID_STRING = 20,    // 잘못된 문자
     // Login
     LOGIN_INCORRECT_ACC_NAME = 100, // 계정명이 잘못됨
-    LOGIN_INCORRECT_ACC_PASSWORD = 101, // 패스워드가 잘못됨
-    LOGIN_DUPLICATION = 102,        // 중복 로그인
+    LOGIN_INCORRECT_ACC_PASSWORD, // 패스워드가 잘못됨
+    LOGIN_DUPLICATION ,        // 중복 로그인
     // JOIN
-    JOIN_ACC_NAME_ALREADY = 200,    // 계정명 중복
-    JOIN_CANNOT_ACC_CREATE = 201,   // 계정 생성 실패
+    JOIN_ACC_NAME_ALREADY,    // 계정명 중복
+    JOIN_CANNOT_ACC_CREATE,   // 계정 생성 실패
     // Create Character
-    CREATE_CHARACTER_NAME_ALREADY = 300,
-    CREATE_CHARACTER_CANNOT_CREATE = 301,
-    CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST = 302, // 능력치 설정 에러
+    CREATE_CHARACTER_NAME_ALREADY,
+    CREATE_CHARACTER_CANNOT_CREATE,
+    CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST, // 능력치 설정 에러
     // Delete Character
-    DELETE_CHARACTER_NOT_EXIST = 400,
-    DELETE_CHARACTER_CANNOT_DELETE = 401,
-    // Enter World
-    ENTER_WORLD_INVALID_CHARACTER = 500, // 영웅이 존재하지 않음
-    ENTER_WORLD_INVALID_STATE = 501, // 잘못된 상태
-    ENTER_WORLD_CANNOT_ENTER_ZONE = 502, // 지역에 들어갈수 없다
-    ENTER_WORLD_NEXT_INVALID_STATE = 510,
-    ENTER_WORLD_NEXT_CHARACTER_NOT_LOADED = 511,
-    ENTER_WORLD_NEXT_CANNOT_FIND_ZONE = 512,
-    // World Logic
-    WORLD_LOGIC_INVALID_STATE = 600,
-    WORLD_LOGIC_ENTER_ZONE_FAILED = 603,
+    DELETE_CHARACTER_NOT_EXIST,
+    DELETE_CHARACTER_CANNOT_DELETE,
+    // World
+    WORLD_LOGIN_INVALID_CREDENTIAL = 200, // 로그인 실패
+    WORLD_LOGIN_INVALID_ACCOUNT,    // 계정이 잘못됨
+    WORLD_LOGIN_INVALID_CHARACTER, // 영웅이 존재하지 않음
+    WORLD_LOGIN_INVALID_STATE, // 잘못된 상태
+    WORLD_CANNOT_ENTER_ZONE, // 지역에 들어갈수 없다
+    WORLD_NEXT_INVALID_STATE,
+    WORLD_CANNOT_LOAD_CHARACTER,
+    WORLD_CANNOT_FIND_ZONE,
 }
 
 // 공용 스키마 정의=======================
@@ -229,13 +228,6 @@ table Reply_LoginFailed {
     error_code:ErrorCode;
 }
 
-// 캐릭터가 지역에 들어가면 통지 한다.
-table Notify_EnterZone {
-    map_id:int;
-    position:Vec3;
-    rotation:float;
-}
-
 // player Action
 // 로컬 케릭터의 이동을 보낸다.
 table Request_Move {
@@ -269,6 +261,20 @@ table Notify_Damage {
     damage_list:[DamageData];
 }
 
+// 다른 지역으로 이동 요청.
+table Request_MoveZone {
+    map_id:int;
+}
+// 실패
+table Reply_MoveZoneFailed {
+    error_code:ErrorCode;
+}
+// 케릭터를 다른 지역으로 이동 통보.
+table Notify_EnterZone {
+    map_id:int;
+    position:Vec3;
+    rotation:float;
+}
 
 namespace ProtocolCS;
 
@@ -278,7 +284,6 @@ union MessageType {
     Login.Request_Login,
     Login.Reply_LoginSuccess,
     Login.Reply_LoginFailed,
-    Login.Request_LoginCredential,
     Login.Request_Join,
     Login.Reply_JoinSuccess,
     Login.Reply_JoinFailed,
@@ -290,20 +295,20 @@ union MessageType {
     Login.Request_DeleteCharacter,
     Login.Reply_DeleteCharacterSuccess,
     Login.Reply_DeleteCharacterFailed,
-    World.Request_EnterWorld,
-    World.Reply_EnterWorldSuccess,
-    World.Reply_EnterWorldFailed,
-    World.Request_EnterWorldNext,
-    World.Reply_EnterWorldNextSuccess,
-    World.Reply_EnterWorldNextFailed,
+    //===========================================================
+    World.Request_Login,
+    World.Reply_LoginSuccess,
+    World.Reply_LoginFailed,
     World.Request_Move,
     World.Request_Attack,
-    World.Notify_EnterZone,
     World.Notify_AppearActor,
     World.Notify_DisappearActor,
     World.Notify_Move,
     World.Notify_Attack,
     World.Notify_Damage,
+    World.Request_MoveZone,
+    World.Reply_MoveZoneSuccess,
+    World.Reply_MoveZoneFailed,
 }
 
 // 기본 네트워크 메시지 =================================================================

@@ -500,17 +500,20 @@ void LoginServer::RegisterManagerClientHandlers()
 		Stop();
 	};
 
-	manager_client_->OnReplyGenerateCredential = [this](const uuid& credential, int session_id) {
+	manager_client_->OnReplyGenerateCredential = [this](int session_id, const uuid& credential) {
 		auto rc = GetRemoteClient(session_id);
 		if (!rc)
 			return;
 
-		rc->Authenticate(credential);
-		
-		BOOST_LOG_TRIVIAL(info) << "Authenticate. account_uid: " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+		rc->Dispatch([=]() {
 
-		PCS::Login::Reply_LoginSuccessT reply_msg;
-		reply_msg.credential = boost::uuids::to_string(credential);
-		PCS::Send(*rc, reply_msg);
+			rc->Authenticate(credential);
+
+			BOOST_LOG_TRIVIAL(info) << "Authenticate. account_uid: " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+
+			PCS::Login::Reply_LoginSuccessT reply_msg;
+			reply_msg.credential = boost::uuids::to_string(credential);
+			PCS::Send(*rc, reply_msg);
+		});
 	};
 }

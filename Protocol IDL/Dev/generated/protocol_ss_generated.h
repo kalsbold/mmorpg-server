@@ -611,9 +611,12 @@ struct Reply_VerifyCredentialT : public flatbuffers::NativeTable {
   typedef Reply_VerifyCredential TableType;
   ProtocolSS::ErrorCode error_code;
   int32_t session_id;
+  std::string credential;
+  int32_t account_uid;
   Reply_VerifyCredentialT()
       : error_code(ProtocolSS::ErrorCode::OK),
-        session_id(0) {
+        session_id(0),
+        account_uid(0) {
   }
 };
 
@@ -621,7 +624,9 @@ struct Reply_VerifyCredential FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
   typedef Reply_VerifyCredentialT NativeTableType;
   enum {
     VT_ERROR_CODE = 4,
-    VT_SESSION_ID = 6
+    VT_SESSION_ID = 6,
+    VT_CREDENTIAL = 8,
+    VT_ACCOUNT_UID = 10
   };
   ProtocolSS::ErrorCode error_code() const {
     return static_cast<ProtocolSS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
@@ -635,10 +640,25 @@ struct Reply_VerifyCredential FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
   bool mutate_session_id(int32_t _session_id) {
     return SetField<int32_t>(VT_SESSION_ID, _session_id, 0);
   }
+  const flatbuffers::String *credential() const {
+    return GetPointer<const flatbuffers::String *>(VT_CREDENTIAL);
+  }
+  flatbuffers::String *mutable_credential() {
+    return GetPointer<flatbuffers::String *>(VT_CREDENTIAL);
+  }
+  int32_t account_uid() const {
+    return GetField<int32_t>(VT_ACCOUNT_UID, 0);
+  }
+  bool mutate_account_uid(int32_t _account_uid) {
+    return SetField<int32_t>(VT_ACCOUNT_UID, _account_uid, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
            VerifyField<int32_t>(verifier, VT_SESSION_ID) &&
+           VerifyOffset(verifier, VT_CREDENTIAL) &&
+           verifier.Verify(credential()) &&
+           VerifyField<int32_t>(verifier, VT_ACCOUNT_UID) &&
            verifier.EndTable();
   }
   Reply_VerifyCredentialT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -655,13 +675,19 @@ struct Reply_VerifyCredentialBuilder {
   void add_session_id(int32_t session_id) {
     fbb_.AddElement<int32_t>(Reply_VerifyCredential::VT_SESSION_ID, session_id, 0);
   }
+  void add_credential(flatbuffers::Offset<flatbuffers::String> credential) {
+    fbb_.AddOffset(Reply_VerifyCredential::VT_CREDENTIAL, credential);
+  }
+  void add_account_uid(int32_t account_uid) {
+    fbb_.AddElement<int32_t>(Reply_VerifyCredential::VT_ACCOUNT_UID, account_uid, 0);
+  }
   Reply_VerifyCredentialBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   Reply_VerifyCredentialBuilder &operator=(const Reply_VerifyCredentialBuilder &);
   flatbuffers::Offset<Reply_VerifyCredential> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<Reply_VerifyCredential>(end);
     return o;
   }
@@ -670,11 +696,29 @@ struct Reply_VerifyCredentialBuilder {
 inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(
     flatbuffers::FlatBufferBuilder &_fbb,
     ProtocolSS::ErrorCode error_code = ProtocolSS::ErrorCode::OK,
-    int32_t session_id = 0) {
+    int32_t session_id = 0,
+    flatbuffers::Offset<flatbuffers::String> credential = 0,
+    int32_t account_uid = 0) {
   Reply_VerifyCredentialBuilder builder_(_fbb);
+  builder_.add_account_uid(account_uid);
+  builder_.add_credential(credential);
   builder_.add_session_id(session_id);
   builder_.add_error_code(error_code);
   return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredentialDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ProtocolSS::ErrorCode error_code = ProtocolSS::ErrorCode::OK,
+    int32_t session_id = 0,
+    const char *credential = nullptr,
+    int32_t account_uid = 0) {
+  return ProtocolSS::Manager::CreateReply_VerifyCredential(
+      _fbb,
+      error_code,
+      session_id,
+      credential ? _fbb.CreateString(credential) : 0,
+      account_uid);
 }
 
 flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(flatbuffers::FlatBufferBuilder &_fbb, const Reply_VerifyCredentialT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
@@ -1037,6 +1081,8 @@ inline void Reply_VerifyCredential::UnPackTo(Reply_VerifyCredentialT *_o, const 
   (void)_resolver;
   { auto _e = error_code(); _o->error_code = _e; };
   { auto _e = session_id(); _o->session_id = _e; };
+  { auto _e = credential(); if (_e) _o->credential = _e->str(); };
+  { auto _e = account_uid(); _o->account_uid = _e; };
 }
 
 inline flatbuffers::Offset<Reply_VerifyCredential> Reply_VerifyCredential::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_VerifyCredentialT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -1048,10 +1094,14 @@ inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(
   (void)_o;
   auto _error_code = _o->error_code;
   auto _session_id = _o->session_id;
+  auto _credential = _o->credential.size() ? _fbb.CreateString(_o->credential) : 0;
+  auto _account_uid = _o->account_uid;
   return ProtocolSS::Manager::CreateReply_VerifyCredential(
       _fbb,
       _error_code,
-      _session_id);
+      _session_id,
+      _credential,
+      _account_uid);
 }
 
 inline Notify_UserLogoutT *Notify_UserLogout::UnPack(const flatbuffers::resolver_function_t *_resolver) const {

@@ -50,6 +50,7 @@ table Reply_VerifyCredential {
     error_code:ErrorCode;
     session_id:int;
     credential:string;
+    account_uid:int;
 }
 // 인증키가 제거됨 통보
 //table Notify_RemoveCredential {

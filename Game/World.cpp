@@ -1,20 +1,11 @@
 #include "stdafx.h"
 #include "World.h"
-#include "Zone.h"
-#include "GameServer.h"
-#include "Character.h"
 #include "StaticCachedData.h"
 
-World::World()
-	: World(std::make_shared<net::IoServiceLoop>(std::thread::hardware_concurrency()))
-{
-}
 
-World::World(Ptr<net::IoServiceLoop> loop)
-	: loop_(loop)
-	, strand_(loop->GetIoService())
+World::World(boost::asio::io_service & ios)
+	: strand_(ios)
 {
-	assert(loop_);
 }
 
 World::~World()
@@ -29,40 +20,42 @@ void World::Start()
 
 void World::Stop()
 {
-	loop_->Stop();
+
 }
 
-Ptr<net::IoServiceLoop> World::GetIosLoop()
+Zone * World::FindFieldZone(int map_id)
 {
-	return loop_;
-}
-
-Zone * World::GetFieldZone(int map_id)
-{
-	auto iter = std::find_if(field_zones_.begin(), field_zones_.end(), [map_id](const Ptr<Zone>& var)
-	{
-		return var->GetMapData()->id == map_id;
-	});
-	if (iter == field_zones_.end())
+	auto& indexer = zone_set_.get<zone_tags::map_id>();
+	auto iter = indexer.find(map_id);
+	if (iter == indexer.end())
 		return nullptr;
 
-	return (*iter).get();
+	return iter->get();
+}
+
+void World::DoUpdate(float delta_time)
+{
+	for(auto& var : zone_set_)
+	{
+		var->Update(delta_time);
+	}
 }
 
 void World::CreateFieldZones()
 {
 	// 필드존 생성
 	auto& map_table = MapTable::GetInstance().GetAll();
-	for (auto& map : map_table)
+	for (auto& map_data : map_table)
 	{
-		if (map->type == MapType::FIELD)
-		{
-			auto zone = std::make_shared<Zone>(loop_->GetIoService(), this, map);
-			zone->Start();
-
-			field_zones_.push_back(zone);
-		}
+		if (map_data.type == MapType::FIELD)
+			CreateZone(map_data);
 	}
+}
+
+void World::CreateZone(const Map & map_data)
+{
+	auto zone = std::make_shared<Zone>(random_generator()(), map_data, this);
+	zone_set_.insert(zone);
 }
 
 
