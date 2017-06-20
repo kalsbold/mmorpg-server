@@ -14,21 +14,21 @@ enum ErrorCode : int {
     // JOIN
     JOIN_ACC_NAME_ALREADY,    // 계정명 중복
     JOIN_CANNOT_ACC_CREATE,   // 계정 생성 실패
-    // Create Character
-    CREATE_CHARACTER_NAME_ALREADY,
-    CREATE_CHARACTER_CANNOT_CREATE,
-    CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST, // 능력치 설정 에러
-    // Delete Character
-    DELETE_CHARACTER_NOT_EXIST,
-    DELETE_CHARACTER_CANNOT_DELETE,
+    // Create Hero
+    CREATE_HERO_NAME_ALREADY,
+    CREATE_HERO_CANNOT_CREATE,
+    CREATE_HERO_ATTRIBUTE_NOT_EXIST, // 능력치 설정 에러
+    // Delete Hero
+    DELETE_HERO_NOT_EXIST,
+    DELETE_HERO_CANNOT_DELETE,
     // World
     WORLD_LOGIN_INVALID_CREDENTIAL = 200, // 로그인 실패
     WORLD_LOGIN_INVALID_ACCOUNT,    // 계정이 잘못됨
-    WORLD_LOGIN_INVALID_CHARACTER, // 영웅이 존재하지 않음
+    WORLD_LOGIN_INVALID_HERO, // 영웅이 존재하지 않음
     WORLD_LOGIN_INVALID_STATE, // 잘못된 상태
     WORLD_CANNOT_ENTER_ZONE, // 지역에 들어갈수 없다
     WORLD_NEXT_INVALID_STATE,
-    WORLD_CANNOT_LOAD_CHARACTER,
+    WORLD_CANNOT_LOAD_HERO,
     WORLD_CANNOT_FIND_ZONE,
 }
 
@@ -69,7 +69,7 @@ namespace ProtocolCS.Login;
 
 // 데이터 스키마 정의=====================================
 // 간단한 플레이어 캐릭터 정보
-table Character {
+table Hero {
     uid:int;
     name:string;
     class_type:ClassType;
@@ -106,41 +106,41 @@ table Reply_JoinFailed {
     error_code:ErrorCode;
 }
 
-// Character List
+// Hero List
 // 플레이어 캐릭터 리스트를 요청.
-table Request_CharacterList {
+table Request_HeroList {
 }
 // 캐릭터 리스트 요청 응답.
-table Reply_CharacterList {
-    list:[Character]; // Vector of tables.
+table Reply_HeroList {
+    list:[Hero]; // Vector of tables.
 }
 
-// Create Character
+// Create Hero
 // 새 캐릭터 생성을 요청.
-table Request_CreateCharacter {
+table Request_CreateHero {
     name:string;
     class_type:ClassType;
 }
 // 새 캐릭터 생성 성공.
-table Reply_CreateCharacterSuccess {
-    character:Character; // 생성된 캐릭터 정보
+table Reply_CreateHeroSuccess {
+    hero:Hero; // 생성된 캐릭터 정보
 }
 // 새 캐릭터 생성 실패.
-table Reply_CreateCharacterFailed {
+table Reply_CreateHeroFailed {
     error_code:ErrorCode;
 }
 
-// Delete Character
+// Delete Hero
 // 캐릭터 제거를 요청.
-table Request_DeleteCharacter {
-    character_uid:int;
+table Request_DeleteHero {
+    hero_uid:int;
 }
 // 캐릭터 제거 성공.
-table Reply_DeleteCharacterSuccess {
-    character_uid:int;
+table Reply_DeleteHeroSuccess {
+    hero_uid:int;
 }
 // 캐릭터 제거 실패.
-table Reply_DeleteCharacterFailed {
+table Reply_DeleteHeroFailed {
     error_code:ErrorCode;
 }
 
@@ -149,8 +149,9 @@ namespace ProtocolCS.World;
 
 // 데이터 스키마 정의============================
 // 플레이어 캐릭터
-table PlayerCharacter {
+table Hero {
     entity_id:string;
+    uid:int;
     name:string;
     class_type:ClassType;
     exp:int;
@@ -162,20 +163,6 @@ table PlayerCharacter {
     att:int;
     def:int;
     map_id:int;
-    pos:Vec3;
-    rotation:float;
-}
-
-// 리모트 플레이어 캐릭터
-table RemotePC {
-    entity_id:string;
-    name:string;
-    class_type:ClassType;
-    level:int;
-    max_hp:int;
-    hp:int;
-    max_mp:int;
-    mp:int;
     pos:Vec3;
     rotation:float;
 }
@@ -194,21 +181,27 @@ table Monster {
     rotation:float;
 }
 
+union ActorType { Hero, Monster }
+table Actor {
+    entity:ActorType; // union
+}
+
 // 이동 정보
-table MoveData {
+table MoveInfo {
     entity_id:string;
     position:Vec3;
     rotation:float;
     velocity:Vec3;
 }
 // 공격 정보
-table AttackData {
+table SkillInfo {
     entity_id:string;
+    skill:int;
     rotation:float;
 }
 
 // 피격 정보
-table DamageData {
+table DamageInfo {
     entity_id:string;
     damage:int;
 }
@@ -217,98 +210,115 @@ table DamageData {
 // Credential 로그인.
 table Request_Login {
     credential:string;
-    character_uid:int;
+    hero_uid:int;
 }
 // 로그인 성공.
 table Reply_LoginSuccess {
-    character:PlayerCharacter;
+    hero:Hero;
 }
 // 로그인 실패.
 table Reply_LoginFailed {
     error_code:ErrorCode;
 }
 
+// 클라이언트의 로딩이 끝남 C->S
+table Notify_LoadFinish {
+}
+// 진입 성공 
+table Notify_EnterSuccess {
+}
+// 진입 실패
+table Notify_EnterFailed {
+    error_code:ErrorCode;
+}
+
 // player Action
-// 로컬 케릭터의 이동을 보낸다.
-table Request_Move {
+// 내 캐릭터의 이동 액션을 보낸다.
+table Request_ActionMove {
     position:Vec3;
     rotation:float;
     velocity:Vec3;
 }
-// 로컬 케릭터의 공격을 보낸다.
-table Request_Attack {
+// 내 캐릭터의 스킬 액션을 보낸다.
+table Request_ActionSkill {
+    skill:int;
+    targets:[string];
     rotation:float;
 }
+
 // 원격 캐릭터 스폰
-table Notify_AppearActor {
-    remote_pc_list:[RemotePC];
-    monster_list:[Monster];
+table Notify_Appear {
+    entity_list:[Actor];
 }
 // 원격 태릭터 삭제
-table Notify_DisappearActor {
+table Notify_Disappear {
     entity_id_list:[string];
 }
 // 케릭터의 이동 통지
-table Notify_Move {
-    move_list:[MoveData];
+table Notify_ActionMove {
+    list:[MoveInfo];
 }
 // 케릭터의 공격 통지
-table Notify_Attack {
-    attack_list:[AttackData];
+table Notify_ActionSkill {
+    list:[SkillInfo];
 }
 // 피격 통지
 table Notify_Damage {
-    damage_list:[DamageData];
+    list:[DamageInfo];
 }
 
 // 다른 지역으로 이동 요청.
-table Request_MoveZone {
-    map_id:int;
-}
+//table Request_ActionMoveZone {
+//    map_id:int;
+//}
 // 실패
-table Reply_MoveZoneFailed {
-    error_code:ErrorCode;
-}
+//table Reply_MoveZoneFailed {
+//    error_code:ErrorCode;
+//}
 // 케릭터를 다른 지역으로 이동 통보.
-table Notify_EnterZone {
-    map_id:int;
-    position:Vec3;
-    rotation:float;
-}
+//table Notify_EnterZone {
+//    map_id:int;
+//    position:Vec3;
+//    rotation:float;
+//}
 
 namespace ProtocolCS;
 
 // 메시지 타입을 정의 한다 ========================================================================================================================
 union MessageType {
     Notify_UnauthedAccess,
+    // Login==========================================================
     Login.Request_Login,
     Login.Reply_LoginSuccess,
     Login.Reply_LoginFailed,
     Login.Request_Join,
     Login.Reply_JoinSuccess,
     Login.Reply_JoinFailed,
-    Login.Request_CharacterList,
-    Login.Reply_CharacterList,
-    Login.Request_CreateCharacter,
-    Login.Reply_CreateCharacterSuccess,
-    Login.Reply_CreateCharacterFailed,
-    Login.Request_DeleteCharacter,
-    Login.Reply_DeleteCharacterSuccess,
-    Login.Reply_DeleteCharacterFailed,
-    //===========================================================
+    Login.Request_HeroList,
+    Login.Reply_HeroList,
+    Login.Request_CreateHero,
+    Login.Reply_CreateHeroSuccess,
+    Login.Reply_CreateHeroFailed,
+    Login.Request_DeleteHero,
+    Login.Reply_DeleteHeroSuccess,
+    Login.Reply_DeleteHeroFailed,
+    // World===========================================================
     World.Request_Login,
     World.Reply_LoginSuccess,
     World.Reply_LoginFailed,
-    World.Request_Move,
-    World.Request_Attack,
-    World.Notify_AppearActor,
-    World.Notify_DisappearActor,
-    World.Notify_Move,
-    World.Notify_Attack,
+    World.Notify_LoadFinish,
+    World.Notify_EnterSuccess,
+    World.Notify_EnterFailed,
+    World.Request_ActionMove,
+    World.Request_ActionSkill,
+    World.Notify_Appear,
+    World.Notify_Disappear,
+    World.Notify_ActionMove,
+    World.Notify_ActionSkill,
     World.Notify_Damage,
-    World.Request_MoveZone,
-    World.Reply_MoveZoneSuccess,
-    World.Reply_MoveZoneFailed,
+    //World.Request_ActionMoveZone,
+    //World.Reply_MoveZoneSuccess,
+    //World.Reply_MoveZoneFailed,
 }
 
 // 기본 네트워크 메시지 =================================================================

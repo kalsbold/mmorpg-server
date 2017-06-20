@@ -8,14 +8,14 @@ namespace ProtocolCS.Login
 using global::System;
 using global::FlatBuffers;
 
-public struct Character : IFlatbufferObject
+public struct Hero : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static Character GetRootAsCharacter(ByteBuffer _bb) { return GetRootAsCharacter(_bb, new Character()); }
-  public static Character GetRootAsCharacter(ByteBuffer _bb, Character obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static Hero GetRootAsHero(ByteBuffer _bb) { return GetRootAsHero(_bb, new Hero()); }
+  public static Hero GetRootAsHero(ByteBuffer _bb, Hero obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
-  public Character __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public Hero __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int Uid { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public bool MutateUid(int uid) { int o = __p.__offset(4); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, uid); return true; } else { return false; } }
@@ -26,27 +26,27 @@ public struct Character : IFlatbufferObject
   public int Level { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public bool MutateLevel(int level) { int o = __p.__offset(10); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, level); return true; } else { return false; } }
 
-  public static Offset<Character> CreateCharacter(FlatBufferBuilder builder,
+  public static Offset<Hero> CreateHero(FlatBufferBuilder builder,
       int uid = 0,
       StringOffset nameOffset = default(StringOffset),
       ProtocolCS.ClassType class_type = ProtocolCS.ClassType.NONE,
       int level = 0) {
     builder.StartObject(4);
-    Character.AddLevel(builder, level);
-    Character.AddClassType(builder, class_type);
-    Character.AddName(builder, nameOffset);
-    Character.AddUid(builder, uid);
-    return Character.EndCharacter(builder);
+    Hero.AddLevel(builder, level);
+    Hero.AddClassType(builder, class_type);
+    Hero.AddName(builder, nameOffset);
+    Hero.AddUid(builder, uid);
+    return Hero.EndHero(builder);
   }
 
-  public static void StartCharacter(FlatBufferBuilder builder) { builder.StartObject(4); }
+  public static void StartHero(FlatBufferBuilder builder) { builder.StartObject(4); }
   public static void AddUid(FlatBufferBuilder builder, int uid) { builder.AddInt(0, uid, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddClassType(FlatBufferBuilder builder, ProtocolCS.ClassType classType) { builder.AddInt(2, (int)classType, 0); }
   public static void AddLevel(FlatBufferBuilder builder, int level) { builder.AddInt(3, level, 0); }
-  public static Offset<Character> EndCharacter(FlatBufferBuilder builder) {
+  public static Offset<Hero> EndHero(FlatBufferBuilder builder) {
     int o = builder.EndObject();
-    return new Offset<Character>(o);
+    return new Offset<Hero>(o);
   }
 };
 

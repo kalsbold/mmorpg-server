@@ -78,6 +78,9 @@ private:
 	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);
 
 	void OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message);
+    void OnLoadFinish(const Ptr<net::Session>& session, const PCS::World::Notify_LoadFinish* message);
+	void OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove* message);
+	void OnActionSkill(const Ptr<net::Session>& session, const PCS::World::Request_ActionSkill* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();

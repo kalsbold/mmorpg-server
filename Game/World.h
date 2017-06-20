@@ -7,7 +7,7 @@
 #include <boost\multi_index\member.hpp>
 #include <boost\multi_index\mem_fun.hpp>
 
-class PlayerCharacter;
+class Hero;
 
 using namespace boost::multi_index;
 

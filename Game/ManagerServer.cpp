@@ -183,6 +183,8 @@ void ManagerServer::HandleMessage(const Ptr<net::Session>& session, const uint8_
 	}
 
 	auto message_type = message_root->message_type();
+    BOOST_LOG_TRIVIAL(info) << "On Recv message_type : " << PSS::EnumNameMessageType(message_type);
+
 	auto iter = message_handlers_.find(message_type);
 	if (iter == message_handlers_.end())
 	{
@@ -305,7 +307,8 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 		return;
 	}
 
-	const uuid credential = boost::uuids::string_generator()(message->credential()->c_str());
+    std::string str_credential = message->credential()->c_str();
+	const uuid credential = boost::uuids::string_generator()(str_credential);
 	auto error_code = PSS::ErrorCode::OK;
 
 	auto& indexer = user_session_set_.get<tags::credential>();
@@ -314,8 +317,10 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 	{
 		// 없으면 실패
 		Reply_VerifyCredentialT reply;
+        reply.error_code = PSS::ErrorCode::VERIFY_CREDENTIAL_FAILED;
 		reply.session_id = message->session_id();
-		reply.error_code = PSS::ErrorCode::VERIFY_CREDENTIAL_FAILED;
+        reply.credential = str_credential;
+        reply.account_uid = iter->account_uid_;
 		PSS::Send(*session, reply);
 		return;
 	}
@@ -326,8 +331,10 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 	BOOST_LOG_TRIVIAL(info) << "Verify credential. account_uid: " << iter->account_uid_ << " credential: " << iter->credential_;
 
 	Reply_VerifyCredentialT reply;
-	reply.session_id = message->session_id();
 	reply.error_code = PSS::ErrorCode::OK;
+	reply.session_id = message->session_id();
+	reply.credential = str_credential;
+	reply.account_uid = iter->account_uid_;
 	PSS::Send(*session, reply);
 }
 

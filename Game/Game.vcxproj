@@ -168,7 +168,7 @@
     <ClInclude Include="LoginServer.h" />
     <ClInclude Include="ManagerServer.h" />
     <ClInclude Include="Monster.h" />
-    <ClInclude Include="PlayerCharacter.h" />
+    <ClInclude Include="Hero.h" />
     <ClInclude Include="protocol_cs_generated.h" />
     <ClInclude Include="protocol_cs_helper.h" />
     <ClInclude Include="protocol_ss_generated.h" />
@@ -197,7 +197,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ManagerServer.cpp" />
     <ClCompile Include="Monster.cpp" />
-    <ClCompile Include="PlayerCharacter.cpp" />
+    <ClCompile Include="Hero.cpp" />
     <ClCompile Include="RemoteWorldClient.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

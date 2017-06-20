@@ -8,30 +8,30 @@ namespace ProtocolCS.World
 using global::System;
 using global::FlatBuffers;
 
-public struct Reply_MoveZoneFailed : IFlatbufferObject
+public struct Notify_EnterFailed : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static Reply_MoveZoneFailed GetRootAsReply_MoveZoneFailed(ByteBuffer _bb) { return GetRootAsReply_MoveZoneFailed(_bb, new Reply_MoveZoneFailed()); }
-  public static Reply_MoveZoneFailed GetRootAsReply_MoveZoneFailed(ByteBuffer _bb, Reply_MoveZoneFailed obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static Notify_EnterFailed GetRootAsNotify_EnterFailed(ByteBuffer _bb) { return GetRootAsNotify_EnterFailed(_bb, new Notify_EnterFailed()); }
+  public static Notify_EnterFailed GetRootAsNotify_EnterFailed(ByteBuffer _bb, Notify_EnterFailed obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
-  public Reply_MoveZoneFailed __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public Notify_EnterFailed __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public ProtocolCS.ErrorCode ErrorCode { get { int o = __p.__offset(4); return o != 0 ? (ProtocolCS.ErrorCode)__p.bb.GetInt(o + __p.bb_pos) : ProtocolCS.ErrorCode.OK; } }
   public bool MutateErrorCode(ProtocolCS.ErrorCode error_code) { int o = __p.__offset(4); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, (int)error_code); return true; } else { return false; } }
 
-  public static Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(FlatBufferBuilder builder,
+  public static Offset<Notify_EnterFailed> CreateNotify_EnterFailed(FlatBufferBuilder builder,
       ProtocolCS.ErrorCode error_code = ProtocolCS.ErrorCode.OK) {
     builder.StartObject(1);
-    Reply_MoveZoneFailed.AddErrorCode(builder, error_code);
-    return Reply_MoveZoneFailed.EndReply_MoveZoneFailed(builder);
+    Notify_EnterFailed.AddErrorCode(builder, error_code);
+    return Notify_EnterFailed.EndNotify_EnterFailed(builder);
   }
 
-  public static void StartReply_MoveZoneFailed(FlatBufferBuilder builder) { builder.StartObject(1); }
+  public static void StartNotify_EnterFailed(FlatBufferBuilder builder) { builder.StartObject(1); }
   public static void AddErrorCode(FlatBufferBuilder builder, ProtocolCS.ErrorCode errorCode) { builder.AddInt(0, (int)errorCode, 0); }
-  public static Offset<Reply_MoveZoneFailed> EndReply_MoveZoneFailed(FlatBufferBuilder builder) {
+  public static Offset<Notify_EnterFailed> EndNotify_EnterFailed(FlatBufferBuilder builder) {
     int o = builder.EndObject();
-    return new Offset<Reply_MoveZoneFailed>(o);
+    return new Offset<Notify_EnterFailed>(o);
   }
 };
 

@@ -122,7 +122,7 @@ private:
 	{
 		sql::Connection* conn = driver_->connect(url_.c_str(), user_.c_str(), password_.c_str());
 		conn->setSchema(database_.c_str());
-		conn->setClientOption("characterSetResults", connection_charset_.c_str());
+		conn->setClientOption("heroSetResults", connection_charset_.c_str());
 		bool reconnect = true;
 		conn->setClientOption("OPT_RECONNECT", (void*)&reconnect);
 

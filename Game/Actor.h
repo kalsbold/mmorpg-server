@@ -14,7 +14,10 @@ class Zone;
 class Actor : public GameObject
 {
 public:
-	using GameObject::GameObject;
+	Actor(const uuid& entity_id)
+        : GameObject(entity_id)
+        , location_zone_(nullptr)
+    {}
 
 	virtual bool IsInZone()
 	{

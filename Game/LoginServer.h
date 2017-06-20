@@ -86,9 +86,9 @@ private:
 
 	void OnJoin(const Ptr<net::Session>& session, const PCS::Login::Request_Join* message);
 	void OnLogin(const Ptr<net::Session>& session, const PCS::Login::Request_Login* message);
-	void OnCreateCharacter(const Ptr<net::Session>& session, const PCS::Login::Request_CreateCharacter* message);
-	void OnCharacterList(const Ptr<net::Session>& session, const PCS::Login::Request_CharacterList* message);
-	void OnDeleteCharacter(const Ptr<net::Session>& session, const PCS::Login::Request_DeleteCharacter* message);
+	void OnCreateHero(const Ptr<net::Session>& session, const PCS::Login::Request_CreateHero* message);
+	void OnHeroList(const Ptr<net::Session>& session, const PCS::Login::Request_HeroList* message);
+	void OnDeleteHero(const Ptr<net::Session>& session, const PCS::Login::Request_DeleteHero* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();

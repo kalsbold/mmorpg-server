@@ -54,7 +54,7 @@ void LoginServer::Run()
 		settings.db_connection_pool);
 
 	// 필요한 데이터 로딩.
-	CharacterAttributeTable::Load(db_conn_);
+	HeroAttributeTable::Load(db_conn_);
 
 	// Frame Update 시작.
 	strand_ = std::make_shared<boost::asio::strand>(ios_loop_->GetIoService());
@@ -148,9 +148,12 @@ void LoginServer::ProcessRemoteClientDisconnected(const Ptr<RemoteLoginClient>& 
 	RemoveRemoteClient(rc);
 	rc->OnDisconnected();
 
-	// Manager 서버로 로그아웃을 알린다.
-	manager_client_->NotifyUserLogout(rc->GetAccount()->uid);
-	BOOST_LOG_TRIVIAL(info) << "Logout. account_uid: " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+    if (rc->IsAuthenticated() && rc->GetAccount())
+    {
+        // Manager 서버로 로그아웃을 알린다.
+        manager_client_->NotifyUserLogout(rc->GetAccount()->uid);
+        BOOST_LOG_TRIVIAL(info) << "Logout. account_uid: " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+    }
 }
 
 void LoginServer::ScheduleNextUpdate(const time_point& now, const duration& timestep)
@@ -189,6 +192,8 @@ void LoginServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t*
 	}
 
 	auto message_type = message_root->message_type();
+    BOOST_LOG_TRIVIAL(info) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
+
 	auto iter = message_handlers_.find(message_type);
 	if (iter == message_handlers_.end())
 	{
@@ -215,7 +220,7 @@ void LoginServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t*
 
 void LoginServer::HandleSessionOpened(const Ptr<net::Session>& session)
 {
-
+    BOOST_LOG_TRIVIAL(info) << "Connect session id : " << session->GetID();
 }
 
 void LoginServer::HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason)
@@ -224,6 +229,7 @@ void LoginServer::HandleSessionClosed(const Ptr<net::Session>& session, net::Clo
 	if (!remote_client)
 		return;
 
+    BOOST_LOG_TRIVIAL(info) << "Disconnected session id : " << session->GetID();
 	ProcessRemoteClientDisconnected(remote_client);
 }
 
@@ -330,8 +336,8 @@ void LoginServer::OnLogin(const Ptr<net::Session>& session, const PCS::Login::Re
 	manager_client_->RequestGenerateCredential(session->GetID(), db_account->uid);
 }
 
-// Create Character ================================================================================================================
-void LoginServer::OnCreateCharacter(const Ptr<net::Session>& session, const PCS::Login::Request_CreateCharacter* message)
+// Create Hero ================================================================================================================
+void LoginServer::OnCreateHero(const Ptr<net::Session>& session, const PCS::Login::Request_CreateHero* message)
 {
 	if (message == nullptr) return;
 
@@ -351,64 +357,64 @@ void LoginServer::OnCreateCharacter(const Ptr<net::Session>& session, const PCS:
 	std::cmatch m;
 	if (std::regex_search(name, m, pattern))
 	{
-		PCS::Login::Reply_CreateCharacterFailedT reply;
+		PCS::Login::Reply_CreateHeroFailedT reply;
 		reply.error_code = PCS::ErrorCode::INVALID_STRING;
 		PCS::Send(*session, reply);
 		return;
 	}
 
-	if (db::Character::Fetch(db_conn_, name))
+	if (db::Hero::Fetch(db_conn_, name))
 	{
 		// 이미 있는 이름.
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_CHARACTER_NAME_ALREADY;
+		PCS::Login::Reply_CreateHeroFailedT reply;
+		reply.error_code = PCS::ErrorCode::CREATE_HERO_NAME_ALREADY;
 		PCS::Send(*session, reply);
 		return;
 	}
 
 	// 초기 능력치를 가져온다.
 	const int level = 1;
-	auto attribute = CharacterAttributeTable::GetInstance().Get(class_type, level);
+	auto attribute = HeroAttributeTable::GetInstance().Get(class_type, level);
 	if (!attribute)
 	{
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST;
+		PCS::Login::Reply_CreateHeroFailedT reply;
+		reply.error_code = PCS::ErrorCode::CREATE_HERO_ATTRIBUTE_NOT_EXIST;
 		PCS::Send(*session, reply);
 		return;
 	}
 
 	//생성
-	auto db_character = db::Character::Create(db_conn_, rc->GetAccount()->uid, name, class_type);
-	if (!db_character)
+	auto db_hero = db::Hero::Create(db_conn_, rc->GetAccount()->uid, name, class_type);
+	if (!db_hero)
 	{
 		// 생성 된게 없다.
-		PCS::Login::Reply_CreateCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_CHARACTER_CANNOT_CREATE;
+		PCS::Login::Reply_CreateHeroFailedT reply;
+		reply.error_code = PCS::ErrorCode::CREATE_HERO_CANNOT_CREATE;
 		PCS::Send(*session, reply);
 		return;
 	}
 
 	// 초기 능력치로 셋.
-	db_character->SetAttribute(*attribute);
-	db_character->map_id = 1001;	// 시작맵
-	db_character->pos = Vector3(100.0f, 0.0f, 100.0f); // 시작 좌표
-	db_character->Update(GetDB());
+	db_hero->SetAttribute(*attribute);
+	db_hero->map_id = 1001;	// 시작맵
+	db_hero->pos = Vector3(10.0f, 0.0f, 10.0f); // 시작 좌표
+	db_hero->Update(GetDB());
 
-	BOOST_LOG_TRIVIAL(info) << "Create Character : " << db_character->name;
+	BOOST_LOG_TRIVIAL(info) << "Create Hero : " << db_hero->name;
 
-	auto character = std::make_unique<PCS::Login::CharacterT>();
-	character->uid = db_character->uid;
-	character->name = db_character->name;
-	character->class_type = (PCS::ClassType)db_character->class_type;
-	character->level = db_character->level;
+	auto hero = std::make_unique<PCS::Login::HeroT>();
+	hero->uid = db_hero->uid;
+	hero->name = db_hero->name;
+	hero->class_type = (PCS::ClassType)db_hero->class_type;
+	hero->level = db_hero->level;
 
-	PCS::Login::Reply_CreateCharacterSuccessT reply;
-	reply.character = std::move(character);
+	PCS::Login::Reply_CreateHeroSuccessT reply;
+	reply.hero = std::move(hero);
 	PCS::Send(*session, reply);
 }
 
-// Character List ================================================================================================================
-void LoginServer::OnCharacterList(const Ptr<net::Session>& session, const PCS::Login::Request_CharacterList* message)
+// Hero List ================================================================================================================
+void LoginServer::OnHeroList(const Ptr<net::Session>& session, const PCS::Login::Request_HeroList* message)
 {
 	if (message == nullptr) return;
 
@@ -420,24 +426,24 @@ void LoginServer::OnCharacterList(const Ptr<net::Session>& session, const PCS::L
 		return;
 	}
 
-	auto db_char_list = db::Character::Fetch(db_conn_, rc->GetAccount()->uid);
+	auto db_char_list = db::Hero::Fetch(db_conn_, rc->GetAccount()->uid);
 
-	PCS::Login::Reply_CharacterListT reply;
+	PCS::Login::Reply_HeroListT reply;
 	for (auto& var : db_char_list)
 	{
-		auto character = std::make_unique<PCS::Login::CharacterT>();
-		character->uid = var->uid;
-		character->name = var->name;
-		character->class_type = (PCS::ClassType)var->class_type;
-		character->level = var->level;
-		reply.list.emplace_back(std::move(character));
+		auto hero = std::make_unique<PCS::Login::HeroT>();
+		hero->uid = var->uid;
+		hero->name = var->name;
+		hero->class_type = (PCS::ClassType)var->class_type;
+		hero->level = var->level;
+		reply.list.emplace_back(std::move(hero));
 	}
 
 	PCS::Send(*session, reply);
 }
 
-// Delete Character ==========================================================================================================
-void LoginServer::OnDeleteCharacter(const Ptr<net::Session>& session, const PCS::Login::Request_DeleteCharacter* message)
+// Delete Hero ==========================================================================================================
+void LoginServer::OnDeleteHero(const Ptr<net::Session>& session, const PCS::Login::Request_DeleteHero* message)
 {
 	if (message == nullptr) return;
 
@@ -449,24 +455,24 @@ void LoginServer::OnDeleteCharacter(const Ptr<net::Session>& session, const PCS:
 		return;
 	}
 
-	const int character_uid = message->character_uid();
+	const int hero_uid = message->hero_uid();
 
-	auto db_character = db::Character::Fetch(db_conn_, character_uid, rc->GetAccount()->uid);
-	if (!db_character)
+	auto db_hero = db::Hero::Fetch(db_conn_, hero_uid, rc->GetAccount()->uid);
+	if (!db_hero)
 	{
-		PCS::Login::Reply_DeleteCharacterFailedT reply;
-		reply.error_code = PCS::ErrorCode::DELETE_CHARACTER_NOT_EXIST;
+		PCS::Login::Reply_DeleteHeroFailedT reply;
+		reply.error_code = PCS::ErrorCode::DELETE_HERO_NOT_EXIST;
 		PCS::Send(*session, reply);
 		return;
 	}
 
 	// 삭제
-	db_character->Delete(GetDB());
+	db_hero->Delete(GetDB());
 
-	BOOST_LOG_TRIVIAL(info) << "Delete Character : " << db_character->name;
+	BOOST_LOG_TRIVIAL(info) << "Delete Hero : " << db_hero->name;
 
-	PCS::Login::Reply_DeleteCharacterSuccessT reply;
-	reply.character_uid = character_uid;
+	PCS::Login::Reply_DeleteHeroSuccessT reply;
+	reply.hero_uid = hero_uid;
 	PCS::Send(*session, reply);
 }
 
@@ -474,9 +480,9 @@ void LoginServer::RegisterHandlers()
 {
 	RegisterMessageHandler<PCS::Login::Request_Join>([this](auto& session, auto* msg) { OnJoin(session, msg); });
 	RegisterMessageHandler<PCS::Login::Request_Login>([this](auto& session, auto* msg) { OnLogin(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_CreateCharacter>([this](auto& session, auto* msg) { OnCreateCharacter(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_CharacterList>([this](auto& session, auto* msg) { OnCharacterList(session, msg); });
-	RegisterMessageHandler<PCS::Login::Request_DeleteCharacter>([this](auto& session, auto* msg) { OnDeleteCharacter(session, msg); });
+	RegisterMessageHandler<PCS::Login::Request_CreateHero>([this](auto& session, auto* msg) { OnCreateHero(session, msg); });
+	RegisterMessageHandler<PCS::Login::Request_HeroList>([this](auto& session, auto* msg) { OnHeroList(session, msg); });
+	RegisterMessageHandler<PCS::Login::Request_DeleteHero>([this](auto& session, auto* msg) { OnDeleteHero(session, msg); });
 }
 
 void LoginServer::RegisterManagerClientHandlers()

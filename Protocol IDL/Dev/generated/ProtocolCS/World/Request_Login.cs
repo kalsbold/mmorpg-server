@@ -19,21 +19,21 @@ public struct Request_Login : IFlatbufferObject
 
   public string Credential { get { int o = __p.__offset(4); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
   public ArraySegment<byte>? GetCredentialBytes() { return __p.__vector_as_arraysegment(4); }
-  public int CharacterUid { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
-  public bool MutateCharacterUid(int character_uid) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, character_uid); return true; } else { return false; } }
+  public int HeroUid { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public bool MutateHeroUid(int hero_uid) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, hero_uid); return true; } else { return false; } }
 
   public static Offset<Request_Login> CreateRequest_Login(FlatBufferBuilder builder,
       StringOffset credentialOffset = default(StringOffset),
-      int character_uid = 0) {
+      int hero_uid = 0) {
     builder.StartObject(2);
-    Request_Login.AddCharacterUid(builder, character_uid);
+    Request_Login.AddHeroUid(builder, hero_uid);
     Request_Login.AddCredential(builder, credentialOffset);
     return Request_Login.EndRequest_Login(builder);
   }
 
   public static void StartRequest_Login(FlatBufferBuilder builder) { builder.StartObject(2); }
   public static void AddCredential(FlatBufferBuilder builder, StringOffset credentialOffset) { builder.AddOffset(0, credentialOffset.Value, 0); }
-  public static void AddCharacterUid(FlatBufferBuilder builder, int characterUid) { builder.AddInt(1, characterUid, 0); }
+  public static void AddHeroUid(FlatBufferBuilder builder, int heroUid) { builder.AddInt(1, heroUid, 0); }
   public static Offset<Request_Login> EndRequest_Login(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Request_Login>(o);

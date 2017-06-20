@@ -71,7 +71,7 @@ public:
 	MapType	    type;
 };
 
-class CharacterAttribute
+class HeroAttribute
 {
 public:
 	ClassType class_type;
@@ -82,7 +82,7 @@ public:
 	int       def;
 };
 
-class Character
+class Hero
 {
 public:
 	int            uid;
@@ -101,11 +101,11 @@ public:
 	Vector3        pos;
 	float          rotation;
 
-	static Ptr<Character> Create(Ptr<MySQLPool> db, int account_uid, const std::string& name, ClassType class_type)
+	static Ptr<Hero> Create(Ptr<MySQLPool> db, int account_uid, const std::string& name, ClassType class_type)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"INSERT INTO  character_tb (account_uid, name, class_type) VALUES(?,?,?)"));
+			"INSERT INTO  hero_tb (account_uid, name, class_type) VALUES(?,?,?)"));
 		pstmt->setInt(1, account_uid);
 		pstmt->setString(2, name.c_str());
 		pstmt->setInt(3, (int)class_type);
@@ -116,30 +116,30 @@ public:
 		return Fetch(db, account_uid, name);
 	}
 
-	static std::vector<Ptr<Character>> Fetch(Ptr<MySQLPool> db, int account_uid)
+	static std::vector<Ptr<Hero>> Fetch(Ptr<MySQLPool> db, int account_uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE account_uid=?"));
+			"SELECT * FROM hero_tb WHERE account_uid=?"));
 		pstmt->setInt(1, account_uid);
 
 		ResultSetPtr result_set(pstmt->executeQuery());
-		std::vector<Ptr<Character>> characters;
+		std::vector<Ptr<Hero>> hero_vec;
 		while (result_set->next())
 		{
-			auto c = std::make_shared<Character>();
+			auto c = std::make_shared<Hero>();
 			Set(c, result_set);
-			characters.push_back(std::move(c));
+			hero_vec.push_back(std::move(c));
 		}
 
-		return characters;
+		return hero_vec;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int account_uid, const std::string& name)
+	static Ptr<Hero> Fetch(Ptr<MySQLPool> db, int account_uid, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE account_uid=? AND name=?"));
+			"SELECT * FROM hero_tb WHERE account_uid=? AND name=?"));
 		pstmt->setInt(1, account_uid);
 		pstmt->setString(2, name.c_str());
 
@@ -147,16 +147,16 @@ public:
 		if (!result_set->next())
 			return nullptr;
 
-		auto c = std::make_shared<Character>();
+		auto c = std::make_shared<Hero>();
 		Set(c, result_set);
 		return c;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, int uid, int account_uid)
+	static Ptr<Hero> Fetch(Ptr<MySQLPool> db, int uid, int account_uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE uid=? AND account_uid=?"));
+			"SELECT * FROM hero_tb WHERE uid=? AND account_uid=?"));
 		pstmt->setInt(1, uid);
 		pstmt->setInt(2, account_uid);
 
@@ -164,23 +164,23 @@ public:
 		if (!result_set->next())
 			return nullptr;
 
-		auto c = std::make_shared<Character>();
+		auto c = std::make_shared<Hero>();
 		Set(c, result_set);
 		return c;
 	}
 
-	static Ptr<Character> Fetch(Ptr<MySQLPool> db, const std::string& name)
+	static Ptr<Hero> Fetch(Ptr<MySQLPool> db, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
-			"SELECT * FROM character_tb WHERE name=?"));
+			"SELECT * FROM hero_tb WHERE name=?"));
 		pstmt->setString(1, name.c_str());
 
 		ResultSetPtr result_set(pstmt->executeQuery());
 		if (!result_set->next())
 			return nullptr;
 
-		auto c = std::make_shared<Character>();
+		auto c = std::make_shared<Hero>();
 		Set(c, result_set);
 		return c;
 	}
@@ -193,7 +193,7 @@ public:
 		StmtPtr stmt(conn->createStatement());
 		
 		std::stringstream ss;
-		ss << "UPDATE character_tb SET"
+		ss << "UPDATE hero_tb SET"
 			<< " exp=" << exp
 			<< ",level=" << level
 			<< ",max_hp=" << max_hp
@@ -220,12 +220,12 @@ public:
 		StmtPtr stmt(conn->createStatement());
 
 		std::stringstream ss;
-		ss << "DELETE FROM character_tb WHERE uid=" << uid;
+		ss << "DELETE FROM hero_tb WHERE uid=" << uid;
 
 		return stmt->execute(ss.str().c_str());
 	}
 
-	void SetAttribute(const CharacterAttribute& attribute)
+	void SetAttribute(const HeroAttribute& attribute)
 	{
 		level = attribute.level;
 		max_hp = attribute.hp;
@@ -237,7 +237,7 @@ public:
 	}
 
 private:
-	static void Set(Ptr<Character>& c, ResultSetPtr& result_set)
+	static void Set(Ptr<Hero>& c, ResultSetPtr& result_set)
 	{
 		c->uid = result_set->getInt("uid");
 		c->account_uid = result_set->getInt("account_uid");

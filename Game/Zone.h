@@ -6,7 +6,7 @@
 using db_schema::Map;
 
 class World;
-class PlayerCharacter;
+class Hero;
 class Monster;
 
 class Zone : std::enable_shared_from_this<Zone>
@@ -22,11 +22,10 @@ public:
 	int MapID() const { return map_data_.id; }
 	const Map& MapData() const { return map_data_; }
 
-	void Enter(const Ptr<PlayerCharacter>& pc);
-	void Leave(const Ptr<PlayerCharacter>& pc);
-	
-	World* GetWorld() { return owner_; }
+	bool Enter(const Ptr<Hero>& pc);
+	void Leave(const Ptr<Hero>& pc);
 
+	World* GetWorld() { return owner_; }
 	void Update(float delta_time);
 
 private:
@@ -35,8 +34,9 @@ private:
 	uuid entity_id_;
 	Map map_data_;
 	
+public:
 	// 지역에 속한 플레이어
-	std::map<uuid, Ptr<PlayerCharacter>> players_;
+	std::map<uuid, Ptr<Hero>> players_;
 	// 지역에 속한 게임 오브젝트
 	std::map<uuid, Ptr<Monster>> monsters_;
 };

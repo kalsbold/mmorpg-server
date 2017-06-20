@@ -154,14 +154,14 @@ inline bool TcpSession::PrepareRead(size_t min_prepare_bytes)
 	return true;
 }
 
-inline void TcpSession::PendWrite(Ptr<Buffer> buf)
+inline void TcpSession::PendWrite(const Ptr<Buffer>& buf)
 {
-	strand_->dispatch([this, self = shared_from_this(), buf = std::move(buf)]() mutable
+	strand_->dispatch([this, self = shared_from_this(), buf = buf]() mutable
 	{
 		if (!IsOpen())
 			return;
 
-		pending_list_.emplace_back(std::move(buf));
+		pending_list_.emplace_back(buf);
 		if (sending_list_.empty())
 		{
 			Write();

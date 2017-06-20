@@ -49,7 +49,7 @@ namespace net {
 		{
 			if (!IsOpen()) return;
 
-			PendWrite(std::move(data));
+			PendWrite(data);
 		}
 
 		virtual asio::strand& GetStrand() override
@@ -88,7 +88,7 @@ namespace net {
 			DecodeRecvData(read_buf, next_read_size);
 		}
 
-		void PendWrite(Ptr<Buffer> buf);
+		void PendWrite(const Ptr<Buffer>& buf);
 		void Write();
 		void HandleWrite(const error_code& error);
 		void HandleError(const error_code& error);

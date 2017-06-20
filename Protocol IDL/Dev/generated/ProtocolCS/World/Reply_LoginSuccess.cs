@@ -17,17 +17,17 @@ public struct Reply_LoginSuccess : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public Reply_LoginSuccess __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public PlayerCharacter? Character { get { int o = __p.__offset(4); return o != 0 ? (PlayerCharacter?)(new PlayerCharacter()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public Hero? Hero { get { int o = __p.__offset(4); return o != 0 ? (Hero?)(new Hero()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<Reply_LoginSuccess> CreateReply_LoginSuccess(FlatBufferBuilder builder,
-      Offset<PlayerCharacter> characterOffset = default(Offset<PlayerCharacter>)) {
+      Offset<Hero> heroOffset = default(Offset<Hero>)) {
     builder.StartObject(1);
-    Reply_LoginSuccess.AddCharacter(builder, characterOffset);
+    Reply_LoginSuccess.AddHero(builder, heroOffset);
     return Reply_LoginSuccess.EndReply_LoginSuccess(builder);
   }
 
   public static void StartReply_LoginSuccess(FlatBufferBuilder builder) { builder.StartObject(1); }
-  public static void AddCharacter(FlatBufferBuilder builder, Offset<PlayerCharacter> characterOffset) { builder.AddOffset(0, characterOffset.Value, 0); }
+  public static void AddHero(FlatBufferBuilder builder, Offset<Hero> heroOffset) { builder.AddOffset(0, heroOffset.Value, 0); }
   public static Offset<Reply_LoginSuccess> EndReply_LoginSuccess(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Reply_LoginSuccess>(o);

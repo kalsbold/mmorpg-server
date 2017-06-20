@@ -61,18 +61,18 @@ private:
 	std::vector<db::Map> data_;
 };
 
-class CharacterAttributeTable : public Singleton<CharacterAttributeTable>
+class HeroAttributeTable : public Singleton<HeroAttributeTable>
 {
 public:
-	const std::vector<db::CharacterAttribute>& GetAll()
+	const std::vector<db::HeroAttribute>& GetAll()
 	{
 		return data_;
 	}
 
-	const db::CharacterAttribute* Get(ClassType type, int level)
+	const db::HeroAttribute* Get(ClassType type, int level)
 	{
 		auto iter = std::find_if(data_.begin(), data_.end(),
-			[&](const db::CharacterAttribute& value)
+			[&](const db::HeroAttribute& value)
 			{
 				return (value.class_type == type) && (value.level == level);
 			});
@@ -88,10 +88,10 @@ public:
 		{
 			instance.data_.clear();
 
-			auto result_set = db->Excute("SELECT * FROM character_attribute_tb");
+			auto result_set = db->Excute("SELECT * FROM hero_attribute_tb");
 			while (result_set->next())
 			{
-				db::CharacterAttribute attribute;
+				db::HeroAttribute attribute;
 				attribute.class_type = (ClassType)result_set->getInt("class_type");
 				attribute.level = result_set->getInt("level");
 				attribute.hp = result_set->getInt("hp");
@@ -113,6 +113,6 @@ public:
 	}
 
 private:
-	std::vector<db::CharacterAttribute> data_;
+	std::vector<db::HeroAttribute> data_;
 };
 

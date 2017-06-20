@@ -5,6 +5,7 @@
 #include "Settings.h"
 #include "ManagerServer.h"
 #include "LoginServer.h"
+#include "WorldServer.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -22,6 +23,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		puts("Enterable commands:\n");
 		puts("m: Start manager server.\n");
 		puts("l: Start login server.\n");
+		puts("w: Start world server.\n");
 		puts("q: Quit.\n");
 
 		std::vector<Ptr<IServer>> server_list;
@@ -46,6 +48,15 @@ int _tmain(int argc, _TCHAR* argv[])
 					return 0;
 
 				auto server = std::make_shared<LoginServer>();
+				server->Run();
+				server_list.push_back(server);
+			}
+			else if (input == "w")
+			{
+				if (!Settings::GetInstance().Load("world.cfg"))
+					return 0;
+
+				auto server = std::make_shared<WorldServer>();
 				server->Run();
 				server_list.push_back(server);
 			}

@@ -2,12 +2,13 @@
 
 #include "Common.h"
 #include "RemoteClient.h"
+#include "TypeDef.h"
 #include "DBSchema.h"
 
 namespace db = db_schema;
 
 class WorldServer;
-class PlayerCharacter;
+class Hero;
 
 class RemoteWorldClient : public RemoteClient
 {
@@ -23,25 +24,16 @@ public:
 	RemoteWorldClient(const Ptr<net::Session>& net_session, WorldServer* owner);
 	~RemoteWorldClient();
 
-	State GetState() const
-	{
-		return state_;
-	}
+	State GetState() const { return state_; }
 
 	void SetState(State state)
 	{
 		state_ = state;
 	}
 
-	bool IsDispose()
-	{
-		return disposed_;
-	}
+	bool IsDispose() { return disposed_; }
 
-	const Ptr<db::Account>& GetAccount() const
-	{
-		return db_account_;
-	}
+	const Ptr<db::Account>& GetAccount() const { return db_account_; }
 
 	void SetAccount(Ptr<db::Account> db_account)
 	{
@@ -63,14 +55,24 @@ public:
 		return credential_;
 	}
 
-	const Ptr<PlayerCharacter>& GetCharacter()
+	const Ptr<db::Hero> GetDBHero()
 	{
-		return character_;
+		return db_hero_;
 	}
 
-	void SetCharacter(Ptr<PlayerCharacter> character)
+	void SetDBHero(const Ptr<db::Hero>& db_hero)
 	{
-		character_ = character;
+		db_hero_ = db_hero;
+	}
+
+	const Ptr<Hero>& GetHero()
+	{
+		return hero_;
+	}
+
+	void SetHero(Ptr<Hero> hero)
+	{
+		hero_ = hero;
 	}
 
 	void UpdateToDB();
@@ -86,7 +88,10 @@ public:
 	}
 
 public:
-	int selected_character_uid_;
+	int selected_hero_uid_;
+
+	// 메시지 처리
+    void OnActionMove(const Vector3& position, float rotation, const Vector3& velocity);
 
 private:
 	const Ptr<MySQLPool>& GetDB();
@@ -98,5 +103,10 @@ private:
 	uuid					credential_;
 	
 	std::atomic<State>		state_;
-	Ptr<PlayerCharacter>    character_ = nullptr;
+	Ptr<db::Hero>			db_hero_;
+	Ptr<Hero>				hero_;
+
+	time_point last_position_update_time_;
+	time_point last_attack_time;
+
 };

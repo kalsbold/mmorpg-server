@@ -17,8 +17,8 @@ struct Notify_UnauthedAccessT;
 
 namespace Login {
 
-struct Character;
-struct CharacterT;
+struct Hero;
+struct HeroT;
 
 struct Request_Login;
 struct Request_LoginT;
@@ -38,51 +38,51 @@ struct Reply_JoinSuccessT;
 struct Reply_JoinFailed;
 struct Reply_JoinFailedT;
 
-struct Request_CharacterList;
-struct Request_CharacterListT;
+struct Request_HeroList;
+struct Request_HeroListT;
 
-struct Reply_CharacterList;
-struct Reply_CharacterListT;
+struct Reply_HeroList;
+struct Reply_HeroListT;
 
-struct Request_CreateCharacter;
-struct Request_CreateCharacterT;
+struct Request_CreateHero;
+struct Request_CreateHeroT;
 
-struct Reply_CreateCharacterSuccess;
-struct Reply_CreateCharacterSuccessT;
+struct Reply_CreateHeroSuccess;
+struct Reply_CreateHeroSuccessT;
 
-struct Reply_CreateCharacterFailed;
-struct Reply_CreateCharacterFailedT;
+struct Reply_CreateHeroFailed;
+struct Reply_CreateHeroFailedT;
 
-struct Request_DeleteCharacter;
-struct Request_DeleteCharacterT;
+struct Request_DeleteHero;
+struct Request_DeleteHeroT;
 
-struct Reply_DeleteCharacterSuccess;
-struct Reply_DeleteCharacterSuccessT;
+struct Reply_DeleteHeroSuccess;
+struct Reply_DeleteHeroSuccessT;
 
-struct Reply_DeleteCharacterFailed;
-struct Reply_DeleteCharacterFailedT;
+struct Reply_DeleteHeroFailed;
+struct Reply_DeleteHeroFailedT;
 
 }  // namespace Login
 
 namespace World {
 
-struct PlayerCharacter;
-struct PlayerCharacterT;
-
-struct RemotePC;
-struct RemotePCT;
+struct Hero;
+struct HeroT;
 
 struct Monster;
 struct MonsterT;
 
-struct MoveData;
-struct MoveDataT;
+struct Actor;
+struct ActorT;
 
-struct AttackData;
-struct AttackDataT;
+struct MoveInfo;
+struct MoveInfoT;
 
-struct DamageData;
-struct DamageDataT;
+struct SkillInfo;
+struct SkillInfoT;
+
+struct DamageInfo;
+struct DamageInfoT;
 
 struct Request_Login;
 struct Request_LoginT;
@@ -93,35 +93,35 @@ struct Reply_LoginSuccessT;
 struct Reply_LoginFailed;
 struct Reply_LoginFailedT;
 
-struct Request_Move;
-struct Request_MoveT;
+struct Notify_LoadFinish;
+struct Notify_LoadFinishT;
 
-struct Request_Attack;
-struct Request_AttackT;
+struct Notify_EnterSuccess;
+struct Notify_EnterSuccessT;
 
-struct Notify_AppearActor;
-struct Notify_AppearActorT;
+struct Notify_EnterFailed;
+struct Notify_EnterFailedT;
 
-struct Notify_DisappearActor;
-struct Notify_DisappearActorT;
+struct Request_ActionMove;
+struct Request_ActionMoveT;
 
-struct Notify_Move;
-struct Notify_MoveT;
+struct Request_ActionSkill;
+struct Request_ActionSkillT;
 
-struct Notify_Attack;
-struct Notify_AttackT;
+struct Notify_Appear;
+struct Notify_AppearT;
+
+struct Notify_Disappear;
+struct Notify_DisappearT;
+
+struct Notify_ActionMove;
+struct Notify_ActionMoveT;
+
+struct Notify_ActionSkill;
+struct Notify_ActionSkillT;
 
 struct Notify_Damage;
 struct Notify_DamageT;
-
-struct Request_MoveZone;
-struct Request_MoveZoneT;
-
-struct Reply_MoveZoneSuccess;
-struct Reply_MoveZoneSuccessT;
-
-struct Reply_MoveZoneFailed;
-struct Reply_MoveZoneFailedT;
 
 }  // namespace World
 
@@ -139,18 +139,18 @@ enum class ErrorCode : int32_t {
   LOGIN_DUPLICATION = 102,
   JOIN_ACC_NAME_ALREADY = 103,
   JOIN_CANNOT_ACC_CREATE = 104,
-  CREATE_CHARACTER_NAME_ALREADY = 105,
-  CREATE_CHARACTER_CANNOT_CREATE = 106,
-  CREATE_CHARACTER_ATTRIBUTE_NOT_EXIST = 107,
-  DELETE_CHARACTER_NOT_EXIST = 108,
-  DELETE_CHARACTER_CANNOT_DELETE = 109,
+  CREATE_HERO_NAME_ALREADY = 105,
+  CREATE_HERO_CANNOT_CREATE = 106,
+  CREATE_HERO_ATTRIBUTE_NOT_EXIST = 107,
+  DELETE_HERO_NOT_EXIST = 108,
+  DELETE_HERO_CANNOT_DELETE = 109,
   WORLD_LOGIN_INVALID_CREDENTIAL = 200,
   WORLD_LOGIN_INVALID_ACCOUNT = 201,
-  WORLD_LOGIN_INVALID_CHARACTER = 202,
+  WORLD_LOGIN_INVALID_HERO = 202,
   WORLD_LOGIN_INVALID_STATE = 203,
   WORLD_CANNOT_ENTER_ZONE = 204,
   WORLD_NEXT_INVALID_STATE = 205,
-  WORLD_CANNOT_LOAD_CHARACTER = 206,
+  WORLD_CANNOT_LOAD_HERO = 206,
   WORLD_CANNOT_FIND_ZONE = 207,
   MIN = OK,
   MAX = WORLD_CANNOT_FIND_ZONE
@@ -204,6 +204,87 @@ inline const char *EnumNameMapType(MapType e) {
   return EnumNamesMapType()[index];
 }
 
+namespace World {
+
+enum class ActorType : uint8_t {
+  NONE = 0,
+  Hero = 1,
+  Monster = 2,
+  MIN = NONE,
+  MAX = Monster
+};
+
+inline const char **EnumNamesActorType() {
+  static const char *names[] = {
+    "NONE",
+    "Hero",
+    "Monster",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameActorType(ActorType e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesActorType()[index];
+}
+
+template<typename T> struct ActorTypeTraits {
+  static const ActorType enum_value = ActorType::NONE;
+};
+
+template<> struct ActorTypeTraits<Hero> {
+  static const ActorType enum_value = ActorType::Hero;
+};
+
+template<> struct ActorTypeTraits<Monster> {
+  static const ActorType enum_value = ActorType::Monster;
+};
+
+struct ActorTypeUnion {
+  ActorType type;
+  void *value;
+
+  ActorTypeUnion() : type(ActorType::NONE), value(nullptr) {}
+  ActorTypeUnion(ActorTypeUnion&& u) FLATBUFFERS_NOEXCEPT :
+    type(ActorType::NONE), value(nullptr)
+    { std::swap(type, u.type); std::swap(value, u.value); }
+  ActorTypeUnion(const ActorTypeUnion &) FLATBUFFERS_NOEXCEPT;
+  ActorTypeUnion &operator=(const ActorTypeUnion &u) FLATBUFFERS_NOEXCEPT
+    { ActorTypeUnion t(u); std::swap(type, t.type); std::swap(value, t.value); return *this; }
+  ActorTypeUnion &operator=(ActorTypeUnion &&u) FLATBUFFERS_NOEXCEPT
+    { std::swap(type, u.type); std::swap(value, u.value); return *this; }
+  ~ActorTypeUnion() { Reset(); }
+
+  void Reset();
+
+  template <typename T>
+  void Set(T&& val) {
+    Reset();
+    type = ActorTypeTraits<typename T::TableType>::enum_value;
+    if (type != ActorType::NONE) {
+      value = new T(std::forward<T>(val));
+    }
+  }
+
+  static void *UnPack(const void *obj, ActorType type, const flatbuffers::resolver_function_t *resolver);
+  flatbuffers::Offset<void> Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher = nullptr) const;
+
+  HeroT *AsHero() {
+    return type == ActorType::Hero ?
+      reinterpret_cast<HeroT *>(value) : nullptr;
+  }
+  MonsterT *AsMonster() {
+    return type == ActorType::Monster ?
+      reinterpret_cast<MonsterT *>(value) : nullptr;
+  }
+};
+
+bool VerifyActorType(flatbuffers::Verifier &verifier, const void *obj, ActorType type);
+bool VerifyActorTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
+
+}  // namespace World
+
 enum class MessageType : uint8_t {
   NONE = 0,
   Notify_UnauthedAccess = 1,
@@ -213,29 +294,29 @@ enum class MessageType : uint8_t {
   Login_Request_Join = 5,
   Login_Reply_JoinSuccess = 6,
   Login_Reply_JoinFailed = 7,
-  Login_Request_CharacterList = 8,
-  Login_Reply_CharacterList = 9,
-  Login_Request_CreateCharacter = 10,
-  Login_Reply_CreateCharacterSuccess = 11,
-  Login_Reply_CreateCharacterFailed = 12,
-  Login_Request_DeleteCharacter = 13,
-  Login_Reply_DeleteCharacterSuccess = 14,
-  Login_Reply_DeleteCharacterFailed = 15,
+  Login_Request_HeroList = 8,
+  Login_Reply_HeroList = 9,
+  Login_Request_CreateHero = 10,
+  Login_Reply_CreateHeroSuccess = 11,
+  Login_Reply_CreateHeroFailed = 12,
+  Login_Request_DeleteHero = 13,
+  Login_Reply_DeleteHeroSuccess = 14,
+  Login_Reply_DeleteHeroFailed = 15,
   World_Request_Login = 16,
   World_Reply_LoginSuccess = 17,
   World_Reply_LoginFailed = 18,
-  World_Request_Move = 19,
-  World_Request_Attack = 20,
-  World_Notify_AppearActor = 21,
-  World_Notify_DisappearActor = 22,
-  World_Notify_Move = 23,
-  World_Notify_Attack = 24,
-  World_Notify_Damage = 25,
-  World_Request_MoveZone = 26,
-  World_Reply_MoveZoneSuccess = 27,
-  World_Reply_MoveZoneFailed = 28,
+  World_Notify_LoadFinish = 19,
+  World_Notify_EnterSuccess = 20,
+  World_Notify_EnterFailed = 21,
+  World_Request_ActionMove = 22,
+  World_Request_ActionSkill = 23,
+  World_Notify_Appear = 24,
+  World_Notify_Disappear = 25,
+  World_Notify_ActionMove = 26,
+  World_Notify_ActionSkill = 27,
+  World_Notify_Damage = 28,
   MIN = NONE,
-  MAX = World_Reply_MoveZoneFailed
+  MAX = World_Notify_Damage
 };
 
 inline const char **EnumNamesMessageType() {
@@ -248,27 +329,27 @@ inline const char **EnumNamesMessageType() {
     "Login_Request_Join",
     "Login_Reply_JoinSuccess",
     "Login_Reply_JoinFailed",
-    "Login_Request_CharacterList",
-    "Login_Reply_CharacterList",
-    "Login_Request_CreateCharacter",
-    "Login_Reply_CreateCharacterSuccess",
-    "Login_Reply_CreateCharacterFailed",
-    "Login_Request_DeleteCharacter",
-    "Login_Reply_DeleteCharacterSuccess",
-    "Login_Reply_DeleteCharacterFailed",
+    "Login_Request_HeroList",
+    "Login_Reply_HeroList",
+    "Login_Request_CreateHero",
+    "Login_Reply_CreateHeroSuccess",
+    "Login_Reply_CreateHeroFailed",
+    "Login_Request_DeleteHero",
+    "Login_Reply_DeleteHeroSuccess",
+    "Login_Reply_DeleteHeroFailed",
     "World_Request_Login",
     "World_Reply_LoginSuccess",
     "World_Reply_LoginFailed",
-    "World_Request_Move",
-    "World_Request_Attack",
-    "World_Notify_AppearActor",
-    "World_Notify_DisappearActor",
-    "World_Notify_Move",
-    "World_Notify_Attack",
+    "World_Notify_LoadFinish",
+    "World_Notify_EnterSuccess",
+    "World_Notify_EnterFailed",
+    "World_Request_ActionMove",
+    "World_Request_ActionSkill",
+    "World_Notify_Appear",
+    "World_Notify_Disappear",
+    "World_Notify_ActionMove",
+    "World_Notify_ActionSkill",
     "World_Notify_Damage",
-    "World_Request_MoveZone",
-    "World_Reply_MoveZoneSuccess",
-    "World_Reply_MoveZoneFailed",
     nullptr
   };
   return names;
@@ -311,36 +392,36 @@ template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_JoinFailed> {
   static const MessageType enum_value = MessageType::Login_Reply_JoinFailed;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Request_CharacterList> {
-  static const MessageType enum_value = MessageType::Login_Request_CharacterList;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Request_HeroList> {
+  static const MessageType enum_value = MessageType::Login_Request_HeroList;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_CharacterList> {
-  static const MessageType enum_value = MessageType::Login_Reply_CharacterList;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_HeroList> {
+  static const MessageType enum_value = MessageType::Login_Reply_HeroList;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Request_CreateCharacter> {
-  static const MessageType enum_value = MessageType::Login_Request_CreateCharacter;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Request_CreateHero> {
+  static const MessageType enum_value = MessageType::Login_Request_CreateHero;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_CreateCharacterSuccess> {
-  static const MessageType enum_value = MessageType::Login_Reply_CreateCharacterSuccess;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_CreateHeroSuccess> {
+  static const MessageType enum_value = MessageType::Login_Reply_CreateHeroSuccess;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_CreateCharacterFailed> {
-  static const MessageType enum_value = MessageType::Login_Reply_CreateCharacterFailed;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_CreateHeroFailed> {
+  static const MessageType enum_value = MessageType::Login_Reply_CreateHeroFailed;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Request_DeleteCharacter> {
-  static const MessageType enum_value = MessageType::Login_Request_DeleteCharacter;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Request_DeleteHero> {
+  static const MessageType enum_value = MessageType::Login_Request_DeleteHero;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_DeleteCharacterSuccess> {
-  static const MessageType enum_value = MessageType::Login_Reply_DeleteCharacterSuccess;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_DeleteHeroSuccess> {
+  static const MessageType enum_value = MessageType::Login_Reply_DeleteHeroSuccess;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_DeleteCharacterFailed> {
-  static const MessageType enum_value = MessageType::Login_Reply_DeleteCharacterFailed;
+template<> struct MessageTypeTraits<ProtocolCS::Login::Reply_DeleteHeroFailed> {
+  static const MessageType enum_value = MessageType::Login_Reply_DeleteHeroFailed;
 };
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Request_Login> {
@@ -355,44 +436,44 @@ template<> struct MessageTypeTraits<ProtocolCS::World::Reply_LoginFailed> {
   static const MessageType enum_value = MessageType::World_Reply_LoginFailed;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Request_Move> {
-  static const MessageType enum_value = MessageType::World_Request_Move;
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_LoadFinish> {
+  static const MessageType enum_value = MessageType::World_Notify_LoadFinish;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Request_Attack> {
-  static const MessageType enum_value = MessageType::World_Request_Attack;
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_EnterSuccess> {
+  static const MessageType enum_value = MessageType::World_Notify_EnterSuccess;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Notify_AppearActor> {
-  static const MessageType enum_value = MessageType::World_Notify_AppearActor;
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_EnterFailed> {
+  static const MessageType enum_value = MessageType::World_Notify_EnterFailed;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Notify_DisappearActor> {
-  static const MessageType enum_value = MessageType::World_Notify_DisappearActor;
+template<> struct MessageTypeTraits<ProtocolCS::World::Request_ActionMove> {
+  static const MessageType enum_value = MessageType::World_Request_ActionMove;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Move> {
-  static const MessageType enum_value = MessageType::World_Notify_Move;
+template<> struct MessageTypeTraits<ProtocolCS::World::Request_ActionSkill> {
+  static const MessageType enum_value = MessageType::World_Request_ActionSkill;
 };
 
-template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Attack> {
-  static const MessageType enum_value = MessageType::World_Notify_Attack;
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Appear> {
+  static const MessageType enum_value = MessageType::World_Notify_Appear;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Disappear> {
+  static const MessageType enum_value = MessageType::World_Notify_Disappear;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_ActionMove> {
+  static const MessageType enum_value = MessageType::World_Notify_ActionMove;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Notify_ActionSkill> {
+  static const MessageType enum_value = MessageType::World_Notify_ActionSkill;
 };
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Damage> {
   static const MessageType enum_value = MessageType::World_Notify_Damage;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Request_MoveZone> {
-  static const MessageType enum_value = MessageType::World_Request_MoveZone;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Reply_MoveZoneSuccess> {
-  static const MessageType enum_value = MessageType::World_Reply_MoveZoneSuccess;
-};
-
-template<> struct MessageTypeTraits<ProtocolCS::World::Reply_MoveZoneFailed> {
-  static const MessageType enum_value = MessageType::World_Reply_MoveZoneFailed;
 };
 
 struct MessageTypeUnion {
@@ -452,37 +533,37 @@ struct MessageTypeUnion {
     return type == MessageType::Login_Reply_JoinFailed ?
       reinterpret_cast<ProtocolCS::Login::Reply_JoinFailedT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Request_CharacterListT *AsLogin_Request_CharacterList() {
-    return type == MessageType::Login_Request_CharacterList ?
-      reinterpret_cast<ProtocolCS::Login::Request_CharacterListT *>(value) : nullptr;
+  ProtocolCS::Login::Request_HeroListT *AsLogin_Request_HeroList() {
+    return type == MessageType::Login_Request_HeroList ?
+      reinterpret_cast<ProtocolCS::Login::Request_HeroListT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Reply_CharacterListT *AsLogin_Reply_CharacterList() {
-    return type == MessageType::Login_Reply_CharacterList ?
-      reinterpret_cast<ProtocolCS::Login::Reply_CharacterListT *>(value) : nullptr;
+  ProtocolCS::Login::Reply_HeroListT *AsLogin_Reply_HeroList() {
+    return type == MessageType::Login_Reply_HeroList ?
+      reinterpret_cast<ProtocolCS::Login::Reply_HeroListT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Request_CreateCharacterT *AsLogin_Request_CreateCharacter() {
-    return type == MessageType::Login_Request_CreateCharacter ?
-      reinterpret_cast<ProtocolCS::Login::Request_CreateCharacterT *>(value) : nullptr;
+  ProtocolCS::Login::Request_CreateHeroT *AsLogin_Request_CreateHero() {
+    return type == MessageType::Login_Request_CreateHero ?
+      reinterpret_cast<ProtocolCS::Login::Request_CreateHeroT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Reply_CreateCharacterSuccessT *AsLogin_Reply_CreateCharacterSuccess() {
-    return type == MessageType::Login_Reply_CreateCharacterSuccess ?
-      reinterpret_cast<ProtocolCS::Login::Reply_CreateCharacterSuccessT *>(value) : nullptr;
+  ProtocolCS::Login::Reply_CreateHeroSuccessT *AsLogin_Reply_CreateHeroSuccess() {
+    return type == MessageType::Login_Reply_CreateHeroSuccess ?
+      reinterpret_cast<ProtocolCS::Login::Reply_CreateHeroSuccessT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Reply_CreateCharacterFailedT *AsLogin_Reply_CreateCharacterFailed() {
-    return type == MessageType::Login_Reply_CreateCharacterFailed ?
-      reinterpret_cast<ProtocolCS::Login::Reply_CreateCharacterFailedT *>(value) : nullptr;
+  ProtocolCS::Login::Reply_CreateHeroFailedT *AsLogin_Reply_CreateHeroFailed() {
+    return type == MessageType::Login_Reply_CreateHeroFailed ?
+      reinterpret_cast<ProtocolCS::Login::Reply_CreateHeroFailedT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Request_DeleteCharacterT *AsLogin_Request_DeleteCharacter() {
-    return type == MessageType::Login_Request_DeleteCharacter ?
-      reinterpret_cast<ProtocolCS::Login::Request_DeleteCharacterT *>(value) : nullptr;
+  ProtocolCS::Login::Request_DeleteHeroT *AsLogin_Request_DeleteHero() {
+    return type == MessageType::Login_Request_DeleteHero ?
+      reinterpret_cast<ProtocolCS::Login::Request_DeleteHeroT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Reply_DeleteCharacterSuccessT *AsLogin_Reply_DeleteCharacterSuccess() {
-    return type == MessageType::Login_Reply_DeleteCharacterSuccess ?
-      reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterSuccessT *>(value) : nullptr;
+  ProtocolCS::Login::Reply_DeleteHeroSuccessT *AsLogin_Reply_DeleteHeroSuccess() {
+    return type == MessageType::Login_Reply_DeleteHeroSuccess ?
+      reinterpret_cast<ProtocolCS::Login::Reply_DeleteHeroSuccessT *>(value) : nullptr;
   }
-  ProtocolCS::Login::Reply_DeleteCharacterFailedT *AsLogin_Reply_DeleteCharacterFailed() {
-    return type == MessageType::Login_Reply_DeleteCharacterFailed ?
-      reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(value) : nullptr;
+  ProtocolCS::Login::Reply_DeleteHeroFailedT *AsLogin_Reply_DeleteHeroFailed() {
+    return type == MessageType::Login_Reply_DeleteHeroFailed ?
+      reinterpret_cast<ProtocolCS::Login::Reply_DeleteHeroFailedT *>(value) : nullptr;
   }
   ProtocolCS::World::Request_LoginT *AsWorld_Request_Login() {
     return type == MessageType::World_Request_Login ?
@@ -496,45 +577,45 @@ struct MessageTypeUnion {
     return type == MessageType::World_Reply_LoginFailed ?
       reinterpret_cast<ProtocolCS::World::Reply_LoginFailedT *>(value) : nullptr;
   }
-  ProtocolCS::World::Request_MoveT *AsWorld_Request_Move() {
-    return type == MessageType::World_Request_Move ?
-      reinterpret_cast<ProtocolCS::World::Request_MoveT *>(value) : nullptr;
+  ProtocolCS::World::Notify_LoadFinishT *AsWorld_Notify_LoadFinish() {
+    return type == MessageType::World_Notify_LoadFinish ?
+      reinterpret_cast<ProtocolCS::World::Notify_LoadFinishT *>(value) : nullptr;
   }
-  ProtocolCS::World::Request_AttackT *AsWorld_Request_Attack() {
-    return type == MessageType::World_Request_Attack ?
-      reinterpret_cast<ProtocolCS::World::Request_AttackT *>(value) : nullptr;
+  ProtocolCS::World::Notify_EnterSuccessT *AsWorld_Notify_EnterSuccess() {
+    return type == MessageType::World_Notify_EnterSuccess ?
+      reinterpret_cast<ProtocolCS::World::Notify_EnterSuccessT *>(value) : nullptr;
   }
-  ProtocolCS::World::Notify_AppearActorT *AsWorld_Notify_AppearActor() {
-    return type == MessageType::World_Notify_AppearActor ?
-      reinterpret_cast<ProtocolCS::World::Notify_AppearActorT *>(value) : nullptr;
+  ProtocolCS::World::Notify_EnterFailedT *AsWorld_Notify_EnterFailed() {
+    return type == MessageType::World_Notify_EnterFailed ?
+      reinterpret_cast<ProtocolCS::World::Notify_EnterFailedT *>(value) : nullptr;
   }
-  ProtocolCS::World::Notify_DisappearActorT *AsWorld_Notify_DisappearActor() {
-    return type == MessageType::World_Notify_DisappearActor ?
-      reinterpret_cast<ProtocolCS::World::Notify_DisappearActorT *>(value) : nullptr;
+  ProtocolCS::World::Request_ActionMoveT *AsWorld_Request_ActionMove() {
+    return type == MessageType::World_Request_ActionMove ?
+      reinterpret_cast<ProtocolCS::World::Request_ActionMoveT *>(value) : nullptr;
   }
-  ProtocolCS::World::Notify_MoveT *AsWorld_Notify_Move() {
-    return type == MessageType::World_Notify_Move ?
-      reinterpret_cast<ProtocolCS::World::Notify_MoveT *>(value) : nullptr;
+  ProtocolCS::World::Request_ActionSkillT *AsWorld_Request_ActionSkill() {
+    return type == MessageType::World_Request_ActionSkill ?
+      reinterpret_cast<ProtocolCS::World::Request_ActionSkillT *>(value) : nullptr;
   }
-  ProtocolCS::World::Notify_AttackT *AsWorld_Notify_Attack() {
-    return type == MessageType::World_Notify_Attack ?
-      reinterpret_cast<ProtocolCS::World::Notify_AttackT *>(value) : nullptr;
+  ProtocolCS::World::Notify_AppearT *AsWorld_Notify_Appear() {
+    return type == MessageType::World_Notify_Appear ?
+      reinterpret_cast<ProtocolCS::World::Notify_AppearT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Notify_DisappearT *AsWorld_Notify_Disappear() {
+    return type == MessageType::World_Notify_Disappear ?
+      reinterpret_cast<ProtocolCS::World::Notify_DisappearT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Notify_ActionMoveT *AsWorld_Notify_ActionMove() {
+    return type == MessageType::World_Notify_ActionMove ?
+      reinterpret_cast<ProtocolCS::World::Notify_ActionMoveT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Notify_ActionSkillT *AsWorld_Notify_ActionSkill() {
+    return type == MessageType::World_Notify_ActionSkill ?
+      reinterpret_cast<ProtocolCS::World::Notify_ActionSkillT *>(value) : nullptr;
   }
   ProtocolCS::World::Notify_DamageT *AsWorld_Notify_Damage() {
     return type == MessageType::World_Notify_Damage ?
       reinterpret_cast<ProtocolCS::World::Notify_DamageT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Request_MoveZoneT *AsWorld_Request_MoveZone() {
-    return type == MessageType::World_Request_MoveZone ?
-      reinterpret_cast<ProtocolCS::World::Request_MoveZoneT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Reply_MoveZoneSuccessT *AsWorld_Reply_MoveZoneSuccess() {
-    return type == MessageType::World_Reply_MoveZoneSuccess ?
-      reinterpret_cast<ProtocolCS::World::Reply_MoveZoneSuccessT *>(value) : nullptr;
-  }
-  ProtocolCS::World::Reply_MoveZoneFailedT *AsWorld_Reply_MoveZoneFailed() {
-    return type == MessageType::World_Reply_MoveZoneFailed ?
-      reinterpret_cast<ProtocolCS::World::Reply_MoveZoneFailedT *>(value) : nullptr;
   }
 };
 
@@ -653,21 +734,21 @@ flatbuffers::Offset<Notify_UnauthedAccess> CreateNotify_UnauthedAccess(flatbuffe
 
 namespace Login {
 
-struct CharacterT : public flatbuffers::NativeTable {
-  typedef Character TableType;
+struct HeroT : public flatbuffers::NativeTable {
+  typedef Hero TableType;
   int32_t uid;
   std::string name;
   ProtocolCS::ClassType class_type;
   int32_t level;
-  CharacterT()
+  HeroT()
       : uid(0),
         class_type(ProtocolCS::ClassType::NONE),
         level(0) {
   }
 };
 
-struct Character FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef CharacterT NativeTableType;
+struct Hero FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef HeroT NativeTableType;
   enum {
     VT_UID = 4,
     VT_NAME = 6,
@@ -707,45 +788,45 @@ struct Character FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_LEVEL) &&
            verifier.EndTable();
   }
-  CharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(CharacterT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Character> Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  HeroT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(HeroT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Hero> Pack(flatbuffers::FlatBufferBuilder &_fbb, const HeroT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct CharacterBuilder {
+struct HeroBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_uid(int32_t uid) {
-    fbb_.AddElement<int32_t>(Character::VT_UID, uid, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_UID, uid, 0);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(Character::VT_NAME, name);
+    fbb_.AddOffset(Hero::VT_NAME, name);
   }
   void add_class_type(ProtocolCS::ClassType class_type) {
-    fbb_.AddElement<int32_t>(Character::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
+    fbb_.AddElement<int32_t>(Hero::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
   }
   void add_level(int32_t level) {
-    fbb_.AddElement<int32_t>(Character::VT_LEVEL, level, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_LEVEL, level, 0);
   }
-  CharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  HeroBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  CharacterBuilder &operator=(const CharacterBuilder &);
-  flatbuffers::Offset<Character> Finish() {
+  HeroBuilder &operator=(const HeroBuilder &);
+  flatbuffers::Offset<Hero> Finish() {
     const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<Character>(end);
+    auto o = flatbuffers::Offset<Hero>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Character> CreateCharacter(
+inline flatbuffers::Offset<Hero> CreateHero(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t uid = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE,
     int32_t level = 0) {
-  CharacterBuilder builder_(_fbb);
+  HeroBuilder builder_(_fbb);
   builder_.add_level(level);
   builder_.add_class_type(class_type);
   builder_.add_name(name);
@@ -753,13 +834,13 @@ inline flatbuffers::Offset<Character> CreateCharacter(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Character> CreateCharacterDirect(
+inline flatbuffers::Offset<Hero> CreateHeroDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t uid = 0,
     const char *name = nullptr,
     ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE,
     int32_t level = 0) {
-  return ProtocolCS::Login::CreateCharacter(
+  return ProtocolCS::Login::CreateHero(
       _fbb,
       uid,
       name ? _fbb.CreateString(name) : 0,
@@ -767,7 +848,7 @@ inline flatbuffers::Offset<Character> CreateCharacterDirect(
       level);
 }
 
-flatbuffers::Offset<Character> CreateCharacter(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Hero> CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const HeroT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Request_LoginT : public flatbuffers::NativeTable {
   typedef Request_Login TableType;
@@ -1152,63 +1233,63 @@ inline flatbuffers::Offset<Reply_JoinFailed> CreateReply_JoinFailed(
 
 flatbuffers::Offset<Reply_JoinFailed> CreateReply_JoinFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_JoinFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_CharacterListT : public flatbuffers::NativeTable {
-  typedef Request_CharacterList TableType;
-  Request_CharacterListT() {
+struct Request_HeroListT : public flatbuffers::NativeTable {
+  typedef Request_HeroList TableType;
+  Request_HeroListT() {
   }
 };
 
-struct Request_CharacterList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_CharacterListT NativeTableType;
+struct Request_HeroList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_HeroListT NativeTableType;
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            verifier.EndTable();
   }
-  Request_CharacterListT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_CharacterListT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_CharacterList> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_CharacterListT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Request_HeroListT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_HeroListT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_HeroList> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_HeroListT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Request_CharacterListBuilder {
+struct Request_HeroListBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  Request_CharacterListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Request_HeroListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Request_CharacterListBuilder &operator=(const Request_CharacterListBuilder &);
-  flatbuffers::Offset<Request_CharacterList> Finish() {
+  Request_HeroListBuilder &operator=(const Request_HeroListBuilder &);
+  flatbuffers::Offset<Request_HeroList> Finish() {
     const auto end = fbb_.EndTable(start_, 0);
-    auto o = flatbuffers::Offset<Request_CharacterList>(end);
+    auto o = flatbuffers::Offset<Request_HeroList>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Request_CharacterList> CreateRequest_CharacterList(
+inline flatbuffers::Offset<Request_HeroList> CreateRequest_HeroList(
     flatbuffers::FlatBufferBuilder &_fbb) {
-  Request_CharacterListBuilder builder_(_fbb);
+  Request_HeroListBuilder builder_(_fbb);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Request_CharacterList> CreateRequest_CharacterList(flatbuffers::FlatBufferBuilder &_fbb, const Request_CharacterListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Request_HeroList> CreateRequest_HeroList(flatbuffers::FlatBufferBuilder &_fbb, const Request_HeroListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Reply_CharacterListT : public flatbuffers::NativeTable {
-  typedef Reply_CharacterList TableType;
-  std::vector<std::unique_ptr<CharacterT>> list;
-  Reply_CharacterListT() {
+struct Reply_HeroListT : public flatbuffers::NativeTable {
+  typedef Reply_HeroList TableType;
+  std::vector<std::unique_ptr<HeroT>> list;
+  Reply_HeroListT() {
   }
 };
 
-struct Reply_CharacterList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_CharacterListT NativeTableType;
+struct Reply_HeroList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_HeroListT NativeTableType;
   enum {
     VT_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<Character>> *list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Character>> *>(VT_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<Hero>> *list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Hero>> *>(VT_LIST);
   }
-  flatbuffers::Vector<flatbuffers::Offset<Character>> *mutable_list() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<Character>> *>(VT_LIST);
+  flatbuffers::Vector<flatbuffers::Offset<Hero>> *mutable_list() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<Hero>> *>(VT_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1217,58 +1298,58 @@ struct Reply_CharacterList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table 
            verifier.VerifyVectorOfTables(list()) &&
            verifier.EndTable();
   }
-  Reply_CharacterListT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_CharacterListT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_CharacterList> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CharacterListT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_HeroListT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_HeroListT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_HeroList> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_HeroListT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_CharacterListBuilder {
+struct Reply_HeroListBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Character>>> list) {
-    fbb_.AddOffset(Reply_CharacterList::VT_LIST, list);
+  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Hero>>> list) {
+    fbb_.AddOffset(Reply_HeroList::VT_LIST, list);
   }
-  Reply_CharacterListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_HeroListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_CharacterListBuilder &operator=(const Reply_CharacterListBuilder &);
-  flatbuffers::Offset<Reply_CharacterList> Finish() {
+  Reply_HeroListBuilder &operator=(const Reply_HeroListBuilder &);
+  flatbuffers::Offset<Reply_HeroList> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_CharacterList>(end);
+    auto o = flatbuffers::Offset<Reply_HeroList>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_CharacterList> CreateReply_CharacterList(
+inline flatbuffers::Offset<Reply_HeroList> CreateReply_HeroList(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Character>>> list = 0) {
-  Reply_CharacterListBuilder builder_(_fbb);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Hero>>> list = 0) {
+  Reply_HeroListBuilder builder_(_fbb);
   builder_.add_list(list);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Reply_CharacterList> CreateReply_CharacterListDirect(
+inline flatbuffers::Offset<Reply_HeroList> CreateReply_HeroListDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<Character>> *list = nullptr) {
-  return ProtocolCS::Login::CreateReply_CharacterList(
+    const std::vector<flatbuffers::Offset<Hero>> *list = nullptr) {
+  return ProtocolCS::Login::CreateReply_HeroList(
       _fbb,
-      list ? _fbb.CreateVector<flatbuffers::Offset<Character>>(*list) : 0);
+      list ? _fbb.CreateVector<flatbuffers::Offset<Hero>>(*list) : 0);
 }
 
-flatbuffers::Offset<Reply_CharacterList> CreateReply_CharacterList(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CharacterListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_HeroList> CreateReply_HeroList(flatbuffers::FlatBufferBuilder &_fbb, const Reply_HeroListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_CreateCharacterT : public flatbuffers::NativeTable {
-  typedef Request_CreateCharacter TableType;
+struct Request_CreateHeroT : public flatbuffers::NativeTable {
+  typedef Request_CreateHero TableType;
   std::string name;
   ProtocolCS::ClassType class_type;
-  Request_CreateCharacterT()
+  Request_CreateHeroT()
       : class_type(ProtocolCS::ClassType::NONE) {
   }
 };
 
-struct Request_CreateCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_CreateCharacterT NativeTableType;
+struct Request_CreateHero FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_CreateHeroT NativeTableType;
   enum {
     VT_NAME = 4,
     VT_CLASS_TYPE = 6
@@ -1292,121 +1373,121 @@ struct Request_CreateCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Ta
            VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
            verifier.EndTable();
   }
-  Request_CreateCharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_CreateCharacterT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_CreateCharacter> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Request_CreateHeroT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_CreateHeroT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_CreateHero> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateHeroT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Request_CreateCharacterBuilder {
+struct Request_CreateHeroBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(Request_CreateCharacter::VT_NAME, name);
+    fbb_.AddOffset(Request_CreateHero::VT_NAME, name);
   }
   void add_class_type(ProtocolCS::ClassType class_type) {
-    fbb_.AddElement<int32_t>(Request_CreateCharacter::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
+    fbb_.AddElement<int32_t>(Request_CreateHero::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
   }
-  Request_CreateCharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Request_CreateHeroBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Request_CreateCharacterBuilder &operator=(const Request_CreateCharacterBuilder &);
-  flatbuffers::Offset<Request_CreateCharacter> Finish() {
+  Request_CreateHeroBuilder &operator=(const Request_CreateHeroBuilder &);
+  flatbuffers::Offset<Request_CreateHero> Finish() {
     const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<Request_CreateCharacter>(end);
+    auto o = flatbuffers::Offset<Request_CreateHero>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Request_CreateCharacter> CreateRequest_CreateCharacter(
+inline flatbuffers::Offset<Request_CreateHero> CreateRequest_CreateHero(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE) {
-  Request_CreateCharacterBuilder builder_(_fbb);
+  Request_CreateHeroBuilder builder_(_fbb);
   builder_.add_class_type(class_type);
   builder_.add_name(name);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Request_CreateCharacter> CreateRequest_CreateCharacterDirect(
+inline flatbuffers::Offset<Request_CreateHero> CreateRequest_CreateHeroDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE) {
-  return ProtocolCS::Login::CreateRequest_CreateCharacter(
+  return ProtocolCS::Login::CreateRequest_CreateHero(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       class_type);
 }
 
-flatbuffers::Offset<Request_CreateCharacter> CreateRequest_CreateCharacter(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Request_CreateHero> CreateRequest_CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateHeroT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Reply_CreateCharacterSuccessT : public flatbuffers::NativeTable {
-  typedef Reply_CreateCharacterSuccess TableType;
-  std::unique_ptr<CharacterT> character;
-  Reply_CreateCharacterSuccessT() {
+struct Reply_CreateHeroSuccessT : public flatbuffers::NativeTable {
+  typedef Reply_CreateHeroSuccess TableType;
+  std::unique_ptr<HeroT> hero;
+  Reply_CreateHeroSuccessT() {
   }
 };
 
-struct Reply_CreateCharacterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_CreateCharacterSuccessT NativeTableType;
+struct Reply_CreateHeroSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_CreateHeroSuccessT NativeTableType;
   enum {
-    VT_CHARACTER = 4
+    VT_HERO = 4
   };
-  const Character *character() const {
-    return GetPointer<const Character *>(VT_CHARACTER);
+  const Hero *hero() const {
+    return GetPointer<const Hero *>(VT_HERO);
   }
-  Character *mutable_character() {
-    return GetPointer<Character *>(VT_CHARACTER);
+  Hero *mutable_hero() {
+    return GetPointer<Hero *>(VT_HERO);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_CHARACTER) &&
-           verifier.VerifyTable(character()) &&
+           VerifyOffset(verifier, VT_HERO) &&
+           verifier.VerifyTable(hero()) &&
            verifier.EndTable();
   }
-  Reply_CreateCharacterSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_CreateCharacterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_CreateCharacterSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_CreateHeroSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_CreateHeroSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_CreateHeroSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_CreateCharacterSuccessBuilder {
+struct Reply_CreateHeroSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_character(flatbuffers::Offset<Character> character) {
-    fbb_.AddOffset(Reply_CreateCharacterSuccess::VT_CHARACTER, character);
+  void add_hero(flatbuffers::Offset<Hero> hero) {
+    fbb_.AddOffset(Reply_CreateHeroSuccess::VT_HERO, hero);
   }
-  Reply_CreateCharacterSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_CreateHeroSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_CreateCharacterSuccessBuilder &operator=(const Reply_CreateCharacterSuccessBuilder &);
-  flatbuffers::Offset<Reply_CreateCharacterSuccess> Finish() {
+  Reply_CreateHeroSuccessBuilder &operator=(const Reply_CreateHeroSuccessBuilder &);
+  flatbuffers::Offset<Reply_CreateHeroSuccess> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_CreateCharacterSuccess>(end);
+    auto o = flatbuffers::Offset<Reply_CreateHeroSuccess>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_CreateCharacterSuccess> CreateReply_CreateCharacterSuccess(
+inline flatbuffers::Offset<Reply_CreateHeroSuccess> CreateReply_CreateHeroSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<Character> character = 0) {
-  Reply_CreateCharacterSuccessBuilder builder_(_fbb);
-  builder_.add_character(character);
+    flatbuffers::Offset<Hero> hero = 0) {
+  Reply_CreateHeroSuccessBuilder builder_(_fbb);
+  builder_.add_hero(hero);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Reply_CreateCharacterSuccess> CreateReply_CreateCharacterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_CreateHeroSuccess> CreateReply_CreateHeroSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Reply_CreateCharacterFailedT : public flatbuffers::NativeTable {
-  typedef Reply_CreateCharacterFailed TableType;
+struct Reply_CreateHeroFailedT : public flatbuffers::NativeTable {
+  typedef Reply_CreateHeroFailed TableType;
   ProtocolCS::ErrorCode error_code;
-  Reply_CreateCharacterFailedT()
+  Reply_CreateHeroFailedT()
       : error_code(ProtocolCS::ErrorCode::OK) {
   }
 };
 
-struct Reply_CreateCharacterFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_CreateCharacterFailedT NativeTableType;
+struct Reply_CreateHeroFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_CreateHeroFailedT NativeTableType;
   enum {
     VT_ERROR_CODE = 4
   };
@@ -1421,163 +1502,163 @@ struct Reply_CreateCharacterFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers
            VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
            verifier.EndTable();
   }
-  Reply_CreateCharacterFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_CreateCharacterFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_CreateCharacterFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_CreateHeroFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_CreateHeroFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_CreateHeroFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_CreateCharacterFailedBuilder {
+struct Reply_CreateHeroFailedBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_error_code(ProtocolCS::ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(Reply_CreateCharacterFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+    fbb_.AddElement<int32_t>(Reply_CreateHeroFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
   }
-  Reply_CreateCharacterFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_CreateHeroFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_CreateCharacterFailedBuilder &operator=(const Reply_CreateCharacterFailedBuilder &);
-  flatbuffers::Offset<Reply_CreateCharacterFailed> Finish() {
+  Reply_CreateHeroFailedBuilder &operator=(const Reply_CreateHeroFailedBuilder &);
+  flatbuffers::Offset<Reply_CreateHeroFailed> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_CreateCharacterFailed>(end);
+    auto o = flatbuffers::Offset<Reply_CreateHeroFailed>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_CreateCharacterFailed> CreateReply_CreateCharacterFailed(
+inline flatbuffers::Offset<Reply_CreateHeroFailed> CreateReply_CreateHeroFailed(
     flatbuffers::FlatBufferBuilder &_fbb,
     ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
-  Reply_CreateCharacterFailedBuilder builder_(_fbb);
+  Reply_CreateHeroFailedBuilder builder_(_fbb);
   builder_.add_error_code(error_code);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Reply_CreateCharacterFailed> CreateReply_CreateCharacterFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_CreateHeroFailed> CreateReply_CreateHeroFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_DeleteCharacterT : public flatbuffers::NativeTable {
-  typedef Request_DeleteCharacter TableType;
-  int32_t character_uid;
-  Request_DeleteCharacterT()
-      : character_uid(0) {
+struct Request_DeleteHeroT : public flatbuffers::NativeTable {
+  typedef Request_DeleteHero TableType;
+  int32_t hero_uid;
+  Request_DeleteHeroT()
+      : hero_uid(0) {
   }
 };
 
-struct Request_DeleteCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_DeleteCharacterT NativeTableType;
+struct Request_DeleteHero FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_DeleteHeroT NativeTableType;
   enum {
-    VT_CHARACTER_UID = 4
+    VT_HERO_UID = 4
   };
-  int32_t character_uid() const {
-    return GetField<int32_t>(VT_CHARACTER_UID, 0);
+  int32_t hero_uid() const {
+    return GetField<int32_t>(VT_HERO_UID, 0);
   }
-  bool mutate_character_uid(int32_t _character_uid) {
-    return SetField<int32_t>(VT_CHARACTER_UID, _character_uid, 0);
+  bool mutate_hero_uid(int32_t _hero_uid) {
+    return SetField<int32_t>(VT_HERO_UID, _hero_uid, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_CHARACTER_UID) &&
+           VerifyField<int32_t>(verifier, VT_HERO_UID) &&
            verifier.EndTable();
   }
-  Request_DeleteCharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_DeleteCharacterT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_DeleteCharacter> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Request_DeleteHeroT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_DeleteHeroT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_DeleteHero> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteHeroT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Request_DeleteCharacterBuilder {
+struct Request_DeleteHeroBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_character_uid(int32_t character_uid) {
-    fbb_.AddElement<int32_t>(Request_DeleteCharacter::VT_CHARACTER_UID, character_uid, 0);
+  void add_hero_uid(int32_t hero_uid) {
+    fbb_.AddElement<int32_t>(Request_DeleteHero::VT_HERO_UID, hero_uid, 0);
   }
-  Request_DeleteCharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Request_DeleteHeroBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Request_DeleteCharacterBuilder &operator=(const Request_DeleteCharacterBuilder &);
-  flatbuffers::Offset<Request_DeleteCharacter> Finish() {
+  Request_DeleteHeroBuilder &operator=(const Request_DeleteHeroBuilder &);
+  flatbuffers::Offset<Request_DeleteHero> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Request_DeleteCharacter>(end);
+    auto o = flatbuffers::Offset<Request_DeleteHero>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Request_DeleteCharacter> CreateRequest_DeleteCharacter(
+inline flatbuffers::Offset<Request_DeleteHero> CreateRequest_DeleteHero(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t character_uid = 0) {
-  Request_DeleteCharacterBuilder builder_(_fbb);
-  builder_.add_character_uid(character_uid);
+    int32_t hero_uid = 0) {
+  Request_DeleteHeroBuilder builder_(_fbb);
+  builder_.add_hero_uid(hero_uid);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Request_DeleteCharacter> CreateRequest_DeleteCharacter(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Request_DeleteHero> CreateRequest_DeleteHero(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteHeroT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Reply_DeleteCharacterSuccessT : public flatbuffers::NativeTable {
-  typedef Reply_DeleteCharacterSuccess TableType;
-  int32_t character_uid;
-  Reply_DeleteCharacterSuccessT()
-      : character_uid(0) {
+struct Reply_DeleteHeroSuccessT : public flatbuffers::NativeTable {
+  typedef Reply_DeleteHeroSuccess TableType;
+  int32_t hero_uid;
+  Reply_DeleteHeroSuccessT()
+      : hero_uid(0) {
   }
 };
 
-struct Reply_DeleteCharacterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_DeleteCharacterSuccessT NativeTableType;
+struct Reply_DeleteHeroSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_DeleteHeroSuccessT NativeTableType;
   enum {
-    VT_CHARACTER_UID = 4
+    VT_HERO_UID = 4
   };
-  int32_t character_uid() const {
-    return GetField<int32_t>(VT_CHARACTER_UID, 0);
+  int32_t hero_uid() const {
+    return GetField<int32_t>(VT_HERO_UID, 0);
   }
-  bool mutate_character_uid(int32_t _character_uid) {
-    return SetField<int32_t>(VT_CHARACTER_UID, _character_uid, 0);
+  bool mutate_hero_uid(int32_t _hero_uid) {
+    return SetField<int32_t>(VT_HERO_UID, _hero_uid, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_CHARACTER_UID) &&
+           VerifyField<int32_t>(verifier, VT_HERO_UID) &&
            verifier.EndTable();
   }
-  Reply_DeleteCharacterSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_DeleteCharacterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_DeleteCharacterSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_DeleteHeroSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_DeleteHeroSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_DeleteHeroSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_DeleteCharacterSuccessBuilder {
+struct Reply_DeleteHeroSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_character_uid(int32_t character_uid) {
-    fbb_.AddElement<int32_t>(Reply_DeleteCharacterSuccess::VT_CHARACTER_UID, character_uid, 0);
+  void add_hero_uid(int32_t hero_uid) {
+    fbb_.AddElement<int32_t>(Reply_DeleteHeroSuccess::VT_HERO_UID, hero_uid, 0);
   }
-  Reply_DeleteCharacterSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_DeleteHeroSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_DeleteCharacterSuccessBuilder &operator=(const Reply_DeleteCharacterSuccessBuilder &);
-  flatbuffers::Offset<Reply_DeleteCharacterSuccess> Finish() {
+  Reply_DeleteHeroSuccessBuilder &operator=(const Reply_DeleteHeroSuccessBuilder &);
+  flatbuffers::Offset<Reply_DeleteHeroSuccess> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_DeleteCharacterSuccess>(end);
+    auto o = flatbuffers::Offset<Reply_DeleteHeroSuccess>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_DeleteCharacterSuccess> CreateReply_DeleteCharacterSuccess(
+inline flatbuffers::Offset<Reply_DeleteHeroSuccess> CreateReply_DeleteHeroSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t character_uid = 0) {
-  Reply_DeleteCharacterSuccessBuilder builder_(_fbb);
-  builder_.add_character_uid(character_uid);
+    int32_t hero_uid = 0) {
+  Reply_DeleteHeroSuccessBuilder builder_(_fbb);
+  builder_.add_hero_uid(hero_uid);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Reply_DeleteCharacterSuccess> CreateReply_DeleteCharacterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_DeleteHeroSuccess> CreateReply_DeleteHeroSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Reply_DeleteCharacterFailedT : public flatbuffers::NativeTable {
-  typedef Reply_DeleteCharacterFailed TableType;
+struct Reply_DeleteHeroFailedT : public flatbuffers::NativeTable {
+  typedef Reply_DeleteHeroFailed TableType;
   ProtocolCS::ErrorCode error_code;
-  Reply_DeleteCharacterFailedT()
+  Reply_DeleteHeroFailedT()
       : error_code(ProtocolCS::ErrorCode::OK) {
   }
 };
 
-struct Reply_DeleteCharacterFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_DeleteCharacterFailedT NativeTableType;
+struct Reply_DeleteHeroFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_DeleteHeroFailedT NativeTableType;
   enum {
     VT_ERROR_CODE = 4
   };
@@ -1592,46 +1673,47 @@ struct Reply_DeleteCharacterFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers
            VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
            verifier.EndTable();
   }
-  Reply_DeleteCharacterFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_DeleteCharacterFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_DeleteCharacterFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Reply_DeleteHeroFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_DeleteHeroFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_DeleteHeroFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Reply_DeleteCharacterFailedBuilder {
+struct Reply_DeleteHeroFailedBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_error_code(ProtocolCS::ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(Reply_DeleteCharacterFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+    fbb_.AddElement<int32_t>(Reply_DeleteHeroFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
   }
-  Reply_DeleteCharacterFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Reply_DeleteHeroFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Reply_DeleteCharacterFailedBuilder &operator=(const Reply_DeleteCharacterFailedBuilder &);
-  flatbuffers::Offset<Reply_DeleteCharacterFailed> Finish() {
+  Reply_DeleteHeroFailedBuilder &operator=(const Reply_DeleteHeroFailedBuilder &);
+  flatbuffers::Offset<Reply_DeleteHeroFailed> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_DeleteCharacterFailed>(end);
+    auto o = flatbuffers::Offset<Reply_DeleteHeroFailed>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Reply_DeleteCharacterFailed> CreateReply_DeleteCharacterFailed(
+inline flatbuffers::Offset<Reply_DeleteHeroFailed> CreateReply_DeleteHeroFailed(
     flatbuffers::FlatBufferBuilder &_fbb,
     ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
-  Reply_DeleteCharacterFailedBuilder builder_(_fbb);
+  Reply_DeleteHeroFailedBuilder builder_(_fbb);
   builder_.add_error_code(error_code);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Reply_DeleteCharacterFailed> CreateReply_DeleteCharacterFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Reply_DeleteHeroFailed> CreateReply_DeleteHeroFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 }  // namespace Login
 
 namespace World {
 
-struct PlayerCharacterT : public flatbuffers::NativeTable {
-  typedef PlayerCharacter TableType;
+struct HeroT : public flatbuffers::NativeTable {
+  typedef Hero TableType;
   std::string entity_id;
+  int32_t uid;
   std::string name;
   ProtocolCS::ClassType class_type;
   int32_t exp;
@@ -1645,8 +1727,9 @@ struct PlayerCharacterT : public flatbuffers::NativeTable {
   int32_t map_id;
   std::unique_ptr<ProtocolCS::Vec3> pos;
   float rotation;
-  PlayerCharacterT()
-      : class_type(ProtocolCS::ClassType::NONE),
+  HeroT()
+      : uid(0),
+        class_type(ProtocolCS::ClassType::NONE),
         exp(0),
         level(0),
         max_hp(0),
@@ -1660,29 +1743,36 @@ struct PlayerCharacterT : public flatbuffers::NativeTable {
   }
 };
 
-struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef PlayerCharacterT NativeTableType;
+struct Hero FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef HeroT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
-    VT_NAME = 6,
-    VT_CLASS_TYPE = 8,
-    VT_EXP = 10,
-    VT_LEVEL = 12,
-    VT_MAX_HP = 14,
-    VT_HP = 16,
-    VT_MAX_MP = 18,
-    VT_MP = 20,
-    VT_ATT = 22,
-    VT_DEF = 24,
-    VT_MAP_ID = 26,
-    VT_POS = 28,
-    VT_ROTATION = 30
+    VT_UID = 6,
+    VT_NAME = 8,
+    VT_CLASS_TYPE = 10,
+    VT_EXP = 12,
+    VT_LEVEL = 14,
+    VT_MAX_HP = 16,
+    VT_HP = 18,
+    VT_MAX_MP = 20,
+    VT_MP = 22,
+    VT_ATT = 24,
+    VT_DEF = 26,
+    VT_MAP_ID = 28,
+    VT_POS = 30,
+    VT_ROTATION = 32
   };
   const flatbuffers::String *entity_id() const {
     return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
   }
   flatbuffers::String *mutable_entity_id() {
     return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  int32_t uid() const {
+    return GetField<int32_t>(VT_UID, 0);
+  }
+  bool mutate_uid(int32_t _uid) {
+    return SetField<int32_t>(VT_UID, _uid, 0);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -1766,6 +1856,7 @@ struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ENTITY_ID) &&
            verifier.Verify(entity_id()) &&
+           VerifyField<int32_t>(verifier, VT_UID) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
            VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
@@ -1782,71 +1873,75 @@ struct PlayerCharacter FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
   }
-  PlayerCharacterT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(PlayerCharacterT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<PlayerCharacter> Pack(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  HeroT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(HeroT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Hero> Pack(flatbuffers::FlatBufferBuilder &_fbb, const HeroT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct PlayerCharacterBuilder {
+struct HeroBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(PlayerCharacter::VT_ENTITY_ID, entity_id);
+    fbb_.AddOffset(Hero::VT_ENTITY_ID, entity_id);
+  }
+  void add_uid(int32_t uid) {
+    fbb_.AddElement<int32_t>(Hero::VT_UID, uid, 0);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(PlayerCharacter::VT_NAME, name);
+    fbb_.AddOffset(Hero::VT_NAME, name);
   }
   void add_class_type(ProtocolCS::ClassType class_type) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
+    fbb_.AddElement<int32_t>(Hero::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
   }
   void add_exp(int32_t exp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_EXP, exp, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_EXP, exp, 0);
   }
   void add_level(int32_t level) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_LEVEL, level, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_LEVEL, level, 0);
   }
   void add_max_hp(int32_t max_hp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_MAX_HP, max_hp, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_MAX_HP, max_hp, 0);
   }
   void add_hp(int32_t hp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_HP, hp, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_HP, hp, 0);
   }
   void add_max_mp(int32_t max_mp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_MAX_MP, max_mp, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_MAX_MP, max_mp, 0);
   }
   void add_mp(int32_t mp) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_MP, mp, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_MP, mp, 0);
   }
   void add_att(int32_t att) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_ATT, att, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_ATT, att, 0);
   }
   void add_def(int32_t def) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_DEF, def, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_DEF, def, 0);
   }
   void add_map_id(int32_t map_id) {
-    fbb_.AddElement<int32_t>(PlayerCharacter::VT_MAP_ID, map_id, 0);
+    fbb_.AddElement<int32_t>(Hero::VT_MAP_ID, map_id, 0);
   }
   void add_pos(const ProtocolCS::Vec3 *pos) {
-    fbb_.AddStruct(PlayerCharacter::VT_POS, pos);
+    fbb_.AddStruct(Hero::VT_POS, pos);
   }
   void add_rotation(float rotation) {
-    fbb_.AddElement<float>(PlayerCharacter::VT_ROTATION, rotation, 0.0f);
+    fbb_.AddElement<float>(Hero::VT_ROTATION, rotation, 0.0f);
   }
-  PlayerCharacterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  HeroBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  PlayerCharacterBuilder &operator=(const PlayerCharacterBuilder &);
-  flatbuffers::Offset<PlayerCharacter> Finish() {
-    const auto end = fbb_.EndTable(start_, 14);
-    auto o = flatbuffers::Offset<PlayerCharacter>(end);
+  HeroBuilder &operator=(const HeroBuilder &);
+  flatbuffers::Offset<Hero> Finish() {
+    const auto end = fbb_.EndTable(start_, 15);
+    auto o = flatbuffers::Offset<Hero>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
+inline flatbuffers::Offset<Hero> CreateHero(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
+    int32_t uid = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE,
     int32_t exp = 0,
@@ -1860,7 +1955,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
     int32_t map_id = 0,
     const ProtocolCS::Vec3 *pos = 0,
     float rotation = 0.0f) {
-  PlayerCharacterBuilder builder_(_fbb);
+  HeroBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
   builder_.add_pos(pos);
   builder_.add_map_id(map_id);
@@ -1874,13 +1969,15 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(
   builder_.add_exp(exp);
   builder_.add_class_type(class_type);
   builder_.add_name(name);
+  builder_.add_uid(uid);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
+inline flatbuffers::Offset<Hero> CreateHeroDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
+    int32_t uid = 0,
     const char *name = nullptr,
     ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE,
     int32_t exp = 0,
@@ -1894,9 +1991,10 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
     int32_t map_id = 0,
     const ProtocolCS::Vec3 *pos = 0,
     float rotation = 0.0f) {
-  return ProtocolCS::World::CreatePlayerCharacter(
+  return ProtocolCS::World::CreateHero(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
+      uid,
       name ? _fbb.CreateString(name) : 0,
       class_type,
       exp,
@@ -1912,224 +2010,7 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacterDirect(
       rotation);
 }
 
-flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct RemotePCT : public flatbuffers::NativeTable {
-  typedef RemotePC TableType;
-  std::string entity_id;
-  std::string name;
-  ProtocolCS::ClassType class_type;
-  int32_t level;
-  int32_t max_hp;
-  int32_t hp;
-  int32_t max_mp;
-  int32_t mp;
-  std::unique_ptr<ProtocolCS::Vec3> pos;
-  float rotation;
-  RemotePCT()
-      : class_type(ProtocolCS::ClassType::NONE),
-        level(0),
-        max_hp(0),
-        hp(0),
-        max_mp(0),
-        mp(0),
-        rotation(0.0f) {
-  }
-};
-
-struct RemotePC FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef RemotePCT NativeTableType;
-  enum {
-    VT_ENTITY_ID = 4,
-    VT_NAME = 6,
-    VT_CLASS_TYPE = 8,
-    VT_LEVEL = 10,
-    VT_MAX_HP = 12,
-    VT_HP = 14,
-    VT_MAX_MP = 16,
-    VT_MP = 18,
-    VT_POS = 20,
-    VT_ROTATION = 22
-  };
-  const flatbuffers::String *entity_id() const {
-    return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
-  }
-  flatbuffers::String *mutable_entity_id() {
-    return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
-  }
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
-  }
-  flatbuffers::String *mutable_name() {
-    return GetPointer<flatbuffers::String *>(VT_NAME);
-  }
-  ProtocolCS::ClassType class_type() const {
-    return static_cast<ProtocolCS::ClassType>(GetField<int32_t>(VT_CLASS_TYPE, 0));
-  }
-  bool mutate_class_type(ProtocolCS::ClassType _class_type) {
-    return SetField<int32_t>(VT_CLASS_TYPE, static_cast<int32_t>(_class_type), 0);
-  }
-  int32_t level() const {
-    return GetField<int32_t>(VT_LEVEL, 0);
-  }
-  bool mutate_level(int32_t _level) {
-    return SetField<int32_t>(VT_LEVEL, _level, 0);
-  }
-  int32_t max_hp() const {
-    return GetField<int32_t>(VT_MAX_HP, 0);
-  }
-  bool mutate_max_hp(int32_t _max_hp) {
-    return SetField<int32_t>(VT_MAX_HP, _max_hp, 0);
-  }
-  int32_t hp() const {
-    return GetField<int32_t>(VT_HP, 0);
-  }
-  bool mutate_hp(int32_t _hp) {
-    return SetField<int32_t>(VT_HP, _hp, 0);
-  }
-  int32_t max_mp() const {
-    return GetField<int32_t>(VT_MAX_MP, 0);
-  }
-  bool mutate_max_mp(int32_t _max_mp) {
-    return SetField<int32_t>(VT_MAX_MP, _max_mp, 0);
-  }
-  int32_t mp() const {
-    return GetField<int32_t>(VT_MP, 0);
-  }
-  bool mutate_mp(int32_t _mp) {
-    return SetField<int32_t>(VT_MP, _mp, 0);
-  }
-  const ProtocolCS::Vec3 *pos() const {
-    return GetStruct<const ProtocolCS::Vec3 *>(VT_POS);
-  }
-  ProtocolCS::Vec3 *mutable_pos() {
-    return GetStruct<ProtocolCS::Vec3 *>(VT_POS);
-  }
-  float rotation() const {
-    return GetField<float>(VT_ROTATION, 0.0f);
-  }
-  bool mutate_rotation(float _rotation) {
-    return SetField<float>(VT_ROTATION, _rotation, 0.0f);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_ENTITY_ID) &&
-           verifier.Verify(entity_id()) &&
-           VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
-           VerifyField<int32_t>(verifier, VT_CLASS_TYPE) &&
-           VerifyField<int32_t>(verifier, VT_LEVEL) &&
-           VerifyField<int32_t>(verifier, VT_MAX_HP) &&
-           VerifyField<int32_t>(verifier, VT_HP) &&
-           VerifyField<int32_t>(verifier, VT_MAX_MP) &&
-           VerifyField<int32_t>(verifier, VT_MP) &&
-           VerifyField<ProtocolCS::Vec3>(verifier, VT_POS) &&
-           VerifyField<float>(verifier, VT_ROTATION) &&
-           verifier.EndTable();
-  }
-  RemotePCT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(RemotePCT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<RemotePC> Pack(flatbuffers::FlatBufferBuilder &_fbb, const RemotePCT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct RemotePCBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(RemotePC::VT_ENTITY_ID, entity_id);
-  }
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(RemotePC::VT_NAME, name);
-  }
-  void add_class_type(ProtocolCS::ClassType class_type) {
-    fbb_.AddElement<int32_t>(RemotePC::VT_CLASS_TYPE, static_cast<int32_t>(class_type), 0);
-  }
-  void add_level(int32_t level) {
-    fbb_.AddElement<int32_t>(RemotePC::VT_LEVEL, level, 0);
-  }
-  void add_max_hp(int32_t max_hp) {
-    fbb_.AddElement<int32_t>(RemotePC::VT_MAX_HP, max_hp, 0);
-  }
-  void add_hp(int32_t hp) {
-    fbb_.AddElement<int32_t>(RemotePC::VT_HP, hp, 0);
-  }
-  void add_max_mp(int32_t max_mp) {
-    fbb_.AddElement<int32_t>(RemotePC::VT_MAX_MP, max_mp, 0);
-  }
-  void add_mp(int32_t mp) {
-    fbb_.AddElement<int32_t>(RemotePC::VT_MP, mp, 0);
-  }
-  void add_pos(const ProtocolCS::Vec3 *pos) {
-    fbb_.AddStruct(RemotePC::VT_POS, pos);
-  }
-  void add_rotation(float rotation) {
-    fbb_.AddElement<float>(RemotePC::VT_ROTATION, rotation, 0.0f);
-  }
-  RemotePCBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  RemotePCBuilder &operator=(const RemotePCBuilder &);
-  flatbuffers::Offset<RemotePC> Finish() {
-    const auto end = fbb_.EndTable(start_, 10);
-    auto o = flatbuffers::Offset<RemotePC>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<RemotePC> CreateRemotePC(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> entity_id = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE,
-    int32_t level = 0,
-    int32_t max_hp = 0,
-    int32_t hp = 0,
-    int32_t max_mp = 0,
-    int32_t mp = 0,
-    const ProtocolCS::Vec3 *pos = 0,
-    float rotation = 0.0f) {
-  RemotePCBuilder builder_(_fbb);
-  builder_.add_rotation(rotation);
-  builder_.add_pos(pos);
-  builder_.add_mp(mp);
-  builder_.add_max_mp(max_mp);
-  builder_.add_hp(hp);
-  builder_.add_max_hp(max_hp);
-  builder_.add_level(level);
-  builder_.add_class_type(class_type);
-  builder_.add_name(name);
-  builder_.add_entity_id(entity_id);
-  return builder_.Finish();
-}
-
-inline flatbuffers::Offset<RemotePC> CreateRemotePCDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const char *entity_id = nullptr,
-    const char *name = nullptr,
-    ProtocolCS::ClassType class_type = ProtocolCS::ClassType::NONE,
-    int32_t level = 0,
-    int32_t max_hp = 0,
-    int32_t hp = 0,
-    int32_t max_mp = 0,
-    int32_t mp = 0,
-    const ProtocolCS::Vec3 *pos = 0,
-    float rotation = 0.0f) {
-  return ProtocolCS::World::CreateRemotePC(
-      _fbb,
-      entity_id ? _fbb.CreateString(entity_id) : 0,
-      name ? _fbb.CreateString(name) : 0,
-      class_type,
-      level,
-      max_hp,
-      hp,
-      max_mp,
-      mp,
-      pos,
-      rotation);
-}
-
-flatbuffers::Offset<RemotePC> CreateRemotePC(flatbuffers::FlatBufferBuilder &_fbb, const RemotePCT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Hero> CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const HeroT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct MonsterT : public flatbuffers::NativeTable {
   typedef Monster TableType;
@@ -2348,19 +2229,104 @@ inline flatbuffers::Offset<Monster> CreateMonsterDirect(
 
 flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder &_fbb, const MonsterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct MoveDataT : public flatbuffers::NativeTable {
-  typedef MoveData TableType;
+struct ActorT : public flatbuffers::NativeTable {
+  typedef Actor TableType;
+  ActorTypeUnion entity;
+  ActorT() {
+  }
+};
+
+struct Actor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ActorT NativeTableType;
+  enum {
+    VT_ENTITY_TYPE = 4,
+    VT_ENTITY = 6
+  };
+  ActorType entity_type() const {
+    return static_cast<ActorType>(GetField<uint8_t>(VT_ENTITY_TYPE, 0));
+  }
+  bool mutate_entity_type(ActorType _entity_type) {
+    return SetField<uint8_t>(VT_ENTITY_TYPE, static_cast<uint8_t>(_entity_type), 0);
+  }
+  const void *entity() const {
+    return GetPointer<const void *>(VT_ENTITY);
+  }
+  template<typename T> const T *entity_as() const;
+  const Hero *entity_as_Hero() const {
+    return entity_type() == ActorType::Hero ? static_cast<const Hero *>(entity()) : nullptr;
+  }
+  const Monster *entity_as_Monster() const {
+    return entity_type() == ActorType::Monster ? static_cast<const Monster *>(entity()) : nullptr;
+  }
+  void *mutable_entity() {
+    return GetPointer<void *>(VT_ENTITY);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, VT_ENTITY_TYPE) &&
+           VerifyOffset(verifier, VT_ENTITY) &&
+           VerifyActorType(verifier, entity(), entity_type()) &&
+           verifier.EndTable();
+  }
+  ActorT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(ActorT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Actor> Pack(flatbuffers::FlatBufferBuilder &_fbb, const ActorT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+template<> inline const Hero *Actor::entity_as<Hero>() const {
+  return entity_as_Hero();
+}
+
+template<> inline const Monster *Actor::entity_as<Monster>() const {
+  return entity_as_Monster();
+}
+
+struct ActorBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_entity_type(ActorType entity_type) {
+    fbb_.AddElement<uint8_t>(Actor::VT_ENTITY_TYPE, static_cast<uint8_t>(entity_type), 0);
+  }
+  void add_entity(flatbuffers::Offset<void> entity) {
+    fbb_.AddOffset(Actor::VT_ENTITY, entity);
+  }
+  ActorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ActorBuilder &operator=(const ActorBuilder &);
+  flatbuffers::Offset<Actor> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<Actor>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Actor> CreateActor(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ActorType entity_type = ActorType::NONE,
+    flatbuffers::Offset<void> entity = 0) {
+  ActorBuilder builder_(_fbb);
+  builder_.add_entity(entity);
+  builder_.add_entity_type(entity_type);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Actor> CreateActor(flatbuffers::FlatBufferBuilder &_fbb, const ActorT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct MoveInfoT : public flatbuffers::NativeTable {
+  typedef MoveInfo TableType;
   std::string entity_id;
   std::unique_ptr<ProtocolCS::Vec3> position;
   float rotation;
   std::unique_ptr<ProtocolCS::Vec3> velocity;
-  MoveDataT()
+  MoveInfoT()
       : rotation(0.0f) {
   }
 };
 
-struct MoveData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef MoveDataT NativeTableType;
+struct MoveInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef MoveInfoT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
     VT_POSITION = 6,
@@ -2400,45 +2366,45 @@ struct MoveData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<ProtocolCS::Vec3>(verifier, VT_VELOCITY) &&
            verifier.EndTable();
   }
-  MoveDataT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(MoveDataT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<MoveData> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveDataT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  MoveInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(MoveInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<MoveInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct MoveDataBuilder {
+struct MoveInfoBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(MoveData::VT_ENTITY_ID, entity_id);
+    fbb_.AddOffset(MoveInfo::VT_ENTITY_ID, entity_id);
   }
   void add_position(const ProtocolCS::Vec3 *position) {
-    fbb_.AddStruct(MoveData::VT_POSITION, position);
+    fbb_.AddStruct(MoveInfo::VT_POSITION, position);
   }
   void add_rotation(float rotation) {
-    fbb_.AddElement<float>(MoveData::VT_ROTATION, rotation, 0.0f);
+    fbb_.AddElement<float>(MoveInfo::VT_ROTATION, rotation, 0.0f);
   }
   void add_velocity(const ProtocolCS::Vec3 *velocity) {
-    fbb_.AddStruct(MoveData::VT_VELOCITY, velocity);
+    fbb_.AddStruct(MoveInfo::VT_VELOCITY, velocity);
   }
-  MoveDataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  MoveInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  MoveDataBuilder &operator=(const MoveDataBuilder &);
-  flatbuffers::Offset<MoveData> Finish() {
+  MoveInfoBuilder &operator=(const MoveInfoBuilder &);
+  flatbuffers::Offset<MoveInfo> Finish() {
     const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<MoveData>(end);
+    auto o = flatbuffers::Offset<MoveInfo>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<MoveData> CreateMoveData(
+inline flatbuffers::Offset<MoveInfo> CreateMoveInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
     const ProtocolCS::Vec3 *position = 0,
     float rotation = 0.0f,
     const ProtocolCS::Vec3 *velocity = 0) {
-  MoveDataBuilder builder_(_fbb);
+  MoveInfoBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_rotation(rotation);
   builder_.add_position(position);
@@ -2446,13 +2412,13 @@ inline flatbuffers::Offset<MoveData> CreateMoveData(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<MoveData> CreateMoveDataDirect(
+inline flatbuffers::Offset<MoveInfo> CreateMoveInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
     const ProtocolCS::Vec3 *position = 0,
     float rotation = 0.0f,
     const ProtocolCS::Vec3 *velocity = 0) {
-  return ProtocolCS::World::CreateMoveData(
+  return ProtocolCS::World::CreateMoveInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
       position,
@@ -2460,28 +2426,37 @@ inline flatbuffers::Offset<MoveData> CreateMoveDataDirect(
       velocity);
 }
 
-flatbuffers::Offset<MoveData> CreateMoveData(flatbuffers::FlatBufferBuilder &_fbb, const MoveDataT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<MoveInfo> CreateMoveInfo(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct AttackDataT : public flatbuffers::NativeTable {
-  typedef AttackData TableType;
+struct SkillInfoT : public flatbuffers::NativeTable {
+  typedef SkillInfo TableType;
   std::string entity_id;
+  int32_t skill;
   float rotation;
-  AttackDataT()
-      : rotation(0.0f) {
+  SkillInfoT()
+      : skill(0),
+        rotation(0.0f) {
   }
 };
 
-struct AttackData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef AttackDataT NativeTableType;
+struct SkillInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef SkillInfoT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
-    VT_ROTATION = 6
+    VT_SKILL = 6,
+    VT_ROTATION = 8
   };
   const flatbuffers::String *entity_id() const {
     return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
   }
   flatbuffers::String *mutable_entity_id() {
     return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  int32_t skill() const {
+    return GetField<int32_t>(VT_SKILL, 0);
+  }
+  bool mutate_skill(int32_t _skill) {
+    return SetField<int32_t>(VT_SKILL, _skill, 0);
   }
   float rotation() const {
     return GetField<float>(VT_ROTATION, 0.0f);
@@ -2493,68 +2468,76 @@ struct AttackData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ENTITY_ID) &&
            verifier.Verify(entity_id()) &&
+           VerifyField<int32_t>(verifier, VT_SKILL) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
   }
-  AttackDataT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(AttackDataT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<AttackData> Pack(flatbuffers::FlatBufferBuilder &_fbb, const AttackDataT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  SkillInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(SkillInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<SkillInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct AttackDataBuilder {
+struct SkillInfoBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(AttackData::VT_ENTITY_ID, entity_id);
+    fbb_.AddOffset(SkillInfo::VT_ENTITY_ID, entity_id);
+  }
+  void add_skill(int32_t skill) {
+    fbb_.AddElement<int32_t>(SkillInfo::VT_SKILL, skill, 0);
   }
   void add_rotation(float rotation) {
-    fbb_.AddElement<float>(AttackData::VT_ROTATION, rotation, 0.0f);
+    fbb_.AddElement<float>(SkillInfo::VT_ROTATION, rotation, 0.0f);
   }
-  AttackDataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  SkillInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  AttackDataBuilder &operator=(const AttackDataBuilder &);
-  flatbuffers::Offset<AttackData> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<AttackData>(end);
+  SkillInfoBuilder &operator=(const SkillInfoBuilder &);
+  flatbuffers::Offset<SkillInfo> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<SkillInfo>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<AttackData> CreateAttackData(
+inline flatbuffers::Offset<SkillInfo> CreateSkillInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
+    int32_t skill = 0,
     float rotation = 0.0f) {
-  AttackDataBuilder builder_(_fbb);
+  SkillInfoBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
+  builder_.add_skill(skill);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<AttackData> CreateAttackDataDirect(
+inline flatbuffers::Offset<SkillInfo> CreateSkillInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
+    int32_t skill = 0,
     float rotation = 0.0f) {
-  return ProtocolCS::World::CreateAttackData(
+  return ProtocolCS::World::CreateSkillInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
+      skill,
       rotation);
 }
 
-flatbuffers::Offset<AttackData> CreateAttackData(flatbuffers::FlatBufferBuilder &_fbb, const AttackDataT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<SkillInfo> CreateSkillInfo(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct DamageDataT : public flatbuffers::NativeTable {
-  typedef DamageData TableType;
+struct DamageInfoT : public flatbuffers::NativeTable {
+  typedef DamageInfo TableType;
   std::string entity_id;
   int32_t damage;
-  DamageDataT()
+  DamageInfoT()
       : damage(0) {
   }
 };
 
-struct DamageData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef DamageDataT NativeTableType;
+struct DamageInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef DamageInfoT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
     VT_DAMAGE = 6
@@ -2578,60 +2561,60 @@ struct DamageData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_DAMAGE) &&
            verifier.EndTable();
   }
-  DamageDataT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(DamageDataT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<DamageData> Pack(flatbuffers::FlatBufferBuilder &_fbb, const DamageDataT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  DamageInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(DamageInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<DamageInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const DamageInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct DamageDataBuilder {
+struct DamageInfoBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(DamageData::VT_ENTITY_ID, entity_id);
+    fbb_.AddOffset(DamageInfo::VT_ENTITY_ID, entity_id);
   }
   void add_damage(int32_t damage) {
-    fbb_.AddElement<int32_t>(DamageData::VT_DAMAGE, damage, 0);
+    fbb_.AddElement<int32_t>(DamageInfo::VT_DAMAGE, damage, 0);
   }
-  DamageDataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  DamageInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  DamageDataBuilder &operator=(const DamageDataBuilder &);
-  flatbuffers::Offset<DamageData> Finish() {
+  DamageInfoBuilder &operator=(const DamageInfoBuilder &);
+  flatbuffers::Offset<DamageInfo> Finish() {
     const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<DamageData>(end);
+    auto o = flatbuffers::Offset<DamageInfo>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<DamageData> CreateDamageData(
+inline flatbuffers::Offset<DamageInfo> CreateDamageInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
     int32_t damage = 0) {
-  DamageDataBuilder builder_(_fbb);
+  DamageInfoBuilder builder_(_fbb);
   builder_.add_damage(damage);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<DamageData> CreateDamageDataDirect(
+inline flatbuffers::Offset<DamageInfo> CreateDamageInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
     int32_t damage = 0) {
-  return ProtocolCS::World::CreateDamageData(
+  return ProtocolCS::World::CreateDamageInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
       damage);
 }
 
-flatbuffers::Offset<DamageData> CreateDamageData(flatbuffers::FlatBufferBuilder &_fbb, const DamageDataT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<DamageInfo> CreateDamageInfo(flatbuffers::FlatBufferBuilder &_fbb, const DamageInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Request_LoginT : public flatbuffers::NativeTable {
   typedef Request_Login TableType;
   std::string credential;
-  int32_t character_uid;
+  int32_t hero_uid;
   Request_LoginT()
-      : character_uid(0) {
+      : hero_uid(0) {
   }
 };
 
@@ -2639,7 +2622,7 @@ struct Request_Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Request_LoginT NativeTableType;
   enum {
     VT_CREDENTIAL = 4,
-    VT_CHARACTER_UID = 6
+    VT_HERO_UID = 6
   };
   const flatbuffers::String *credential() const {
     return GetPointer<const flatbuffers::String *>(VT_CREDENTIAL);
@@ -2647,17 +2630,17 @@ struct Request_Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   flatbuffers::String *mutable_credential() {
     return GetPointer<flatbuffers::String *>(VT_CREDENTIAL);
   }
-  int32_t character_uid() const {
-    return GetField<int32_t>(VT_CHARACTER_UID, 0);
+  int32_t hero_uid() const {
+    return GetField<int32_t>(VT_HERO_UID, 0);
   }
-  bool mutate_character_uid(int32_t _character_uid) {
-    return SetField<int32_t>(VT_CHARACTER_UID, _character_uid, 0);
+  bool mutate_hero_uid(int32_t _hero_uid) {
+    return SetField<int32_t>(VT_HERO_UID, _hero_uid, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_CREDENTIAL) &&
            verifier.Verify(credential()) &&
-           VerifyField<int32_t>(verifier, VT_CHARACTER_UID) &&
+           VerifyField<int32_t>(verifier, VT_HERO_UID) &&
            verifier.EndTable();
   }
   Request_LoginT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2671,8 +2654,8 @@ struct Request_LoginBuilder {
   void add_credential(flatbuffers::Offset<flatbuffers::String> credential) {
     fbb_.AddOffset(Request_Login::VT_CREDENTIAL, credential);
   }
-  void add_character_uid(int32_t character_uid) {
-    fbb_.AddElement<int32_t>(Request_Login::VT_CHARACTER_UID, character_uid, 0);
+  void add_hero_uid(int32_t hero_uid) {
+    fbb_.AddElement<int32_t>(Request_Login::VT_HERO_UID, hero_uid, 0);
   }
   Request_LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2689,9 +2672,9 @@ struct Request_LoginBuilder {
 inline flatbuffers::Offset<Request_Login> CreateRequest_Login(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> credential = 0,
-    int32_t character_uid = 0) {
+    int32_t hero_uid = 0) {
   Request_LoginBuilder builder_(_fbb);
-  builder_.add_character_uid(character_uid);
+  builder_.add_hero_uid(hero_uid);
   builder_.add_credential(credential);
   return builder_.Finish();
 }
@@ -2699,18 +2682,18 @@ inline flatbuffers::Offset<Request_Login> CreateRequest_Login(
 inline flatbuffers::Offset<Request_Login> CreateRequest_LoginDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *credential = nullptr,
-    int32_t character_uid = 0) {
+    int32_t hero_uid = 0) {
   return ProtocolCS::World::CreateRequest_Login(
       _fbb,
       credential ? _fbb.CreateString(credential) : 0,
-      character_uid);
+      hero_uid);
 }
 
 flatbuffers::Offset<Request_Login> CreateRequest_Login(flatbuffers::FlatBufferBuilder &_fbb, const Request_LoginT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Reply_LoginSuccessT : public flatbuffers::NativeTable {
   typedef Reply_LoginSuccess TableType;
-  std::unique_ptr<PlayerCharacterT> character;
+  std::unique_ptr<HeroT> hero;
   Reply_LoginSuccessT() {
   }
 };
@@ -2718,18 +2701,18 @@ struct Reply_LoginSuccessT : public flatbuffers::NativeTable {
 struct Reply_LoginSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Reply_LoginSuccessT NativeTableType;
   enum {
-    VT_CHARACTER = 4
+    VT_HERO = 4
   };
-  const PlayerCharacter *character() const {
-    return GetPointer<const PlayerCharacter *>(VT_CHARACTER);
+  const Hero *hero() const {
+    return GetPointer<const Hero *>(VT_HERO);
   }
-  PlayerCharacter *mutable_character() {
-    return GetPointer<PlayerCharacter *>(VT_CHARACTER);
+  Hero *mutable_hero() {
+    return GetPointer<Hero *>(VT_HERO);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_CHARACTER) &&
-           verifier.VerifyTable(character()) &&
+           VerifyOffset(verifier, VT_HERO) &&
+           verifier.VerifyTable(hero()) &&
            verifier.EndTable();
   }
   Reply_LoginSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2740,8 +2723,8 @@ struct Reply_LoginSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct Reply_LoginSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_character(flatbuffers::Offset<PlayerCharacter> character) {
-    fbb_.AddOffset(Reply_LoginSuccess::VT_CHARACTER, character);
+  void add_hero(flatbuffers::Offset<Hero> hero) {
+    fbb_.AddOffset(Reply_LoginSuccess::VT_HERO, hero);
   }
   Reply_LoginSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2757,9 +2740,9 @@ struct Reply_LoginSuccessBuilder {
 
 inline flatbuffers::Offset<Reply_LoginSuccess> CreateReply_LoginSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<PlayerCharacter> character = 0) {
+    flatbuffers::Offset<Hero> hero = 0) {
   Reply_LoginSuccessBuilder builder_(_fbb);
-  builder_.add_character(character);
+  builder_.add_hero(hero);
   return builder_.Finish();
 }
 
@@ -2822,18 +2805,155 @@ inline flatbuffers::Offset<Reply_LoginFailed> CreateReply_LoginFailed(
 
 flatbuffers::Offset<Reply_LoginFailed> CreateReply_LoginFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_MoveT : public flatbuffers::NativeTable {
-  typedef Request_Move TableType;
+struct Notify_LoadFinishT : public flatbuffers::NativeTable {
+  typedef Notify_LoadFinish TableType;
+  Notify_LoadFinishT() {
+  }
+};
+
+struct Notify_LoadFinish FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_LoadFinishT NativeTableType;
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+  Notify_LoadFinishT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_LoadFinishT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_LoadFinish> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_LoadFinishT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Notify_LoadFinishBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  Notify_LoadFinishBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Notify_LoadFinishBuilder &operator=(const Notify_LoadFinishBuilder &);
+  flatbuffers::Offset<Notify_LoadFinish> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<Notify_LoadFinish>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Notify_LoadFinish> CreateNotify_LoadFinish(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  Notify_LoadFinishBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Notify_LoadFinish> CreateNotify_LoadFinish(flatbuffers::FlatBufferBuilder &_fbb, const Notify_LoadFinishT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Notify_EnterSuccessT : public flatbuffers::NativeTable {
+  typedef Notify_EnterSuccess TableType;
+  Notify_EnterSuccessT() {
+  }
+};
+
+struct Notify_EnterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_EnterSuccessT NativeTableType;
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+  Notify_EnterSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_EnterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_EnterSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Notify_EnterSuccessBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  Notify_EnterSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Notify_EnterSuccessBuilder &operator=(const Notify_EnterSuccessBuilder &);
+  flatbuffers::Offset<Notify_EnterSuccess> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<Notify_EnterSuccess>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  Notify_EnterSuccessBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Notify_EnterFailedT : public flatbuffers::NativeTable {
+  typedef Notify_EnterFailed TableType;
+  ProtocolCS::ErrorCode error_code;
+  Notify_EnterFailedT()
+      : error_code(ProtocolCS::ErrorCode::OK) {
+  }
+};
+
+struct Notify_EnterFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_EnterFailedT NativeTableType;
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ProtocolCS::ErrorCode error_code() const {
+    return static_cast<ProtocolCS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool mutate_error_code(ProtocolCS::ErrorCode _error_code) {
+    return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+  Notify_EnterFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_EnterFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_EnterFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Notify_EnterFailedBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ProtocolCS::ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(Notify_EnterFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  Notify_EnterFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Notify_EnterFailedBuilder &operator=(const Notify_EnterFailedBuilder &);
+  flatbuffers::Offset<Notify_EnterFailed> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Notify_EnterFailed>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Notify_EnterFailed> CreateNotify_EnterFailed(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
+  Notify_EnterFailedBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Notify_EnterFailed> CreateNotify_EnterFailed(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Request_ActionMoveT : public flatbuffers::NativeTable {
+  typedef Request_ActionMove TableType;
   std::unique_ptr<ProtocolCS::Vec3> position;
   float rotation;
   std::unique_ptr<ProtocolCS::Vec3> velocity;
-  Request_MoveT()
+  Request_ActionMoveT()
       : rotation(0.0f) {
   }
 };
 
-struct Request_Move FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_MoveT NativeTableType;
+struct Request_ActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_ActionMoveT NativeTableType;
   enum {
     VT_POSITION = 4,
     VT_ROTATION = 6,
@@ -2864,62 +2984,79 @@ struct Request_Move FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<ProtocolCS::Vec3>(verifier, VT_VELOCITY) &&
            verifier.EndTable();
   }
-  Request_MoveT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_MoveT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_Move> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Request_ActionMoveT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_ActionMoveT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_ActionMove> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionMoveT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Request_MoveBuilder {
+struct Request_ActionMoveBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_position(const ProtocolCS::Vec3 *position) {
-    fbb_.AddStruct(Request_Move::VT_POSITION, position);
+    fbb_.AddStruct(Request_ActionMove::VT_POSITION, position);
   }
   void add_rotation(float rotation) {
-    fbb_.AddElement<float>(Request_Move::VT_ROTATION, rotation, 0.0f);
+    fbb_.AddElement<float>(Request_ActionMove::VT_ROTATION, rotation, 0.0f);
   }
   void add_velocity(const ProtocolCS::Vec3 *velocity) {
-    fbb_.AddStruct(Request_Move::VT_VELOCITY, velocity);
+    fbb_.AddStruct(Request_ActionMove::VT_VELOCITY, velocity);
   }
-  Request_MoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Request_ActionMoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Request_MoveBuilder &operator=(const Request_MoveBuilder &);
-  flatbuffers::Offset<Request_Move> Finish() {
+  Request_ActionMoveBuilder &operator=(const Request_ActionMoveBuilder &);
+  flatbuffers::Offset<Request_ActionMove> Finish() {
     const auto end = fbb_.EndTable(start_, 3);
-    auto o = flatbuffers::Offset<Request_Move>(end);
+    auto o = flatbuffers::Offset<Request_ActionMove>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Request_Move> CreateRequest_Move(
+inline flatbuffers::Offset<Request_ActionMove> CreateRequest_ActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
     const ProtocolCS::Vec3 *position = 0,
     float rotation = 0.0f,
     const ProtocolCS::Vec3 *velocity = 0) {
-  Request_MoveBuilder builder_(_fbb);
+  Request_ActionMoveBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_rotation(rotation);
   builder_.add_position(position);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Request_Move> CreateRequest_Move(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Request_ActionMove> CreateRequest_ActionMove(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionMoveT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Request_AttackT : public flatbuffers::NativeTable {
-  typedef Request_Attack TableType;
+struct Request_ActionSkillT : public flatbuffers::NativeTable {
+  typedef Request_ActionSkill TableType;
+  int32_t skill;
+  std::vector<std::string> targets;
   float rotation;
-  Request_AttackT()
-      : rotation(0.0f) {
+  Request_ActionSkillT()
+      : skill(0),
+        rotation(0.0f) {
   }
 };
 
-struct Request_Attack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_AttackT NativeTableType;
+struct Request_ActionSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_ActionSkillT NativeTableType;
   enum {
-    VT_ROTATION = 4
+    VT_SKILL = 4,
+    VT_TARGETS = 6,
+    VT_ROTATION = 8
   };
+  int32_t skill() const {
+    return GetField<int32_t>(VT_SKILL, 0);
+  }
+  bool mutate_skill(int32_t _skill) {
+    return SetField<int32_t>(VT_SKILL, _skill, 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *targets() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_TARGETS);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_targets() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_TARGETS);
+  }
   float rotation() const {
     return GetField<float>(VT_ROTATION, 0.0f);
   }
@@ -2928,135 +3065,143 @@ struct Request_Attack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_SKILL) &&
+           VerifyOffset(verifier, VT_TARGETS) &&
+           verifier.Verify(targets()) &&
+           verifier.VerifyVectorOfStrings(targets()) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
   }
-  Request_AttackT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_AttackT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_Attack> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_AttackT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Request_ActionSkillT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_ActionSkillT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_ActionSkill> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionSkillT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Request_AttackBuilder {
+struct Request_ActionSkillBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_rotation(float rotation) {
-    fbb_.AddElement<float>(Request_Attack::VT_ROTATION, rotation, 0.0f);
+  void add_skill(int32_t skill) {
+    fbb_.AddElement<int32_t>(Request_ActionSkill::VT_SKILL, skill, 0);
   }
-  Request_AttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  void add_targets(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> targets) {
+    fbb_.AddOffset(Request_ActionSkill::VT_TARGETS, targets);
+  }
+  void add_rotation(float rotation) {
+    fbb_.AddElement<float>(Request_ActionSkill::VT_ROTATION, rotation, 0.0f);
+  }
+  Request_ActionSkillBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Request_AttackBuilder &operator=(const Request_AttackBuilder &);
-  flatbuffers::Offset<Request_Attack> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Request_Attack>(end);
+  Request_ActionSkillBuilder &operator=(const Request_ActionSkillBuilder &);
+  flatbuffers::Offset<Request_ActionSkill> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<Request_ActionSkill>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Request_Attack> CreateRequest_Attack(
+inline flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkill(
     flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t skill = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> targets = 0,
     float rotation = 0.0f) {
-  Request_AttackBuilder builder_(_fbb);
+  Request_ActionSkillBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
+  builder_.add_targets(targets);
+  builder_.add_skill(skill);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<Request_Attack> CreateRequest_Attack(flatbuffers::FlatBufferBuilder &_fbb, const Request_AttackT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+inline flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkillDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t skill = 0,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *targets = nullptr,
+    float rotation = 0.0f) {
+  return ProtocolCS::World::CreateRequest_ActionSkill(
+      _fbb,
+      skill,
+      targets ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*targets) : 0,
+      rotation);
+}
 
-struct Notify_AppearActorT : public flatbuffers::NativeTable {
-  typedef Notify_AppearActor TableType;
-  std::vector<std::unique_ptr<RemotePCT>> remote_pc_list;
-  std::vector<std::unique_ptr<MonsterT>> monster_list;
-  Notify_AppearActorT() {
+flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkill(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionSkillT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Notify_AppearT : public flatbuffers::NativeTable {
+  typedef Notify_Appear TableType;
+  std::vector<std::unique_ptr<ActorT>> entity_list;
+  Notify_AppearT() {
   }
 };
 
-struct Notify_AppearActor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Notify_AppearActorT NativeTableType;
+struct Notify_Appear FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_AppearT NativeTableType;
   enum {
-    VT_REMOTE_PC_LIST = 4,
-    VT_MONSTER_LIST = 6
+    VT_ENTITY_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<RemotePC>> *remote_pc_list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<RemotePC>> *>(VT_REMOTE_PC_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<Actor>> *entity_list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Actor>> *>(VT_ENTITY_LIST);
   }
-  flatbuffers::Vector<flatbuffers::Offset<RemotePC>> *mutable_remote_pc_list() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<RemotePC>> *>(VT_REMOTE_PC_LIST);
-  }
-  const flatbuffers::Vector<flatbuffers::Offset<Monster>> *monster_list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Monster>> *>(VT_MONSTER_LIST);
-  }
-  flatbuffers::Vector<flatbuffers::Offset<Monster>> *mutable_monster_list() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<Monster>> *>(VT_MONSTER_LIST);
+  flatbuffers::Vector<flatbuffers::Offset<Actor>> *mutable_entity_list() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<Actor>> *>(VT_ENTITY_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_REMOTE_PC_LIST) &&
-           verifier.Verify(remote_pc_list()) &&
-           verifier.VerifyVectorOfTables(remote_pc_list()) &&
-           VerifyOffset(verifier, VT_MONSTER_LIST) &&
-           verifier.Verify(monster_list()) &&
-           verifier.VerifyVectorOfTables(monster_list()) &&
+           VerifyOffset(verifier, VT_ENTITY_LIST) &&
+           verifier.Verify(entity_list()) &&
+           verifier.VerifyVectorOfTables(entity_list()) &&
            verifier.EndTable();
   }
-  Notify_AppearActorT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Notify_AppearActorT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Notify_AppearActor> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearActorT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Notify_AppearT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_AppearT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_Appear> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Notify_AppearActorBuilder {
+struct Notify_AppearBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_remote_pc_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<RemotePC>>> remote_pc_list) {
-    fbb_.AddOffset(Notify_AppearActor::VT_REMOTE_PC_LIST, remote_pc_list);
+  void add_entity_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Actor>>> entity_list) {
+    fbb_.AddOffset(Notify_Appear::VT_ENTITY_LIST, entity_list);
   }
-  void add_monster_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Monster>>> monster_list) {
-    fbb_.AddOffset(Notify_AppearActor::VT_MONSTER_LIST, monster_list);
-  }
-  Notify_AppearActorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Notify_AppearBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Notify_AppearActorBuilder &operator=(const Notify_AppearActorBuilder &);
-  flatbuffers::Offset<Notify_AppearActor> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<Notify_AppearActor>(end);
+  Notify_AppearBuilder &operator=(const Notify_AppearBuilder &);
+  flatbuffers::Offset<Notify_Appear> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Notify_Appear>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Notify_AppearActor> CreateNotify_AppearActor(
+inline flatbuffers::Offset<Notify_Appear> CreateNotify_Appear(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<RemotePC>>> remote_pc_list = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Monster>>> monster_list = 0) {
-  Notify_AppearActorBuilder builder_(_fbb);
-  builder_.add_monster_list(monster_list);
-  builder_.add_remote_pc_list(remote_pc_list);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Actor>>> entity_list = 0) {
+  Notify_AppearBuilder builder_(_fbb);
+  builder_.add_entity_list(entity_list);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Notify_AppearActor> CreateNotify_AppearActorDirect(
+inline flatbuffers::Offset<Notify_Appear> CreateNotify_AppearDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<RemotePC>> *remote_pc_list = nullptr,
-    const std::vector<flatbuffers::Offset<Monster>> *monster_list = nullptr) {
-  return ProtocolCS::World::CreateNotify_AppearActor(
+    const std::vector<flatbuffers::Offset<Actor>> *entity_list = nullptr) {
+  return ProtocolCS::World::CreateNotify_Appear(
       _fbb,
-      remote_pc_list ? _fbb.CreateVector<flatbuffers::Offset<RemotePC>>(*remote_pc_list) : 0,
-      monster_list ? _fbb.CreateVector<flatbuffers::Offset<Monster>>(*monster_list) : 0);
+      entity_list ? _fbb.CreateVector<flatbuffers::Offset<Actor>>(*entity_list) : 0);
 }
 
-flatbuffers::Offset<Notify_AppearActor> CreateNotify_AppearActor(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearActorT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Notify_Appear> CreateNotify_Appear(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Notify_DisappearActorT : public flatbuffers::NativeTable {
-  typedef Notify_DisappearActor TableType;
+struct Notify_DisappearT : public flatbuffers::NativeTable {
+  typedef Notify_Disappear TableType;
   std::vector<std::string> entity_id_list;
-  Notify_DisappearActorT() {
+  Notify_DisappearT() {
   }
 };
 
-struct Notify_DisappearActor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Notify_DisappearActorT NativeTableType;
+struct Notify_Disappear FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_DisappearT NativeTableType;
   enum {
     VT_ENTITY_ID_LIST = 4
   };
@@ -3073,182 +3218,182 @@ struct Notify_DisappearActor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
            verifier.VerifyVectorOfStrings(entity_id_list()) &&
            verifier.EndTable();
   }
-  Notify_DisappearActorT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Notify_DisappearActorT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Notify_DisappearActor> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearActorT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Notify_DisappearT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_DisappearT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_Disappear> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Notify_DisappearActorBuilder {
+struct Notify_DisappearBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> entity_id_list) {
-    fbb_.AddOffset(Notify_DisappearActor::VT_ENTITY_ID_LIST, entity_id_list);
+    fbb_.AddOffset(Notify_Disappear::VT_ENTITY_ID_LIST, entity_id_list);
   }
-  Notify_DisappearActorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Notify_DisappearBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Notify_DisappearActorBuilder &operator=(const Notify_DisappearActorBuilder &);
-  flatbuffers::Offset<Notify_DisappearActor> Finish() {
+  Notify_DisappearBuilder &operator=(const Notify_DisappearBuilder &);
+  flatbuffers::Offset<Notify_Disappear> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Notify_DisappearActor>(end);
+    auto o = flatbuffers::Offset<Notify_Disappear>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Notify_DisappearActor> CreateNotify_DisappearActor(
+inline flatbuffers::Offset<Notify_Disappear> CreateNotify_Disappear(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> entity_id_list = 0) {
-  Notify_DisappearActorBuilder builder_(_fbb);
+  Notify_DisappearBuilder builder_(_fbb);
   builder_.add_entity_id_list(entity_id_list);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Notify_DisappearActor> CreateNotify_DisappearActorDirect(
+inline flatbuffers::Offset<Notify_Disappear> CreateNotify_DisappearDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *entity_id_list = nullptr) {
-  return ProtocolCS::World::CreateNotify_DisappearActor(
+  return ProtocolCS::World::CreateNotify_Disappear(
       _fbb,
       entity_id_list ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*entity_id_list) : 0);
 }
 
-flatbuffers::Offset<Notify_DisappearActor> CreateNotify_DisappearActor(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearActorT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Notify_Disappear> CreateNotify_Disappear(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Notify_MoveT : public flatbuffers::NativeTable {
-  typedef Notify_Move TableType;
-  std::vector<std::unique_ptr<MoveDataT>> move_list;
-  Notify_MoveT() {
+struct Notify_ActionMoveT : public flatbuffers::NativeTable {
+  typedef Notify_ActionMove TableType;
+  std::vector<std::unique_ptr<MoveInfoT>> list;
+  Notify_ActionMoveT() {
   }
 };
 
-struct Notify_Move FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Notify_MoveT NativeTableType;
+struct Notify_ActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_ActionMoveT NativeTableType;
   enum {
-    VT_MOVE_LIST = 4
+    VT_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<MoveData>> *move_list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<MoveData>> *>(VT_MOVE_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<MoveInfo>> *list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<MoveInfo>> *>(VT_LIST);
   }
-  flatbuffers::Vector<flatbuffers::Offset<MoveData>> *mutable_move_list() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<MoveData>> *>(VT_MOVE_LIST);
+  flatbuffers::Vector<flatbuffers::Offset<MoveInfo>> *mutable_list() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<MoveInfo>> *>(VT_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_MOVE_LIST) &&
-           verifier.Verify(move_list()) &&
-           verifier.VerifyVectorOfTables(move_list()) &&
+           VerifyOffset(verifier, VT_LIST) &&
+           verifier.Verify(list()) &&
+           verifier.VerifyVectorOfTables(list()) &&
            verifier.EndTable();
   }
-  Notify_MoveT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Notify_MoveT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Notify_Move> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_MoveT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Notify_ActionMoveT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_ActionMoveT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_ActionMove> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionMoveT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Notify_MoveBuilder {
+struct Notify_ActionMoveBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_move_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<MoveData>>> move_list) {
-    fbb_.AddOffset(Notify_Move::VT_MOVE_LIST, move_list);
+  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<MoveInfo>>> list) {
+    fbb_.AddOffset(Notify_ActionMove::VT_LIST, list);
   }
-  Notify_MoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Notify_ActionMoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Notify_MoveBuilder &operator=(const Notify_MoveBuilder &);
-  flatbuffers::Offset<Notify_Move> Finish() {
+  Notify_ActionMoveBuilder &operator=(const Notify_ActionMoveBuilder &);
+  flatbuffers::Offset<Notify_ActionMove> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Notify_Move>(end);
+    auto o = flatbuffers::Offset<Notify_ActionMove>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Notify_Move> CreateNotify_Move(
+inline flatbuffers::Offset<Notify_ActionMove> CreateNotify_ActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<MoveData>>> move_list = 0) {
-  Notify_MoveBuilder builder_(_fbb);
-  builder_.add_move_list(move_list);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<MoveInfo>>> list = 0) {
+  Notify_ActionMoveBuilder builder_(_fbb);
+  builder_.add_list(list);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Notify_Move> CreateNotify_MoveDirect(
+inline flatbuffers::Offset<Notify_ActionMove> CreateNotify_ActionMoveDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<MoveData>> *move_list = nullptr) {
-  return ProtocolCS::World::CreateNotify_Move(
+    const std::vector<flatbuffers::Offset<MoveInfo>> *list = nullptr) {
+  return ProtocolCS::World::CreateNotify_ActionMove(
       _fbb,
-      move_list ? _fbb.CreateVector<flatbuffers::Offset<MoveData>>(*move_list) : 0);
+      list ? _fbb.CreateVector<flatbuffers::Offset<MoveInfo>>(*list) : 0);
 }
 
-flatbuffers::Offset<Notify_Move> CreateNotify_Move(flatbuffers::FlatBufferBuilder &_fbb, const Notify_MoveT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Notify_ActionMove> CreateNotify_ActionMove(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionMoveT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Notify_AttackT : public flatbuffers::NativeTable {
-  typedef Notify_Attack TableType;
-  std::vector<std::unique_ptr<AttackDataT>> attack_list;
-  Notify_AttackT() {
+struct Notify_ActionSkillT : public flatbuffers::NativeTable {
+  typedef Notify_ActionSkill TableType;
+  std::vector<std::unique_ptr<SkillInfoT>> list;
+  Notify_ActionSkillT() {
   }
 };
 
-struct Notify_Attack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Notify_AttackT NativeTableType;
+struct Notify_ActionSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_ActionSkillT NativeTableType;
   enum {
-    VT_ATTACK_LIST = 4
+    VT_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<AttackData>> *attack_list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<AttackData>> *>(VT_ATTACK_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<SkillInfo>> *list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<SkillInfo>> *>(VT_LIST);
   }
-  flatbuffers::Vector<flatbuffers::Offset<AttackData>> *mutable_attack_list() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<AttackData>> *>(VT_ATTACK_LIST);
+  flatbuffers::Vector<flatbuffers::Offset<SkillInfo>> *mutable_list() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<SkillInfo>> *>(VT_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_ATTACK_LIST) &&
-           verifier.Verify(attack_list()) &&
-           verifier.VerifyVectorOfTables(attack_list()) &&
+           VerifyOffset(verifier, VT_LIST) &&
+           verifier.Verify(list()) &&
+           verifier.VerifyVectorOfTables(list()) &&
            verifier.EndTable();
   }
-  Notify_AttackT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Notify_AttackT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Notify_Attack> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AttackT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Notify_ActionSkillT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_ActionSkillT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_ActionSkill> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionSkillT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct Notify_AttackBuilder {
+struct Notify_ActionSkillBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_attack_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<AttackData>>> attack_list) {
-    fbb_.AddOffset(Notify_Attack::VT_ATTACK_LIST, attack_list);
+  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<SkillInfo>>> list) {
+    fbb_.AddOffset(Notify_ActionSkill::VT_LIST, list);
   }
-  Notify_AttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  Notify_ActionSkillBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  Notify_AttackBuilder &operator=(const Notify_AttackBuilder &);
-  flatbuffers::Offset<Notify_Attack> Finish() {
+  Notify_ActionSkillBuilder &operator=(const Notify_ActionSkillBuilder &);
+  flatbuffers::Offset<Notify_ActionSkill> Finish() {
     const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Notify_Attack>(end);
+    auto o = flatbuffers::Offset<Notify_ActionSkill>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Notify_Attack> CreateNotify_Attack(
+inline flatbuffers::Offset<Notify_ActionSkill> CreateNotify_ActionSkill(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<AttackData>>> attack_list = 0) {
-  Notify_AttackBuilder builder_(_fbb);
-  builder_.add_attack_list(attack_list);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<SkillInfo>>> list = 0) {
+  Notify_ActionSkillBuilder builder_(_fbb);
+  builder_.add_list(list);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Notify_Attack> CreateNotify_AttackDirect(
+inline flatbuffers::Offset<Notify_ActionSkill> CreateNotify_ActionSkillDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<AttackData>> *attack_list = nullptr) {
-  return ProtocolCS::World::CreateNotify_Attack(
+    const std::vector<flatbuffers::Offset<SkillInfo>> *list = nullptr) {
+  return ProtocolCS::World::CreateNotify_ActionSkill(
       _fbb,
-      attack_list ? _fbb.CreateVector<flatbuffers::Offset<AttackData>>(*attack_list) : 0);
+      list ? _fbb.CreateVector<flatbuffers::Offset<SkillInfo>>(*list) : 0);
 }
 
-flatbuffers::Offset<Notify_Attack> CreateNotify_Attack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AttackT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<Notify_ActionSkill> CreateNotify_ActionSkill(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionSkillT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Notify_DamageT : public flatbuffers::NativeTable {
   typedef Notify_Damage TableType;
-  std::vector<std::unique_ptr<DamageDataT>> damage_list;
+  std::vector<std::unique_ptr<DamageInfoT>> list;
   Notify_DamageT() {
   }
 };
@@ -3256,19 +3401,19 @@ struct Notify_DamageT : public flatbuffers::NativeTable {
 struct Notify_Damage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Notify_DamageT NativeTableType;
   enum {
-    VT_DAMAGE_LIST = 4
+    VT_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<DamageData>> *damage_list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<DamageData>> *>(VT_DAMAGE_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<DamageInfo>> *list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<DamageInfo>> *>(VT_LIST);
   }
-  flatbuffers::Vector<flatbuffers::Offset<DamageData>> *mutable_damage_list() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<DamageData>> *>(VT_DAMAGE_LIST);
+  flatbuffers::Vector<flatbuffers::Offset<DamageInfo>> *mutable_list() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<DamageInfo>> *>(VT_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_DAMAGE_LIST) &&
-           verifier.Verify(damage_list()) &&
-           verifier.VerifyVectorOfTables(damage_list()) &&
+           VerifyOffset(verifier, VT_LIST) &&
+           verifier.Verify(list()) &&
+           verifier.VerifyVectorOfTables(list()) &&
            verifier.EndTable();
   }
   Notify_DamageT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -3279,8 +3424,8 @@ struct Notify_Damage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct Notify_DamageBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_damage_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<DamageData>>> damage_list) {
-    fbb_.AddOffset(Notify_Damage::VT_DAMAGE_LIST, damage_list);
+  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<DamageInfo>>> list) {
+    fbb_.AddOffset(Notify_Damage::VT_LIST, list);
   }
   Notify_DamageBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -3296,221 +3441,21 @@ struct Notify_DamageBuilder {
 
 inline flatbuffers::Offset<Notify_Damage> CreateNotify_Damage(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<DamageData>>> damage_list = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<DamageInfo>>> list = 0) {
   Notify_DamageBuilder builder_(_fbb);
-  builder_.add_damage_list(damage_list);
+  builder_.add_list(list);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Notify_Damage> CreateNotify_DamageDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<DamageData>> *damage_list = nullptr) {
+    const std::vector<flatbuffers::Offset<DamageInfo>> *list = nullptr) {
   return ProtocolCS::World::CreateNotify_Damage(
       _fbb,
-      damage_list ? _fbb.CreateVector<flatbuffers::Offset<DamageData>>(*damage_list) : 0);
+      list ? _fbb.CreateVector<flatbuffers::Offset<DamageInfo>>(*list) : 0);
 }
 
 flatbuffers::Offset<Notify_Damage> CreateNotify_Damage(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DamageT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Request_MoveZoneT : public flatbuffers::NativeTable {
-  typedef Request_MoveZone TableType;
-  int32_t map_id;
-  Request_MoveZoneT()
-      : map_id(0) {
-  }
-};
-
-struct Request_MoveZone FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Request_MoveZoneT NativeTableType;
-  enum {
-    VT_MAP_ID = 4
-  };
-  int32_t map_id() const {
-    return GetField<int32_t>(VT_MAP_ID, 0);
-  }
-  bool mutate_map_id(int32_t _map_id) {
-    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
-           verifier.EndTable();
-  }
-  Request_MoveZoneT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Request_MoveZoneT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Request_MoveZone> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Request_MoveZoneBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_map_id(int32_t map_id) {
-    fbb_.AddElement<int32_t>(Request_MoveZone::VT_MAP_ID, map_id, 0);
-  }
-  Request_MoveZoneBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Request_MoveZoneBuilder &operator=(const Request_MoveZoneBuilder &);
-  flatbuffers::Offset<Request_MoveZone> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Request_MoveZone>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Request_MoveZone> CreateRequest_MoveZone(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t map_id = 0) {
-  Request_MoveZoneBuilder builder_(_fbb);
-  builder_.add_map_id(map_id);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Request_MoveZone> CreateRequest_MoveZone(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Reply_MoveZoneSuccessT : public flatbuffers::NativeTable {
-  typedef Reply_MoveZoneSuccess TableType;
-  int32_t map_id;
-  std::unique_ptr<ProtocolCS::Vec3> position;
-  float rotation;
-  Reply_MoveZoneSuccessT()
-      : map_id(0),
-        rotation(0.0f) {
-  }
-};
-
-struct Reply_MoveZoneSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_MoveZoneSuccessT NativeTableType;
-  enum {
-    VT_MAP_ID = 4,
-    VT_POSITION = 6,
-    VT_ROTATION = 8
-  };
-  int32_t map_id() const {
-    return GetField<int32_t>(VT_MAP_ID, 0);
-  }
-  bool mutate_map_id(int32_t _map_id) {
-    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
-  }
-  const ProtocolCS::Vec3 *position() const {
-    return GetStruct<const ProtocolCS::Vec3 *>(VT_POSITION);
-  }
-  ProtocolCS::Vec3 *mutable_position() {
-    return GetStruct<ProtocolCS::Vec3 *>(VT_POSITION);
-  }
-  float rotation() const {
-    return GetField<float>(VT_ROTATION, 0.0f);
-  }
-  bool mutate_rotation(float _rotation) {
-    return SetField<float>(VT_ROTATION, _rotation, 0.0f);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
-           VerifyField<ProtocolCS::Vec3>(verifier, VT_POSITION) &&
-           VerifyField<float>(verifier, VT_ROTATION) &&
-           verifier.EndTable();
-  }
-  Reply_MoveZoneSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_MoveZoneSuccessT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_MoveZoneSuccess> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Reply_MoveZoneSuccessBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_map_id(int32_t map_id) {
-    fbb_.AddElement<int32_t>(Reply_MoveZoneSuccess::VT_MAP_ID, map_id, 0);
-  }
-  void add_position(const ProtocolCS::Vec3 *position) {
-    fbb_.AddStruct(Reply_MoveZoneSuccess::VT_POSITION, position);
-  }
-  void add_rotation(float rotation) {
-    fbb_.AddElement<float>(Reply_MoveZoneSuccess::VT_ROTATION, rotation, 0.0f);
-  }
-  Reply_MoveZoneSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Reply_MoveZoneSuccessBuilder &operator=(const Reply_MoveZoneSuccessBuilder &);
-  flatbuffers::Offset<Reply_MoveZoneSuccess> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
-    auto o = flatbuffers::Offset<Reply_MoveZoneSuccess>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Reply_MoveZoneSuccess> CreateReply_MoveZoneSuccess(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t map_id = 0,
-    const ProtocolCS::Vec3 *position = 0,
-    float rotation = 0.0f) {
-  Reply_MoveZoneSuccessBuilder builder_(_fbb);
-  builder_.add_rotation(rotation);
-  builder_.add_position(position);
-  builder_.add_map_id(map_id);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Reply_MoveZoneSuccess> CreateReply_MoveZoneSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct Reply_MoveZoneFailedT : public flatbuffers::NativeTable {
-  typedef Reply_MoveZoneFailed TableType;
-  ProtocolCS::ErrorCode error_code;
-  Reply_MoveZoneFailedT()
-      : error_code(ProtocolCS::ErrorCode::OK) {
-  }
-};
-
-struct Reply_MoveZoneFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef Reply_MoveZoneFailedT NativeTableType;
-  enum {
-    VT_ERROR_CODE = 4
-  };
-  ProtocolCS::ErrorCode error_code() const {
-    return static_cast<ProtocolCS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
-  }
-  bool mutate_error_code(ProtocolCS::ErrorCode _error_code) {
-    return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
-           verifier.EndTable();
-  }
-  Reply_MoveZoneFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Reply_MoveZoneFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Reply_MoveZoneFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct Reply_MoveZoneFailedBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_error_code(ProtocolCS::ErrorCode error_code) {
-    fbb_.AddElement<int32_t>(Reply_MoveZoneFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
-  }
-  Reply_MoveZoneFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  Reply_MoveZoneFailedBuilder &operator=(const Reply_MoveZoneFailedBuilder &);
-  flatbuffers::Offset<Reply_MoveZoneFailed> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
-    auto o = flatbuffers::Offset<Reply_MoveZoneFailed>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
-  Reply_MoveZoneFailedBuilder builder_(_fbb);
-  builder_.add_error_code(error_code);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 }  // namespace World
 
@@ -3558,29 +3503,29 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const ProtocolCS::Login::Reply_JoinFailed *message_as_Login_Reply_JoinFailed() const {
     return message_type() == MessageType::Login_Reply_JoinFailed ? static_cast<const ProtocolCS::Login::Reply_JoinFailed *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Request_CharacterList *message_as_Login_Request_CharacterList() const {
-    return message_type() == MessageType::Login_Request_CharacterList ? static_cast<const ProtocolCS::Login::Request_CharacterList *>(message()) : nullptr;
+  const ProtocolCS::Login::Request_HeroList *message_as_Login_Request_HeroList() const {
+    return message_type() == MessageType::Login_Request_HeroList ? static_cast<const ProtocolCS::Login::Request_HeroList *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Reply_CharacterList *message_as_Login_Reply_CharacterList() const {
-    return message_type() == MessageType::Login_Reply_CharacterList ? static_cast<const ProtocolCS::Login::Reply_CharacterList *>(message()) : nullptr;
+  const ProtocolCS::Login::Reply_HeroList *message_as_Login_Reply_HeroList() const {
+    return message_type() == MessageType::Login_Reply_HeroList ? static_cast<const ProtocolCS::Login::Reply_HeroList *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Request_CreateCharacter *message_as_Login_Request_CreateCharacter() const {
-    return message_type() == MessageType::Login_Request_CreateCharacter ? static_cast<const ProtocolCS::Login::Request_CreateCharacter *>(message()) : nullptr;
+  const ProtocolCS::Login::Request_CreateHero *message_as_Login_Request_CreateHero() const {
+    return message_type() == MessageType::Login_Request_CreateHero ? static_cast<const ProtocolCS::Login::Request_CreateHero *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Reply_CreateCharacterSuccess *message_as_Login_Reply_CreateCharacterSuccess() const {
-    return message_type() == MessageType::Login_Reply_CreateCharacterSuccess ? static_cast<const ProtocolCS::Login::Reply_CreateCharacterSuccess *>(message()) : nullptr;
+  const ProtocolCS::Login::Reply_CreateHeroSuccess *message_as_Login_Reply_CreateHeroSuccess() const {
+    return message_type() == MessageType::Login_Reply_CreateHeroSuccess ? static_cast<const ProtocolCS::Login::Reply_CreateHeroSuccess *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Reply_CreateCharacterFailed *message_as_Login_Reply_CreateCharacterFailed() const {
-    return message_type() == MessageType::Login_Reply_CreateCharacterFailed ? static_cast<const ProtocolCS::Login::Reply_CreateCharacterFailed *>(message()) : nullptr;
+  const ProtocolCS::Login::Reply_CreateHeroFailed *message_as_Login_Reply_CreateHeroFailed() const {
+    return message_type() == MessageType::Login_Reply_CreateHeroFailed ? static_cast<const ProtocolCS::Login::Reply_CreateHeroFailed *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Request_DeleteCharacter *message_as_Login_Request_DeleteCharacter() const {
-    return message_type() == MessageType::Login_Request_DeleteCharacter ? static_cast<const ProtocolCS::Login::Request_DeleteCharacter *>(message()) : nullptr;
+  const ProtocolCS::Login::Request_DeleteHero *message_as_Login_Request_DeleteHero() const {
+    return message_type() == MessageType::Login_Request_DeleteHero ? static_cast<const ProtocolCS::Login::Request_DeleteHero *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Reply_DeleteCharacterSuccess *message_as_Login_Reply_DeleteCharacterSuccess() const {
-    return message_type() == MessageType::Login_Reply_DeleteCharacterSuccess ? static_cast<const ProtocolCS::Login::Reply_DeleteCharacterSuccess *>(message()) : nullptr;
+  const ProtocolCS::Login::Reply_DeleteHeroSuccess *message_as_Login_Reply_DeleteHeroSuccess() const {
+    return message_type() == MessageType::Login_Reply_DeleteHeroSuccess ? static_cast<const ProtocolCS::Login::Reply_DeleteHeroSuccess *>(message()) : nullptr;
   }
-  const ProtocolCS::Login::Reply_DeleteCharacterFailed *message_as_Login_Reply_DeleteCharacterFailed() const {
-    return message_type() == MessageType::Login_Reply_DeleteCharacterFailed ? static_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailed *>(message()) : nullptr;
+  const ProtocolCS::Login::Reply_DeleteHeroFailed *message_as_Login_Reply_DeleteHeroFailed() const {
+    return message_type() == MessageType::Login_Reply_DeleteHeroFailed ? static_cast<const ProtocolCS::Login::Reply_DeleteHeroFailed *>(message()) : nullptr;
   }
   const ProtocolCS::World::Request_Login *message_as_World_Request_Login() const {
     return message_type() == MessageType::World_Request_Login ? static_cast<const ProtocolCS::World::Request_Login *>(message()) : nullptr;
@@ -3591,35 +3536,35 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const ProtocolCS::World::Reply_LoginFailed *message_as_World_Reply_LoginFailed() const {
     return message_type() == MessageType::World_Reply_LoginFailed ? static_cast<const ProtocolCS::World::Reply_LoginFailed *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Request_Move *message_as_World_Request_Move() const {
-    return message_type() == MessageType::World_Request_Move ? static_cast<const ProtocolCS::World::Request_Move *>(message()) : nullptr;
+  const ProtocolCS::World::Notify_LoadFinish *message_as_World_Notify_LoadFinish() const {
+    return message_type() == MessageType::World_Notify_LoadFinish ? static_cast<const ProtocolCS::World::Notify_LoadFinish *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Request_Attack *message_as_World_Request_Attack() const {
-    return message_type() == MessageType::World_Request_Attack ? static_cast<const ProtocolCS::World::Request_Attack *>(message()) : nullptr;
+  const ProtocolCS::World::Notify_EnterSuccess *message_as_World_Notify_EnterSuccess() const {
+    return message_type() == MessageType::World_Notify_EnterSuccess ? static_cast<const ProtocolCS::World::Notify_EnterSuccess *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Notify_AppearActor *message_as_World_Notify_AppearActor() const {
-    return message_type() == MessageType::World_Notify_AppearActor ? static_cast<const ProtocolCS::World::Notify_AppearActor *>(message()) : nullptr;
+  const ProtocolCS::World::Notify_EnterFailed *message_as_World_Notify_EnterFailed() const {
+    return message_type() == MessageType::World_Notify_EnterFailed ? static_cast<const ProtocolCS::World::Notify_EnterFailed *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Notify_DisappearActor *message_as_World_Notify_DisappearActor() const {
-    return message_type() == MessageType::World_Notify_DisappearActor ? static_cast<const ProtocolCS::World::Notify_DisappearActor *>(message()) : nullptr;
+  const ProtocolCS::World::Request_ActionMove *message_as_World_Request_ActionMove() const {
+    return message_type() == MessageType::World_Request_ActionMove ? static_cast<const ProtocolCS::World::Request_ActionMove *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Notify_Move *message_as_World_Notify_Move() const {
-    return message_type() == MessageType::World_Notify_Move ? static_cast<const ProtocolCS::World::Notify_Move *>(message()) : nullptr;
+  const ProtocolCS::World::Request_ActionSkill *message_as_World_Request_ActionSkill() const {
+    return message_type() == MessageType::World_Request_ActionSkill ? static_cast<const ProtocolCS::World::Request_ActionSkill *>(message()) : nullptr;
   }
-  const ProtocolCS::World::Notify_Attack *message_as_World_Notify_Attack() const {
-    return message_type() == MessageType::World_Notify_Attack ? static_cast<const ProtocolCS::World::Notify_Attack *>(message()) : nullptr;
+  const ProtocolCS::World::Notify_Appear *message_as_World_Notify_Appear() const {
+    return message_type() == MessageType::World_Notify_Appear ? static_cast<const ProtocolCS::World::Notify_Appear *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Notify_Disappear *message_as_World_Notify_Disappear() const {
+    return message_type() == MessageType::World_Notify_Disappear ? static_cast<const ProtocolCS::World::Notify_Disappear *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Notify_ActionMove *message_as_World_Notify_ActionMove() const {
+    return message_type() == MessageType::World_Notify_ActionMove ? static_cast<const ProtocolCS::World::Notify_ActionMove *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Notify_ActionSkill *message_as_World_Notify_ActionSkill() const {
+    return message_type() == MessageType::World_Notify_ActionSkill ? static_cast<const ProtocolCS::World::Notify_ActionSkill *>(message()) : nullptr;
   }
   const ProtocolCS::World::Notify_Damage *message_as_World_Notify_Damage() const {
     return message_type() == MessageType::World_Notify_Damage ? static_cast<const ProtocolCS::World::Notify_Damage *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Request_MoveZone *message_as_World_Request_MoveZone() const {
-    return message_type() == MessageType::World_Request_MoveZone ? static_cast<const ProtocolCS::World::Request_MoveZone *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Reply_MoveZoneSuccess *message_as_World_Reply_MoveZoneSuccess() const {
-    return message_type() == MessageType::World_Reply_MoveZoneSuccess ? static_cast<const ProtocolCS::World::Reply_MoveZoneSuccess *>(message()) : nullptr;
-  }
-  const ProtocolCS::World::Reply_MoveZoneFailed *message_as_World_Reply_MoveZoneFailed() const {
-    return message_type() == MessageType::World_Reply_MoveZoneFailed ? static_cast<const ProtocolCS::World::Reply_MoveZoneFailed *>(message()) : nullptr;
   }
   void *mutable_message() {
     return GetPointer<void *>(VT_MESSAGE);
@@ -3664,36 +3609,36 @@ template<> inline const ProtocolCS::Login::Reply_JoinFailed *MessageRoot::messag
   return message_as_Login_Reply_JoinFailed();
 }
 
-template<> inline const ProtocolCS::Login::Request_CharacterList *MessageRoot::message_as<ProtocolCS::Login::Request_CharacterList>() const {
-  return message_as_Login_Request_CharacterList();
+template<> inline const ProtocolCS::Login::Request_HeroList *MessageRoot::message_as<ProtocolCS::Login::Request_HeroList>() const {
+  return message_as_Login_Request_HeroList();
 }
 
-template<> inline const ProtocolCS::Login::Reply_CharacterList *MessageRoot::message_as<ProtocolCS::Login::Reply_CharacterList>() const {
-  return message_as_Login_Reply_CharacterList();
+template<> inline const ProtocolCS::Login::Reply_HeroList *MessageRoot::message_as<ProtocolCS::Login::Reply_HeroList>() const {
+  return message_as_Login_Reply_HeroList();
 }
 
-template<> inline const ProtocolCS::Login::Request_CreateCharacter *MessageRoot::message_as<ProtocolCS::Login::Request_CreateCharacter>() const {
-  return message_as_Login_Request_CreateCharacter();
+template<> inline const ProtocolCS::Login::Request_CreateHero *MessageRoot::message_as<ProtocolCS::Login::Request_CreateHero>() const {
+  return message_as_Login_Request_CreateHero();
 }
 
-template<> inline const ProtocolCS::Login::Reply_CreateCharacterSuccess *MessageRoot::message_as<ProtocolCS::Login::Reply_CreateCharacterSuccess>() const {
-  return message_as_Login_Reply_CreateCharacterSuccess();
+template<> inline const ProtocolCS::Login::Reply_CreateHeroSuccess *MessageRoot::message_as<ProtocolCS::Login::Reply_CreateHeroSuccess>() const {
+  return message_as_Login_Reply_CreateHeroSuccess();
 }
 
-template<> inline const ProtocolCS::Login::Reply_CreateCharacterFailed *MessageRoot::message_as<ProtocolCS::Login::Reply_CreateCharacterFailed>() const {
-  return message_as_Login_Reply_CreateCharacterFailed();
+template<> inline const ProtocolCS::Login::Reply_CreateHeroFailed *MessageRoot::message_as<ProtocolCS::Login::Reply_CreateHeroFailed>() const {
+  return message_as_Login_Reply_CreateHeroFailed();
 }
 
-template<> inline const ProtocolCS::Login::Request_DeleteCharacter *MessageRoot::message_as<ProtocolCS::Login::Request_DeleteCharacter>() const {
-  return message_as_Login_Request_DeleteCharacter();
+template<> inline const ProtocolCS::Login::Request_DeleteHero *MessageRoot::message_as<ProtocolCS::Login::Request_DeleteHero>() const {
+  return message_as_Login_Request_DeleteHero();
 }
 
-template<> inline const ProtocolCS::Login::Reply_DeleteCharacterSuccess *MessageRoot::message_as<ProtocolCS::Login::Reply_DeleteCharacterSuccess>() const {
-  return message_as_Login_Reply_DeleteCharacterSuccess();
+template<> inline const ProtocolCS::Login::Reply_DeleteHeroSuccess *MessageRoot::message_as<ProtocolCS::Login::Reply_DeleteHeroSuccess>() const {
+  return message_as_Login_Reply_DeleteHeroSuccess();
 }
 
-template<> inline const ProtocolCS::Login::Reply_DeleteCharacterFailed *MessageRoot::message_as<ProtocolCS::Login::Reply_DeleteCharacterFailed>() const {
-  return message_as_Login_Reply_DeleteCharacterFailed();
+template<> inline const ProtocolCS::Login::Reply_DeleteHeroFailed *MessageRoot::message_as<ProtocolCS::Login::Reply_DeleteHeroFailed>() const {
+  return message_as_Login_Reply_DeleteHeroFailed();
 }
 
 template<> inline const ProtocolCS::World::Request_Login *MessageRoot::message_as<ProtocolCS::World::Request_Login>() const {
@@ -3708,44 +3653,44 @@ template<> inline const ProtocolCS::World::Reply_LoginFailed *MessageRoot::messa
   return message_as_World_Reply_LoginFailed();
 }
 
-template<> inline const ProtocolCS::World::Request_Move *MessageRoot::message_as<ProtocolCS::World::Request_Move>() const {
-  return message_as_World_Request_Move();
+template<> inline const ProtocolCS::World::Notify_LoadFinish *MessageRoot::message_as<ProtocolCS::World::Notify_LoadFinish>() const {
+  return message_as_World_Notify_LoadFinish();
 }
 
-template<> inline const ProtocolCS::World::Request_Attack *MessageRoot::message_as<ProtocolCS::World::Request_Attack>() const {
-  return message_as_World_Request_Attack();
+template<> inline const ProtocolCS::World::Notify_EnterSuccess *MessageRoot::message_as<ProtocolCS::World::Notify_EnterSuccess>() const {
+  return message_as_World_Notify_EnterSuccess();
 }
 
-template<> inline const ProtocolCS::World::Notify_AppearActor *MessageRoot::message_as<ProtocolCS::World::Notify_AppearActor>() const {
-  return message_as_World_Notify_AppearActor();
+template<> inline const ProtocolCS::World::Notify_EnterFailed *MessageRoot::message_as<ProtocolCS::World::Notify_EnterFailed>() const {
+  return message_as_World_Notify_EnterFailed();
 }
 
-template<> inline const ProtocolCS::World::Notify_DisappearActor *MessageRoot::message_as<ProtocolCS::World::Notify_DisappearActor>() const {
-  return message_as_World_Notify_DisappearActor();
+template<> inline const ProtocolCS::World::Request_ActionMove *MessageRoot::message_as<ProtocolCS::World::Request_ActionMove>() const {
+  return message_as_World_Request_ActionMove();
 }
 
-template<> inline const ProtocolCS::World::Notify_Move *MessageRoot::message_as<ProtocolCS::World::Notify_Move>() const {
-  return message_as_World_Notify_Move();
+template<> inline const ProtocolCS::World::Request_ActionSkill *MessageRoot::message_as<ProtocolCS::World::Request_ActionSkill>() const {
+  return message_as_World_Request_ActionSkill();
 }
 
-template<> inline const ProtocolCS::World::Notify_Attack *MessageRoot::message_as<ProtocolCS::World::Notify_Attack>() const {
-  return message_as_World_Notify_Attack();
+template<> inline const ProtocolCS::World::Notify_Appear *MessageRoot::message_as<ProtocolCS::World::Notify_Appear>() const {
+  return message_as_World_Notify_Appear();
+}
+
+template<> inline const ProtocolCS::World::Notify_Disappear *MessageRoot::message_as<ProtocolCS::World::Notify_Disappear>() const {
+  return message_as_World_Notify_Disappear();
+}
+
+template<> inline const ProtocolCS::World::Notify_ActionMove *MessageRoot::message_as<ProtocolCS::World::Notify_ActionMove>() const {
+  return message_as_World_Notify_ActionMove();
+}
+
+template<> inline const ProtocolCS::World::Notify_ActionSkill *MessageRoot::message_as<ProtocolCS::World::Notify_ActionSkill>() const {
+  return message_as_World_Notify_ActionSkill();
 }
 
 template<> inline const ProtocolCS::World::Notify_Damage *MessageRoot::message_as<ProtocolCS::World::Notify_Damage>() const {
   return message_as_World_Notify_Damage();
-}
-
-template<> inline const ProtocolCS::World::Request_MoveZone *MessageRoot::message_as<ProtocolCS::World::Request_MoveZone>() const {
-  return message_as_World_Request_MoveZone();
-}
-
-template<> inline const ProtocolCS::World::Reply_MoveZoneSuccess *MessageRoot::message_as<ProtocolCS::World::Reply_MoveZoneSuccess>() const {
-  return message_as_World_Reply_MoveZoneSuccess();
-}
-
-template<> inline const ProtocolCS::World::Reply_MoveZoneFailed *MessageRoot::message_as<ProtocolCS::World::Reply_MoveZoneFailed>() const {
-  return message_as_World_Reply_MoveZoneFailed();
 }
 
 struct MessageRootBuilder {
@@ -3805,13 +3750,13 @@ inline flatbuffers::Offset<Notify_UnauthedAccess> CreateNotify_UnauthedAccess(fl
 
 namespace Login {
 
-inline CharacterT *Character::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new CharacterT();
+inline HeroT *Hero::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new HeroT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Character::UnPackTo(CharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Hero::UnPackTo(HeroT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = uid(); _o->uid = _e; };
@@ -3820,18 +3765,18 @@ inline void Character::UnPackTo(CharacterT *_o, const flatbuffers::resolver_func
   { auto _e = level(); _o->level = _e; };
 }
 
-inline flatbuffers::Offset<Character> Character::Pack(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateCharacter(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Hero> Hero::Pack(flatbuffers::FlatBufferBuilder &_fbb, const HeroT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateHero(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Character> CreateCharacter(flatbuffers::FlatBufferBuilder &_fbb, const CharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Hero> CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const HeroT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _uid = _o->uid;
   auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
   auto _class_type = _o->class_type;
   auto _level = _o->level;
-  return ProtocolCS::Login::CreateCharacter(
+  return ProtocolCS::Login::CreateHero(
       _fbb,
       _uid,
       _name,
@@ -3992,202 +3937,202 @@ inline flatbuffers::Offset<Reply_JoinFailed> CreateReply_JoinFailed(flatbuffers:
       _error_code);
 }
 
-inline Request_CharacterListT *Request_CharacterList::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_CharacterListT();
+inline Request_HeroListT *Request_HeroList::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_HeroListT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Request_CharacterList::UnPackTo(Request_CharacterListT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Request_HeroList::UnPackTo(Request_HeroListT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
 }
 
-inline flatbuffers::Offset<Request_CharacterList> Request_CharacterList::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_CharacterListT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_CharacterList(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Request_HeroList> Request_HeroList::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_HeroListT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_HeroList(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Request_CharacterList> CreateRequest_CharacterList(flatbuffers::FlatBufferBuilder &_fbb, const Request_CharacterListT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Request_HeroList> CreateRequest_HeroList(flatbuffers::FlatBufferBuilder &_fbb, const Request_HeroListT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  return ProtocolCS::Login::CreateRequest_CharacterList(
+  return ProtocolCS::Login::CreateRequest_HeroList(
       _fbb);
 }
 
-inline Reply_CharacterListT *Reply_CharacterList::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_CharacterListT();
+inline Reply_HeroListT *Reply_HeroList::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_HeroListT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_CharacterList::UnPackTo(Reply_CharacterListT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_HeroList::UnPackTo(Reply_HeroListT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = list(); if (_e) { _o->list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->list[_i] = std::unique_ptr<CharacterT>(_e->Get(_i)->UnPack(_resolver)); } } };
+  { auto _e = list(); if (_e) { _o->list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->list[_i] = std::unique_ptr<HeroT>(_e->Get(_i)->UnPack(_resolver)); } } };
 }
 
-inline flatbuffers::Offset<Reply_CharacterList> Reply_CharacterList::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CharacterListT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_CharacterList(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_HeroList> Reply_HeroList::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_HeroListT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_HeroList(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_CharacterList> CreateReply_CharacterList(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CharacterListT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_HeroList> CreateReply_HeroList(flatbuffers::FlatBufferBuilder &_fbb, const Reply_HeroListT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _list = _o->list.size() ? _fbb.CreateVector<flatbuffers::Offset<Character>>(_o->list.size(), [&](size_t i) { return CreateCharacter(_fbb, _o->list[i].get(), _rehasher); }) : 0;
-  return ProtocolCS::Login::CreateReply_CharacterList(
+  auto _list = _o->list.size() ? _fbb.CreateVector<flatbuffers::Offset<Hero>>(_o->list.size(), [&](size_t i) { return CreateHero(_fbb, _o->list[i].get(), _rehasher); }) : 0;
+  return ProtocolCS::Login::CreateReply_HeroList(
       _fbb,
       _list);
 }
 
-inline Request_CreateCharacterT *Request_CreateCharacter::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_CreateCharacterT();
+inline Request_CreateHeroT *Request_CreateHero::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_CreateHeroT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Request_CreateCharacter::UnPackTo(Request_CreateCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Request_CreateHero::UnPackTo(Request_CreateHeroT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); };
   { auto _e = class_type(); _o->class_type = _e; };
 }
 
-inline flatbuffers::Offset<Request_CreateCharacter> Request_CreateCharacter::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_CreateCharacter(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Request_CreateHero> Request_CreateHero::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateHeroT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_CreateHero(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Request_CreateCharacter> CreateRequest_CreateCharacter(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Request_CreateHero> CreateRequest_CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const Request_CreateHeroT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
   auto _class_type = _o->class_type;
-  return ProtocolCS::Login::CreateRequest_CreateCharacter(
+  return ProtocolCS::Login::CreateRequest_CreateHero(
       _fbb,
       _name,
       _class_type);
 }
 
-inline Reply_CreateCharacterSuccessT *Reply_CreateCharacterSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_CreateCharacterSuccessT();
+inline Reply_CreateHeroSuccessT *Reply_CreateHeroSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_CreateHeroSuccessT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_CreateCharacterSuccess::UnPackTo(Reply_CreateCharacterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_CreateHeroSuccess::UnPackTo(Reply_CreateHeroSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = character(); if (_e) _o->character = std::unique_ptr<CharacterT>(_e->UnPack(_resolver)); };
+  { auto _e = hero(); if (_e) _o->hero = std::unique_ptr<HeroT>(_e->UnPack(_resolver)); };
 }
 
-inline flatbuffers::Offset<Reply_CreateCharacterSuccess> Reply_CreateCharacterSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_CreateCharacterSuccess(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_CreateHeroSuccess> Reply_CreateHeroSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_CreateHeroSuccess(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_CreateCharacterSuccess> CreateReply_CreateCharacterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_CreateHeroSuccess> CreateReply_CreateHeroSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _character = _o->character ? CreateCharacter(_fbb, _o->character.get(), _rehasher) : 0;
-  return ProtocolCS::Login::CreateReply_CreateCharacterSuccess(
+  auto _hero = _o->hero ? CreateHero(_fbb, _o->hero.get(), _rehasher) : 0;
+  return ProtocolCS::Login::CreateReply_CreateHeroSuccess(
       _fbb,
-      _character);
+      _hero);
 }
 
-inline Reply_CreateCharacterFailedT *Reply_CreateCharacterFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_CreateCharacterFailedT();
+inline Reply_CreateHeroFailedT *Reply_CreateHeroFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_CreateHeroFailedT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_CreateCharacterFailed::UnPackTo(Reply_CreateCharacterFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_CreateHeroFailed::UnPackTo(Reply_CreateHeroFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = error_code(); _o->error_code = _e; };
 }
 
-inline flatbuffers::Offset<Reply_CreateCharacterFailed> Reply_CreateCharacterFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_CreateCharacterFailed(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_CreateHeroFailed> Reply_CreateHeroFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_CreateHeroFailed(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_CreateCharacterFailed> CreateReply_CreateCharacterFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateCharacterFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_CreateHeroFailed> CreateReply_CreateHeroFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_CreateHeroFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _error_code = _o->error_code;
-  return ProtocolCS::Login::CreateReply_CreateCharacterFailed(
+  return ProtocolCS::Login::CreateReply_CreateHeroFailed(
       _fbb,
       _error_code);
 }
 
-inline Request_DeleteCharacterT *Request_DeleteCharacter::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_DeleteCharacterT();
+inline Request_DeleteHeroT *Request_DeleteHero::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_DeleteHeroT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Request_DeleteCharacter::UnPackTo(Request_DeleteCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Request_DeleteHero::UnPackTo(Request_DeleteHeroT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = character_uid(); _o->character_uid = _e; };
+  { auto _e = hero_uid(); _o->hero_uid = _e; };
 }
 
-inline flatbuffers::Offset<Request_DeleteCharacter> Request_DeleteCharacter::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_DeleteCharacter(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Request_DeleteHero> Request_DeleteHero::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteHeroT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_DeleteHero(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Request_DeleteCharacter> CreateRequest_DeleteCharacter(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Request_DeleteHero> CreateRequest_DeleteHero(flatbuffers::FlatBufferBuilder &_fbb, const Request_DeleteHeroT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _character_uid = _o->character_uid;
-  return ProtocolCS::Login::CreateRequest_DeleteCharacter(
+  auto _hero_uid = _o->hero_uid;
+  return ProtocolCS::Login::CreateRequest_DeleteHero(
       _fbb,
-      _character_uid);
+      _hero_uid);
 }
 
-inline Reply_DeleteCharacterSuccessT *Reply_DeleteCharacterSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_DeleteCharacterSuccessT();
+inline Reply_DeleteHeroSuccessT *Reply_DeleteHeroSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_DeleteHeroSuccessT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_DeleteCharacterSuccess::UnPackTo(Reply_DeleteCharacterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_DeleteHeroSuccess::UnPackTo(Reply_DeleteHeroSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = character_uid(); _o->character_uid = _e; };
+  { auto _e = hero_uid(); _o->hero_uid = _e; };
 }
 
-inline flatbuffers::Offset<Reply_DeleteCharacterSuccess> Reply_DeleteCharacterSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_DeleteCharacterSuccess(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_DeleteHeroSuccess> Reply_DeleteHeroSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_DeleteHeroSuccess(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_DeleteCharacterSuccess> CreateReply_DeleteCharacterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_DeleteHeroSuccess> CreateReply_DeleteHeroSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _character_uid = _o->character_uid;
-  return ProtocolCS::Login::CreateReply_DeleteCharacterSuccess(
+  auto _hero_uid = _o->hero_uid;
+  return ProtocolCS::Login::CreateReply_DeleteHeroSuccess(
       _fbb,
-      _character_uid);
+      _hero_uid);
 }
 
-inline Reply_DeleteCharacterFailedT *Reply_DeleteCharacterFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_DeleteCharacterFailedT();
+inline Reply_DeleteHeroFailedT *Reply_DeleteHeroFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_DeleteHeroFailedT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Reply_DeleteCharacterFailed::UnPackTo(Reply_DeleteCharacterFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Reply_DeleteHeroFailed::UnPackTo(Reply_DeleteHeroFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = error_code(); _o->error_code = _e; };
 }
 
-inline flatbuffers::Offset<Reply_DeleteCharacterFailed> Reply_DeleteCharacterFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_DeleteCharacterFailed(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Reply_DeleteHeroFailed> Reply_DeleteHeroFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_DeleteHeroFailed(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Reply_DeleteCharacterFailed> CreateReply_DeleteCharacterFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteCharacterFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Reply_DeleteHeroFailed> CreateReply_DeleteHeroFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_DeleteHeroFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _error_code = _o->error_code;
-  return ProtocolCS::Login::CreateReply_DeleteCharacterFailed(
+  return ProtocolCS::Login::CreateReply_DeleteHeroFailed(
       _fbb,
       _error_code);
 }
@@ -4196,16 +4141,17 @@ inline flatbuffers::Offset<Reply_DeleteCharacterFailed> CreateReply_DeleteCharac
 
 namespace World {
 
-inline PlayerCharacterT *PlayerCharacter::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new PlayerCharacterT();
+inline HeroT *Hero::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new HeroT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void PlayerCharacter::UnPackTo(PlayerCharacterT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Hero::UnPackTo(HeroT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
+  { auto _e = uid(); _o->uid = _e; };
   { auto _e = name(); if (_e) _o->name = _e->str(); };
   { auto _e = class_type(); _o->class_type = _e; };
   { auto _e = exp(); _o->exp = _e; };
@@ -4221,14 +4167,15 @@ inline void PlayerCharacter::UnPackTo(PlayerCharacterT *_o, const flatbuffers::r
   { auto _e = rotation(); _o->rotation = _e; };
 }
 
-inline flatbuffers::Offset<PlayerCharacter> PlayerCharacter::Pack(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreatePlayerCharacter(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Hero> Hero::Pack(flatbuffers::FlatBufferBuilder &_fbb, const HeroT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateHero(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::FlatBufferBuilder &_fbb, const PlayerCharacterT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Hero> CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const HeroT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
+  auto _uid = _o->uid;
   auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
   auto _class_type = _o->class_type;
   auto _exp = _o->exp;
@@ -4242,9 +4189,10 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::F
   auto _map_id = _o->map_id;
   auto _pos = _o->pos ? _o->pos.get() : 0;
   auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreatePlayerCharacter(
+  return ProtocolCS::World::CreateHero(
       _fbb,
       _entity_id,
+      _uid,
       _name,
       _class_type,
       _exp,
@@ -4256,58 +4204,6 @@ inline flatbuffers::Offset<PlayerCharacter> CreatePlayerCharacter(flatbuffers::F
       _att,
       _def,
       _map_id,
-      _pos,
-      _rotation);
-}
-
-inline RemotePCT *RemotePC::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new RemotePCT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void RemotePC::UnPackTo(RemotePCT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
-  { auto _e = name(); if (_e) _o->name = _e->str(); };
-  { auto _e = class_type(); _o->class_type = _e; };
-  { auto _e = level(); _o->level = _e; };
-  { auto _e = max_hp(); _o->max_hp = _e; };
-  { auto _e = hp(); _o->hp = _e; };
-  { auto _e = max_mp(); _o->max_mp = _e; };
-  { auto _e = mp(); _o->mp = _e; };
-  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
-  { auto _e = rotation(); _o->rotation = _e; };
-}
-
-inline flatbuffers::Offset<RemotePC> RemotePC::Pack(flatbuffers::FlatBufferBuilder &_fbb, const RemotePCT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRemotePC(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<RemotePC> CreateRemotePC(flatbuffers::FlatBufferBuilder &_fbb, const RemotePCT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
-  auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
-  auto _class_type = _o->class_type;
-  auto _level = _o->level;
-  auto _max_hp = _o->max_hp;
-  auto _hp = _o->hp;
-  auto _max_mp = _o->max_mp;
-  auto _mp = _o->mp;
-  auto _pos = _o->pos ? _o->pos.get() : 0;
-  auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreateRemotePC(
-      _fbb,
-      _entity_id,
-      _name,
-      _class_type,
-      _level,
-      _max_hp,
-      _hp,
-      _max_mp,
-      _mp,
       _pos,
       _rotation);
 }
@@ -4364,13 +4260,41 @@ inline flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder
       _rotation);
 }
 
-inline MoveDataT *MoveData::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new MoveDataT();
+inline ActorT *Actor::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new ActorT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void MoveData::UnPackTo(MoveDataT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Actor::UnPackTo(ActorT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = entity_type(); _o->entity.type = _e; };
+  { auto _e = entity(); if (_e) _o->entity.value = ActorTypeUnion::UnPack(_e, entity_type(), _resolver); };
+}
+
+inline flatbuffers::Offset<Actor> Actor::Pack(flatbuffers::FlatBufferBuilder &_fbb, const ActorT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateActor(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Actor> CreateActor(flatbuffers::FlatBufferBuilder &_fbb, const ActorT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _entity_type = _o->entity.type;
+  auto _entity = _o->entity.Pack(_fbb);
+  return ProtocolCS::World::CreateActor(
+      _fbb,
+      _entity_type,
+      _entity);
+}
+
+inline MoveInfoT *MoveInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new MoveInfoT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void MoveInfo::UnPackTo(MoveInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
@@ -4379,18 +4303,18 @@ inline void MoveData::UnPackTo(MoveDataT *_o, const flatbuffers::resolver_functi
   { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
 }
 
-inline flatbuffers::Offset<MoveData> MoveData::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveDataT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateMoveData(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<MoveInfo> MoveInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateMoveInfo(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<MoveData> CreateMoveData(flatbuffers::FlatBufferBuilder &_fbb, const MoveDataT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<MoveInfo> CreateMoveInfo(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
   auto _position = _o->position ? _o->position.get() : 0;
   auto _rotation = _o->rotation;
   auto _velocity = _o->velocity ? _o->velocity.get() : 0;
-  return ProtocolCS::World::CreateMoveData(
+  return ProtocolCS::World::CreateMoveInfo(
       _fbb,
       _entity_id,
       _position,
@@ -4398,57 +4322,60 @@ inline flatbuffers::Offset<MoveData> CreateMoveData(flatbuffers::FlatBufferBuild
       _velocity);
 }
 
-inline AttackDataT *AttackData::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new AttackDataT();
+inline SkillInfoT *SkillInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new SkillInfoT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void AttackData::UnPackTo(AttackDataT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void SkillInfo::UnPackTo(SkillInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
+  { auto _e = skill(); _o->skill = _e; };
   { auto _e = rotation(); _o->rotation = _e; };
 }
 
-inline flatbuffers::Offset<AttackData> AttackData::Pack(flatbuffers::FlatBufferBuilder &_fbb, const AttackDataT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateAttackData(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<SkillInfo> SkillInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateSkillInfo(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<AttackData> CreateAttackData(flatbuffers::FlatBufferBuilder &_fbb, const AttackDataT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<SkillInfo> CreateSkillInfo(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
+  auto _skill = _o->skill;
   auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreateAttackData(
+  return ProtocolCS::World::CreateSkillInfo(
       _fbb,
       _entity_id,
+      _skill,
       _rotation);
 }
 
-inline DamageDataT *DamageData::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new DamageDataT();
+inline DamageInfoT *DamageInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new DamageInfoT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void DamageData::UnPackTo(DamageDataT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void DamageInfo::UnPackTo(DamageInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
   { auto _e = damage(); _o->damage = _e; };
 }
 
-inline flatbuffers::Offset<DamageData> DamageData::Pack(flatbuffers::FlatBufferBuilder &_fbb, const DamageDataT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateDamageData(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<DamageInfo> DamageInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const DamageInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateDamageInfo(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<DamageData> CreateDamageData(flatbuffers::FlatBufferBuilder &_fbb, const DamageDataT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<DamageInfo> CreateDamageInfo(flatbuffers::FlatBufferBuilder &_fbb, const DamageInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
   auto _damage = _o->damage;
-  return ProtocolCS::World::CreateDamageData(
+  return ProtocolCS::World::CreateDamageInfo(
       _fbb,
       _entity_id,
       _damage);
@@ -4464,7 +4391,7 @@ inline void Request_Login::UnPackTo(Request_LoginT *_o, const flatbuffers::resol
   (void)_o;
   (void)_resolver;
   { auto _e = credential(); if (_e) _o->credential = _e->str(); };
-  { auto _e = character_uid(); _o->character_uid = _e; };
+  { auto _e = hero_uid(); _o->hero_uid = _e; };
 }
 
 inline flatbuffers::Offset<Request_Login> Request_Login::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_LoginT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4475,11 +4402,11 @@ inline flatbuffers::Offset<Request_Login> CreateRequest_Login(flatbuffers::FlatB
   (void)_rehasher;
   (void)_o;
   auto _credential = _o->credential.size() ? _fbb.CreateString(_o->credential) : 0;
-  auto _character_uid = _o->character_uid;
+  auto _hero_uid = _o->hero_uid;
   return ProtocolCS::World::CreateRequest_Login(
       _fbb,
       _credential,
-      _character_uid);
+      _hero_uid);
 }
 
 inline Reply_LoginSuccessT *Reply_LoginSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -4491,7 +4418,7 @@ inline Reply_LoginSuccessT *Reply_LoginSuccess::UnPack(const flatbuffers::resolv
 inline void Reply_LoginSuccess::UnPackTo(Reply_LoginSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = character(); if (_e) _o->character = std::unique_ptr<PlayerCharacterT>(_e->UnPack(_resolver)); };
+  { auto _e = hero(); if (_e) _o->hero = std::unique_ptr<HeroT>(_e->UnPack(_resolver)); };
 }
 
 inline flatbuffers::Offset<Reply_LoginSuccess> Reply_LoginSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4501,10 +4428,10 @@ inline flatbuffers::Offset<Reply_LoginSuccess> Reply_LoginSuccess::Pack(flatbuff
 inline flatbuffers::Offset<Reply_LoginSuccess> CreateReply_LoginSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _character = _o->character ? CreatePlayerCharacter(_fbb, _o->character.get(), _rehasher) : 0;
+  auto _hero = _o->hero ? CreateHero(_fbb, _o->hero.get(), _rehasher) : 0;
   return ProtocolCS::World::CreateReply_LoginSuccess(
       _fbb,
-      _character);
+      _hero);
 }
 
 inline Reply_LoginFailedT *Reply_LoginFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -4532,13 +4459,82 @@ inline flatbuffers::Offset<Reply_LoginFailed> CreateReply_LoginFailed(flatbuffer
       _error_code);
 }
 
-inline Request_MoveT *Request_Move::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_MoveT();
+inline Notify_LoadFinishT *Notify_LoadFinish::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_LoadFinishT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Request_Move::UnPackTo(Request_MoveT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Notify_LoadFinish::UnPackTo(Notify_LoadFinishT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+}
+
+inline flatbuffers::Offset<Notify_LoadFinish> Notify_LoadFinish::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_LoadFinishT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_LoadFinish(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Notify_LoadFinish> CreateNotify_LoadFinish(flatbuffers::FlatBufferBuilder &_fbb, const Notify_LoadFinishT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  return ProtocolCS::World::CreateNotify_LoadFinish(
+      _fbb);
+}
+
+inline Notify_EnterSuccessT *Notify_EnterSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_EnterSuccessT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Notify_EnterSuccess::UnPackTo(Notify_EnterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+}
+
+inline flatbuffers::Offset<Notify_EnterSuccess> Notify_EnterSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_EnterSuccess(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  return ProtocolCS::World::CreateNotify_EnterSuccess(
+      _fbb);
+}
+
+inline Notify_EnterFailedT *Notify_EnterFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_EnterFailedT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Notify_EnterFailed::UnPackTo(Notify_EnterFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = error_code(); _o->error_code = _e; };
+}
+
+inline flatbuffers::Offset<Notify_EnterFailed> Notify_EnterFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_EnterFailed(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Notify_EnterFailed> CreateNotify_EnterFailed(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _error_code = _o->error_code;
+  return ProtocolCS::World::CreateNotify_EnterFailed(
+      _fbb,
+      _error_code);
+}
+
+inline Request_ActionMoveT *Request_ActionMove::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_ActionMoveT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Request_ActionMove::UnPackTo(Request_ActionMoveT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = position(); if (_e) _o->position = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
@@ -4546,149 +4542,152 @@ inline void Request_Move::UnPackTo(Request_MoveT *_o, const flatbuffers::resolve
   { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
 }
 
-inline flatbuffers::Offset<Request_Move> Request_Move::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_Move(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Request_ActionMove> Request_ActionMove::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionMoveT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_ActionMove(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Request_Move> CreateRequest_Move(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Request_ActionMove> CreateRequest_ActionMove(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionMoveT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _position = _o->position ? _o->position.get() : 0;
   auto _rotation = _o->rotation;
   auto _velocity = _o->velocity ? _o->velocity.get() : 0;
-  return ProtocolCS::World::CreateRequest_Move(
+  return ProtocolCS::World::CreateRequest_ActionMove(
       _fbb,
       _position,
       _rotation,
       _velocity);
 }
 
-inline Request_AttackT *Request_Attack::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_AttackT();
+inline Request_ActionSkillT *Request_ActionSkill::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_ActionSkillT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Request_Attack::UnPackTo(Request_AttackT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Request_ActionSkill::UnPackTo(Request_ActionSkillT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
+  { auto _e = skill(); _o->skill = _e; };
+  { auto _e = targets(); if (_e) { _o->targets.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->targets[_i] = _e->Get(_i)->str(); } } };
   { auto _e = rotation(); _o->rotation = _e; };
 }
 
-inline flatbuffers::Offset<Request_Attack> Request_Attack::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_AttackT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_Attack(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Request_ActionSkill> Request_ActionSkill::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionSkillT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_ActionSkill(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Request_Attack> CreateRequest_Attack(flatbuffers::FlatBufferBuilder &_fbb, const Request_AttackT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkill(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionSkillT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
+  auto _skill = _o->skill;
+  auto _targets = _o->targets.size() ? _fbb.CreateVectorOfStrings(_o->targets) : 0;
   auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreateRequest_Attack(
+  return ProtocolCS::World::CreateRequest_ActionSkill(
       _fbb,
+      _skill,
+      _targets,
       _rotation);
 }
 
-inline Notify_AppearActorT *Notify_AppearActor::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Notify_AppearActorT();
+inline Notify_AppearT *Notify_Appear::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_AppearT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Notify_AppearActor::UnPackTo(Notify_AppearActorT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Notify_Appear::UnPackTo(Notify_AppearT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = remote_pc_list(); if (_e) { _o->remote_pc_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->remote_pc_list[_i] = std::unique_ptr<RemotePCT>(_e->Get(_i)->UnPack(_resolver)); } } };
-  { auto _e = monster_list(); if (_e) { _o->monster_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->monster_list[_i] = std::unique_ptr<MonsterT>(_e->Get(_i)->UnPack(_resolver)); } } };
+  { auto _e = entity_list(); if (_e) { _o->entity_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->entity_list[_i] = std::unique_ptr<ActorT>(_e->Get(_i)->UnPack(_resolver)); } } };
 }
 
-inline flatbuffers::Offset<Notify_AppearActor> Notify_AppearActor::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearActorT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateNotify_AppearActor(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Notify_Appear> Notify_Appear::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_Appear(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Notify_AppearActor> CreateNotify_AppearActor(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearActorT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Notify_Appear> CreateNotify_Appear(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _remote_pc_list = _o->remote_pc_list.size() ? _fbb.CreateVector<flatbuffers::Offset<RemotePC>>(_o->remote_pc_list.size(), [&](size_t i) { return CreateRemotePC(_fbb, _o->remote_pc_list[i].get(), _rehasher); }) : 0;
-  auto _monster_list = _o->monster_list.size() ? _fbb.CreateVector<flatbuffers::Offset<Monster>>(_o->monster_list.size(), [&](size_t i) { return CreateMonster(_fbb, _o->monster_list[i].get(), _rehasher); }) : 0;
-  return ProtocolCS::World::CreateNotify_AppearActor(
+  auto _entity_list = _o->entity_list.size() ? _fbb.CreateVector<flatbuffers::Offset<Actor>>(_o->entity_list.size(), [&](size_t i) { return CreateActor(_fbb, _o->entity_list[i].get(), _rehasher); }) : 0;
+  return ProtocolCS::World::CreateNotify_Appear(
       _fbb,
-      _remote_pc_list,
-      _monster_list);
+      _entity_list);
 }
 
-inline Notify_DisappearActorT *Notify_DisappearActor::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Notify_DisappearActorT();
+inline Notify_DisappearT *Notify_Disappear::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_DisappearT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Notify_DisappearActor::UnPackTo(Notify_DisappearActorT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Notify_Disappear::UnPackTo(Notify_DisappearT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id_list(); if (_e) { _o->entity_id_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->entity_id_list[_i] = _e->Get(_i)->str(); } } };
 }
 
-inline flatbuffers::Offset<Notify_DisappearActor> Notify_DisappearActor::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearActorT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateNotify_DisappearActor(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Notify_Disappear> Notify_Disappear::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_Disappear(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Notify_DisappearActor> CreateNotify_DisappearActor(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearActorT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Notify_Disappear> CreateNotify_Disappear(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DisappearT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id_list = _o->entity_id_list.size() ? _fbb.CreateVectorOfStrings(_o->entity_id_list) : 0;
-  return ProtocolCS::World::CreateNotify_DisappearActor(
+  return ProtocolCS::World::CreateNotify_Disappear(
       _fbb,
       _entity_id_list);
 }
 
-inline Notify_MoveT *Notify_Move::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Notify_MoveT();
+inline Notify_ActionMoveT *Notify_ActionMove::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_ActionMoveT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Notify_Move::UnPackTo(Notify_MoveT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Notify_ActionMove::UnPackTo(Notify_ActionMoveT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = move_list(); if (_e) { _o->move_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->move_list[_i] = std::unique_ptr<MoveDataT>(_e->Get(_i)->UnPack(_resolver)); } } };
+  { auto _e = list(); if (_e) { _o->list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->list[_i] = std::unique_ptr<MoveInfoT>(_e->Get(_i)->UnPack(_resolver)); } } };
 }
 
-inline flatbuffers::Offset<Notify_Move> Notify_Move::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_MoveT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateNotify_Move(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Notify_ActionMove> Notify_ActionMove::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionMoveT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_ActionMove(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Notify_Move> CreateNotify_Move(flatbuffers::FlatBufferBuilder &_fbb, const Notify_MoveT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Notify_ActionMove> CreateNotify_ActionMove(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionMoveT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _move_list = _o->move_list.size() ? _fbb.CreateVector<flatbuffers::Offset<MoveData>>(_o->move_list.size(), [&](size_t i) { return CreateMoveData(_fbb, _o->move_list[i].get(), _rehasher); }) : 0;
-  return ProtocolCS::World::CreateNotify_Move(
+  auto _list = _o->list.size() ? _fbb.CreateVector<flatbuffers::Offset<MoveInfo>>(_o->list.size(), [&](size_t i) { return CreateMoveInfo(_fbb, _o->list[i].get(), _rehasher); }) : 0;
+  return ProtocolCS::World::CreateNotify_ActionMove(
       _fbb,
-      _move_list);
+      _list);
 }
 
-inline Notify_AttackT *Notify_Attack::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Notify_AttackT();
+inline Notify_ActionSkillT *Notify_ActionSkill::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_ActionSkillT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void Notify_Attack::UnPackTo(Notify_AttackT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Notify_ActionSkill::UnPackTo(Notify_ActionSkillT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = attack_list(); if (_e) { _o->attack_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->attack_list[_i] = std::unique_ptr<AttackDataT>(_e->Get(_i)->UnPack(_resolver)); } } };
+  { auto _e = list(); if (_e) { _o->list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->list[_i] = std::unique_ptr<SkillInfoT>(_e->Get(_i)->UnPack(_resolver)); } } };
 }
 
-inline flatbuffers::Offset<Notify_Attack> Notify_Attack::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AttackT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateNotify_Attack(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<Notify_ActionSkill> Notify_ActionSkill::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionSkillT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_ActionSkill(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Notify_Attack> CreateNotify_Attack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AttackT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<Notify_ActionSkill> CreateNotify_ActionSkill(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ActionSkillT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _attack_list = _o->attack_list.size() ? _fbb.CreateVector<flatbuffers::Offset<AttackData>>(_o->attack_list.size(), [&](size_t i) { return CreateAttackData(_fbb, _o->attack_list[i].get(), _rehasher); }) : 0;
-  return ProtocolCS::World::CreateNotify_Attack(
+  auto _list = _o->list.size() ? _fbb.CreateVector<flatbuffers::Offset<SkillInfo>>(_o->list.size(), [&](size_t i) { return CreateSkillInfo(_fbb, _o->list[i].get(), _rehasher); }) : 0;
+  return ProtocolCS::World::CreateNotify_ActionSkill(
       _fbb,
-      _attack_list);
+      _list);
 }
 
 inline Notify_DamageT *Notify_Damage::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -4700,7 +4699,7 @@ inline Notify_DamageT *Notify_Damage::UnPack(const flatbuffers::resolver_functio
 inline void Notify_Damage::UnPackTo(Notify_DamageT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = damage_list(); if (_e) { _o->damage_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->damage_list[_i] = std::unique_ptr<DamageDataT>(_e->Get(_i)->UnPack(_resolver)); } } };
+  { auto _e = list(); if (_e) { _o->list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->list[_i] = std::unique_ptr<DamageInfoT>(_e->Get(_i)->UnPack(_resolver)); } } };
 }
 
 inline flatbuffers::Offset<Notify_Damage> Notify_Damage::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DamageT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4710,91 +4709,10 @@ inline flatbuffers::Offset<Notify_Damage> Notify_Damage::Pack(flatbuffers::FlatB
 inline flatbuffers::Offset<Notify_Damage> CreateNotify_Damage(flatbuffers::FlatBufferBuilder &_fbb, const Notify_DamageT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _damage_list = _o->damage_list.size() ? _fbb.CreateVector<flatbuffers::Offset<DamageData>>(_o->damage_list.size(), [&](size_t i) { return CreateDamageData(_fbb, _o->damage_list[i].get(), _rehasher); }) : 0;
+  auto _list = _o->list.size() ? _fbb.CreateVector<flatbuffers::Offset<DamageInfo>>(_o->list.size(), [&](size_t i) { return CreateDamageInfo(_fbb, _o->list[i].get(), _rehasher); }) : 0;
   return ProtocolCS::World::CreateNotify_Damage(
       _fbb,
-      _damage_list);
-}
-
-inline Request_MoveZoneT *Request_MoveZone::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Request_MoveZoneT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Request_MoveZone::UnPackTo(Request_MoveZoneT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = map_id(); _o->map_id = _e; };
-}
-
-inline flatbuffers::Offset<Request_MoveZone> Request_MoveZone::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateRequest_MoveZone(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Request_MoveZone> CreateRequest_MoveZone(flatbuffers::FlatBufferBuilder &_fbb, const Request_MoveZoneT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _map_id = _o->map_id;
-  return ProtocolCS::World::CreateRequest_MoveZone(
-      _fbb,
-      _map_id);
-}
-
-inline Reply_MoveZoneSuccessT *Reply_MoveZoneSuccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_MoveZoneSuccessT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Reply_MoveZoneSuccess::UnPackTo(Reply_MoveZoneSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = map_id(); _o->map_id = _e; };
-  { auto _e = position(); if (_e) _o->position = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
-  { auto _e = rotation(); _o->rotation = _e; };
-}
-
-inline flatbuffers::Offset<Reply_MoveZoneSuccess> Reply_MoveZoneSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_MoveZoneSuccess(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Reply_MoveZoneSuccess> CreateReply_MoveZoneSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _map_id = _o->map_id;
-  auto _position = _o->position ? _o->position.get() : 0;
-  auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreateReply_MoveZoneSuccess(
-      _fbb,
-      _map_id,
-      _position,
-      _rotation);
-}
-
-inline Reply_MoveZoneFailedT *Reply_MoveZoneFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new Reply_MoveZoneFailedT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Reply_MoveZoneFailed::UnPackTo(Reply_MoveZoneFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = error_code(); _o->error_code = _e; };
-}
-
-inline flatbuffers::Offset<Reply_MoveZoneFailed> Reply_MoveZoneFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateReply_MoveZoneFailed(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Reply_MoveZoneFailed> CreateReply_MoveZoneFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_MoveZoneFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _error_code = _o->error_code;
-  return ProtocolCS::World::CreateReply_MoveZoneFailed(
-      _fbb,
-      _error_code);
+      _list);
 }
 
 }  // namespace World
@@ -4826,6 +4744,99 @@ inline flatbuffers::Offset<MessageRoot> CreateMessageRoot(flatbuffers::FlatBuffe
       _message_type,
       _message);
 }
+
+namespace World {
+
+inline bool VerifyActorType(flatbuffers::Verifier &verifier, const void *obj, ActorType type) {
+  switch (type) {
+    case ActorType::NONE: {
+      return true;
+    }
+    case ActorType::Hero: {
+      auto ptr = reinterpret_cast<const Hero *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case ActorType::Monster: {
+      auto ptr = reinterpret_cast<const Monster *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    default: return false;
+  }
+}
+
+inline bool VerifyActorTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+  if (values->size() != types->size()) return false;
+  for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+    if (!VerifyActorType(
+        verifier,  values->Get(i), types->GetEnum<ActorType>(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline void *ActorTypeUnion::UnPack(const void *obj, ActorType type, const flatbuffers::resolver_function_t *resolver) {
+  switch (type) {
+    case ActorType::Hero: {
+      auto ptr = reinterpret_cast<const Hero *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case ActorType::Monster: {
+      auto ptr = reinterpret_cast<const Monster *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    default: return nullptr;
+  }
+}
+
+inline flatbuffers::Offset<void> ActorTypeUnion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher) const {
+  switch (type) {
+    case ActorType::Hero: {
+      auto ptr = reinterpret_cast<const HeroT *>(value);
+      return CreateHero(_fbb, ptr, _rehasher).Union();
+    }
+    case ActorType::Monster: {
+      auto ptr = reinterpret_cast<const MonsterT *>(value);
+      return CreateMonster(_fbb, ptr, _rehasher).Union();
+    }
+    default: return 0;
+  }
+}
+
+inline ActorTypeUnion::ActorTypeUnion(const ActorTypeUnion &u) FLATBUFFERS_NOEXCEPT : type(u.type), value(nullptr) {
+  switch (type) {
+    case ActorType::Hero: {
+      assert(false);  // HeroT not copyable.
+      break;
+    }
+    case ActorType::Monster: {
+      assert(false);  // MonsterT not copyable.
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+inline void ActorTypeUnion::Reset() {
+  switch (type) {
+    case ActorType::Hero: {
+      auto ptr = reinterpret_cast<HeroT *>(value);
+      delete ptr;
+      break;
+    }
+    case ActorType::Monster: {
+      auto ptr = reinterpret_cast<MonsterT *>(value);
+      delete ptr;
+      break;
+    }
+    default: break;
+  }
+  value = nullptr;
+  type = ActorType::NONE;
+}
+
+}  // namespace World
 
 inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, MessageType type) {
   switch (type) {
@@ -4860,36 +4871,36 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
       auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_JoinFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Request_CharacterList: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CharacterList *>(obj);
+    case MessageType::Login_Request_HeroList: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_HeroList *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Reply_CharacterList: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CharacterList *>(obj);
+    case MessageType::Login_Reply_HeroList: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_HeroList *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Request_CreateCharacter: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CreateCharacter *>(obj);
+    case MessageType::Login_Request_CreateHero: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CreateHero *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Reply_CreateCharacterSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateCharacterSuccess *>(obj);
+    case MessageType::Login_Reply_CreateHeroSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateHeroSuccess *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Reply_CreateCharacterFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateCharacterFailed *>(obj);
+    case MessageType::Login_Reply_CreateHeroFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateHeroFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Request_DeleteCharacter: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_DeleteCharacter *>(obj);
+    case MessageType::Login_Request_DeleteHero: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_DeleteHero *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Reply_DeleteCharacterSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterSuccess *>(obj);
+    case MessageType::Login_Reply_DeleteHeroSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteHeroSuccess *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Login_Reply_DeleteCharacterFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailed *>(obj);
+    case MessageType::Login_Reply_DeleteHeroFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteHeroFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MessageType::World_Request_Login: {
@@ -4904,44 +4915,44 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
       auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Request_Move: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Move *>(obj);
+    case MessageType::World_Notify_LoadFinish: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_LoadFinish *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Request_Attack: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Attack *>(obj);
+    case MessageType::World_Notify_EnterSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterSuccess *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Notify_AppearActor: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_AppearActor *>(obj);
+    case MessageType::World_Notify_EnterFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Notify_DisappearActor: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_DisappearActor *>(obj);
+    case MessageType::World_Request_ActionMove: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_ActionMove *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Notify_Move: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Move *>(obj);
+    case MessageType::World_Request_ActionSkill: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_ActionSkill *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::World_Notify_Attack: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Attack *>(obj);
+    case MessageType::World_Notify_Appear: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Appear *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Notify_Disappear: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Disappear *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Notify_ActionMove: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_ActionMove *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Notify_ActionSkill: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_ActionSkill *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Damage *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Request_MoveZone: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveZone *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Reply_MoveZoneSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneSuccess *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::World_Reply_MoveZoneFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneFailed *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -4989,36 +5000,36 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_JoinFailed *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Request_CharacterList: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CharacterList *>(obj);
+    case MessageType::Login_Request_HeroList: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_HeroList *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Reply_CharacterList: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CharacterList *>(obj);
+    case MessageType::Login_Reply_HeroList: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_HeroList *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Request_CreateCharacter: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CreateCharacter *>(obj);
+    case MessageType::Login_Request_CreateHero: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CreateHero *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Reply_CreateCharacterSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateCharacterSuccess *>(obj);
+    case MessageType::Login_Reply_CreateHeroSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateHeroSuccess *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Reply_CreateCharacterFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateCharacterFailed *>(obj);
+    case MessageType::Login_Reply_CreateHeroFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateHeroFailed *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Request_DeleteCharacter: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_DeleteCharacter *>(obj);
+    case MessageType::Login_Request_DeleteHero: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_DeleteHero *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Reply_DeleteCharacterSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterSuccess *>(obj);
+    case MessageType::Login_Reply_DeleteHeroSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteHeroSuccess *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Login_Reply_DeleteCharacterFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailed *>(obj);
+    case MessageType::Login_Reply_DeleteHeroFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteHeroFailed *>(obj);
       return ptr->UnPack(resolver);
     }
     case MessageType::World_Request_Login: {
@@ -5033,44 +5044,44 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginFailed *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Request_Move: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Move *>(obj);
+    case MessageType::World_Notify_LoadFinish: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_LoadFinish *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Request_Attack: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Attack *>(obj);
+    case MessageType::World_Notify_EnterSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterSuccess *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Notify_AppearActor: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_AppearActor *>(obj);
+    case MessageType::World_Notify_EnterFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterFailed *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Notify_DisappearActor: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_DisappearActor *>(obj);
+    case MessageType::World_Request_ActionMove: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_ActionMove *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Notify_Move: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Move *>(obj);
+    case MessageType::World_Request_ActionSkill: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_ActionSkill *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::World_Notify_Attack: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Attack *>(obj);
+    case MessageType::World_Notify_Appear: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Appear *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Notify_Disappear: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Disappear *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Notify_ActionMove: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_ActionMove *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Notify_ActionSkill: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_ActionSkill *>(obj);
       return ptr->UnPack(resolver);
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Damage *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Request_MoveZone: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveZone *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Reply_MoveZoneSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneSuccess *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    case MessageType::World_Reply_MoveZoneFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneFailed *>(obj);
       return ptr->UnPack(resolver);
     }
     default: return nullptr;
@@ -5107,37 +5118,37 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_JoinFailedT *>(value);
       return CreateReply_JoinFailed(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Request_CharacterList: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CharacterListT *>(value);
-      return CreateRequest_CharacterList(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Request_HeroList: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_HeroListT *>(value);
+      return CreateRequest_HeroList(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Reply_CharacterList: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CharacterListT *>(value);
-      return CreateReply_CharacterList(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Reply_HeroList: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_HeroListT *>(value);
+      return CreateReply_HeroList(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Request_CreateCharacter: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CreateCharacterT *>(value);
-      return CreateRequest_CreateCharacter(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Request_CreateHero: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_CreateHeroT *>(value);
+      return CreateRequest_CreateHero(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Reply_CreateCharacterSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateCharacterSuccessT *>(value);
-      return CreateReply_CreateCharacterSuccess(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Reply_CreateHeroSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateHeroSuccessT *>(value);
+      return CreateReply_CreateHeroSuccess(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Reply_CreateCharacterFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateCharacterFailedT *>(value);
-      return CreateReply_CreateCharacterFailed(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Reply_CreateHeroFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_CreateHeroFailedT *>(value);
+      return CreateReply_CreateHeroFailed(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Request_DeleteCharacter: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_DeleteCharacterT *>(value);
-      return CreateRequest_DeleteCharacter(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Request_DeleteHero: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Request_DeleteHeroT *>(value);
+      return CreateRequest_DeleteHero(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Reply_DeleteCharacterSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterSuccessT *>(value);
-      return CreateReply_DeleteCharacterSuccess(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Reply_DeleteHeroSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteHeroSuccessT *>(value);
+      return CreateReply_DeleteHeroSuccess(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Login_Reply_DeleteCharacterFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(value);
-      return CreateReply_DeleteCharacterFailed(_fbb, ptr, _rehasher).Union();
+    case MessageType::Login_Reply_DeleteHeroFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::Login::Reply_DeleteHeroFailedT *>(value);
+      return CreateReply_DeleteHeroFailed(_fbb, ptr, _rehasher).Union();
     }
     case MessageType::World_Request_Login: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_LoginT *>(value);
@@ -5151,45 +5162,45 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_LoginFailedT *>(value);
       return CreateReply_LoginFailed(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Request_Move: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveT *>(value);
-      return CreateRequest_Move(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Notify_LoadFinish: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_LoadFinishT *>(value);
+      return CreateNotify_LoadFinish(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Request_Attack: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_AttackT *>(value);
-      return CreateRequest_Attack(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Notify_EnterSuccess: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterSuccessT *>(value);
+      return CreateNotify_EnterSuccess(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Notify_AppearActor: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_AppearActorT *>(value);
-      return CreateNotify_AppearActor(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Notify_EnterFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_EnterFailedT *>(value);
+      return CreateNotify_EnterFailed(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Notify_DisappearActor: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_DisappearActorT *>(value);
-      return CreateNotify_DisappearActor(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Request_ActionMove: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_ActionMoveT *>(value);
+      return CreateRequest_ActionMove(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Notify_Move: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_MoveT *>(value);
-      return CreateNotify_Move(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Request_ActionSkill: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_ActionSkillT *>(value);
+      return CreateRequest_ActionSkill(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::World_Notify_Attack: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_AttackT *>(value);
-      return CreateNotify_Attack(_fbb, ptr, _rehasher).Union();
+    case MessageType::World_Notify_Appear: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_AppearT *>(value);
+      return CreateNotify_Appear(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Notify_Disappear: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_DisappearT *>(value);
+      return CreateNotify_Disappear(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Notify_ActionMove: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_ActionMoveT *>(value);
+      return CreateNotify_ActionMove(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Notify_ActionSkill: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_ActionSkillT *>(value);
+      return CreateNotify_ActionSkill(_fbb, ptr, _rehasher).Union();
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_DamageT *>(value);
       return CreateNotify_Damage(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Request_MoveZone: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_MoveZoneT *>(value);
-      return CreateRequest_MoveZone(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Reply_MoveZoneSuccess: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneSuccessT *>(value);
-      return CreateReply_MoveZoneSuccess(_fbb, ptr, _rehasher).Union();
-    }
-    case MessageType::World_Reply_MoveZoneFailed: {
-      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_MoveZoneFailedT *>(value);
-      return CreateReply_MoveZoneFailed(_fbb, ptr, _rehasher).Union();
     }
     default: return 0;
   }
@@ -5225,36 +5236,36 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       value = new ProtocolCS::Login::Reply_JoinFailedT(*reinterpret_cast<ProtocolCS::Login::Reply_JoinFailedT *>(u.value));
       break;
     }
-    case MessageType::Login_Request_CharacterList: {
-      value = new ProtocolCS::Login::Request_CharacterListT(*reinterpret_cast<ProtocolCS::Login::Request_CharacterListT *>(u.value));
+    case MessageType::Login_Request_HeroList: {
+      value = new ProtocolCS::Login::Request_HeroListT(*reinterpret_cast<ProtocolCS::Login::Request_HeroListT *>(u.value));
       break;
     }
-    case MessageType::Login_Reply_CharacterList: {
-      assert(false);  // ProtocolCS::Login::Reply_CharacterListT not copyable.
+    case MessageType::Login_Reply_HeroList: {
+      assert(false);  // ProtocolCS::Login::Reply_HeroListT not copyable.
       break;
     }
-    case MessageType::Login_Request_CreateCharacter: {
-      value = new ProtocolCS::Login::Request_CreateCharacterT(*reinterpret_cast<ProtocolCS::Login::Request_CreateCharacterT *>(u.value));
+    case MessageType::Login_Request_CreateHero: {
+      value = new ProtocolCS::Login::Request_CreateHeroT(*reinterpret_cast<ProtocolCS::Login::Request_CreateHeroT *>(u.value));
       break;
     }
-    case MessageType::Login_Reply_CreateCharacterSuccess: {
-      assert(false);  // ProtocolCS::Login::Reply_CreateCharacterSuccessT not copyable.
+    case MessageType::Login_Reply_CreateHeroSuccess: {
+      assert(false);  // ProtocolCS::Login::Reply_CreateHeroSuccessT not copyable.
       break;
     }
-    case MessageType::Login_Reply_CreateCharacterFailed: {
-      value = new ProtocolCS::Login::Reply_CreateCharacterFailedT(*reinterpret_cast<ProtocolCS::Login::Reply_CreateCharacterFailedT *>(u.value));
+    case MessageType::Login_Reply_CreateHeroFailed: {
+      value = new ProtocolCS::Login::Reply_CreateHeroFailedT(*reinterpret_cast<ProtocolCS::Login::Reply_CreateHeroFailedT *>(u.value));
       break;
     }
-    case MessageType::Login_Request_DeleteCharacter: {
-      value = new ProtocolCS::Login::Request_DeleteCharacterT(*reinterpret_cast<ProtocolCS::Login::Request_DeleteCharacterT *>(u.value));
+    case MessageType::Login_Request_DeleteHero: {
+      value = new ProtocolCS::Login::Request_DeleteHeroT(*reinterpret_cast<ProtocolCS::Login::Request_DeleteHeroT *>(u.value));
       break;
     }
-    case MessageType::Login_Reply_DeleteCharacterSuccess: {
-      value = new ProtocolCS::Login::Reply_DeleteCharacterSuccessT(*reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterSuccessT *>(u.value));
+    case MessageType::Login_Reply_DeleteHeroSuccess: {
+      value = new ProtocolCS::Login::Reply_DeleteHeroSuccessT(*reinterpret_cast<ProtocolCS::Login::Reply_DeleteHeroSuccessT *>(u.value));
       break;
     }
-    case MessageType::Login_Reply_DeleteCharacterFailed: {
-      value = new ProtocolCS::Login::Reply_DeleteCharacterFailedT(*reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(u.value));
+    case MessageType::Login_Reply_DeleteHeroFailed: {
+      value = new ProtocolCS::Login::Reply_DeleteHeroFailedT(*reinterpret_cast<ProtocolCS::Login::Reply_DeleteHeroFailedT *>(u.value));
       break;
     }
     case MessageType::World_Request_Login: {
@@ -5269,44 +5280,44 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       value = new ProtocolCS::World::Reply_LoginFailedT(*reinterpret_cast<ProtocolCS::World::Reply_LoginFailedT *>(u.value));
       break;
     }
-    case MessageType::World_Request_Move: {
-      assert(false);  // ProtocolCS::World::Request_MoveT not copyable.
+    case MessageType::World_Notify_LoadFinish: {
+      value = new ProtocolCS::World::Notify_LoadFinishT(*reinterpret_cast<ProtocolCS::World::Notify_LoadFinishT *>(u.value));
       break;
     }
-    case MessageType::World_Request_Attack: {
-      value = new ProtocolCS::World::Request_AttackT(*reinterpret_cast<ProtocolCS::World::Request_AttackT *>(u.value));
+    case MessageType::World_Notify_EnterSuccess: {
+      value = new ProtocolCS::World::Notify_EnterSuccessT(*reinterpret_cast<ProtocolCS::World::Notify_EnterSuccessT *>(u.value));
       break;
     }
-    case MessageType::World_Notify_AppearActor: {
-      assert(false);  // ProtocolCS::World::Notify_AppearActorT not copyable.
+    case MessageType::World_Notify_EnterFailed: {
+      value = new ProtocolCS::World::Notify_EnterFailedT(*reinterpret_cast<ProtocolCS::World::Notify_EnterFailedT *>(u.value));
       break;
     }
-    case MessageType::World_Notify_DisappearActor: {
-      value = new ProtocolCS::World::Notify_DisappearActorT(*reinterpret_cast<ProtocolCS::World::Notify_DisappearActorT *>(u.value));
+    case MessageType::World_Request_ActionMove: {
+      assert(false);  // ProtocolCS::World::Request_ActionMoveT not copyable.
       break;
     }
-    case MessageType::World_Notify_Move: {
-      assert(false);  // ProtocolCS::World::Notify_MoveT not copyable.
+    case MessageType::World_Request_ActionSkill: {
+      value = new ProtocolCS::World::Request_ActionSkillT(*reinterpret_cast<ProtocolCS::World::Request_ActionSkillT *>(u.value));
       break;
     }
-    case MessageType::World_Notify_Attack: {
-      assert(false);  // ProtocolCS::World::Notify_AttackT not copyable.
+    case MessageType::World_Notify_Appear: {
+      assert(false);  // ProtocolCS::World::Notify_AppearT not copyable.
+      break;
+    }
+    case MessageType::World_Notify_Disappear: {
+      value = new ProtocolCS::World::Notify_DisappearT(*reinterpret_cast<ProtocolCS::World::Notify_DisappearT *>(u.value));
+      break;
+    }
+    case MessageType::World_Notify_ActionMove: {
+      assert(false);  // ProtocolCS::World::Notify_ActionMoveT not copyable.
+      break;
+    }
+    case MessageType::World_Notify_ActionSkill: {
+      assert(false);  // ProtocolCS::World::Notify_ActionSkillT not copyable.
       break;
     }
     case MessageType::World_Notify_Damage: {
       assert(false);  // ProtocolCS::World::Notify_DamageT not copyable.
-      break;
-    }
-    case MessageType::World_Request_MoveZone: {
-      value = new ProtocolCS::World::Request_MoveZoneT(*reinterpret_cast<ProtocolCS::World::Request_MoveZoneT *>(u.value));
-      break;
-    }
-    case MessageType::World_Reply_MoveZoneSuccess: {
-      assert(false);  // ProtocolCS::World::Reply_MoveZoneSuccessT not copyable.
-      break;
-    }
-    case MessageType::World_Reply_MoveZoneFailed: {
-      value = new ProtocolCS::World::Reply_MoveZoneFailedT(*reinterpret_cast<ProtocolCS::World::Reply_MoveZoneFailedT *>(u.value));
       break;
     }
     default:
@@ -5351,43 +5362,43 @@ inline void MessageTypeUnion::Reset() {
       delete ptr;
       break;
     }
-    case MessageType::Login_Request_CharacterList: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Request_CharacterListT *>(value);
+    case MessageType::Login_Request_HeroList: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Request_HeroListT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Reply_CharacterList: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_CharacterListT *>(value);
+    case MessageType::Login_Reply_HeroList: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_HeroListT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Request_CreateCharacter: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Request_CreateCharacterT *>(value);
+    case MessageType::Login_Request_CreateHero: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Request_CreateHeroT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Reply_CreateCharacterSuccess: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_CreateCharacterSuccessT *>(value);
+    case MessageType::Login_Reply_CreateHeroSuccess: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_CreateHeroSuccessT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Reply_CreateCharacterFailed: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_CreateCharacterFailedT *>(value);
+    case MessageType::Login_Reply_CreateHeroFailed: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_CreateHeroFailedT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Request_DeleteCharacter: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Request_DeleteCharacterT *>(value);
+    case MessageType::Login_Request_DeleteHero: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Request_DeleteHeroT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Reply_DeleteCharacterSuccess: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterSuccessT *>(value);
+    case MessageType::Login_Reply_DeleteHeroSuccess: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_DeleteHeroSuccessT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Login_Reply_DeleteCharacterFailed: {
-      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_DeleteCharacterFailedT *>(value);
+    case MessageType::Login_Reply_DeleteHeroFailed: {
+      auto ptr = reinterpret_cast<ProtocolCS::Login::Reply_DeleteHeroFailedT *>(value);
       delete ptr;
       break;
     }
@@ -5406,53 +5417,53 @@ inline void MessageTypeUnion::Reset() {
       delete ptr;
       break;
     }
-    case MessageType::World_Request_Move: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Request_MoveT *>(value);
+    case MessageType::World_Notify_LoadFinish: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_LoadFinishT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Request_Attack: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Request_AttackT *>(value);
+    case MessageType::World_Notify_EnterSuccess: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_EnterSuccessT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Notify_AppearActor: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_AppearActorT *>(value);
+    case MessageType::World_Notify_EnterFailed: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_EnterFailedT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Notify_DisappearActor: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_DisappearActorT *>(value);
+    case MessageType::World_Request_ActionMove: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Request_ActionMoveT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Notify_Move: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_MoveT *>(value);
+    case MessageType::World_Request_ActionSkill: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Request_ActionSkillT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::World_Notify_Attack: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_AttackT *>(value);
+    case MessageType::World_Notify_Appear: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_AppearT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Notify_Disappear: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_DisappearT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Notify_ActionMove: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_ActionMoveT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Notify_ActionSkill: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Notify_ActionSkillT *>(value);
       delete ptr;
       break;
     }
     case MessageType::World_Notify_Damage: {
       auto ptr = reinterpret_cast<ProtocolCS::World::Notify_DamageT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Request_MoveZone: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Request_MoveZoneT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Reply_MoveZoneSuccess: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_MoveZoneSuccessT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::World_Reply_MoveZoneFailed: {
-      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_MoveZoneFailedT *>(value);
       delete ptr;
       break;
     }

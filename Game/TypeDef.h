@@ -1,7 +1,7 @@
 #pragma once
 #include "Vector3.h"
 
-using AO::Vector3::Vector3;
+using namespace AO::Vector3;
 
 enum class ClassType : int
 {
@@ -17,3 +17,5 @@ enum class MapType : int
 	FIELD = 1,
 	DUNGEON = 2,
 };
+
+constexpr float HERO_MOVE_SPEED = 3.0f;
