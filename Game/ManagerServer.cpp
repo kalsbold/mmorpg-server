@@ -91,7 +91,7 @@ const Ptr<RemoteManagerClient> ManagerServer::GetRemoteClientByName(const std::s
 {
 	auto iter = std::find_if(remote_clients_.begin(), remote_clients_.end(), [name](auto& var)
 	{
-		return (var.second->server_name == name);
+		return (var.second->GetServerName() == name);
 	});
 
 	return iter == remote_clients_.end() ? nullptr : iter->second;
@@ -111,9 +111,9 @@ void ManagerServer::DoUpdate(double delta_time)
 	auto iter = user_session_set_.begin();
 	for (; iter != user_session_set_.end(); )
 	{
-		if (!iter->login_ && iter->logout_time_ + wait_time < clock_type::now())
+		if (!(iter->Login()) && iter->logout_time_ + wait_time < clock_type::now())
 		{
-			BOOST_LOG_TRIVIAL(info) << "Delete user session : " << iter->account_uid_ << " " << iter->credential_;
+			BOOST_LOG_TRIVIAL(info) << "Delete user session. account_uid : " << iter->account_uid_ << " credential: " << iter->credential_;
 			iter = user_session_set_.erase(iter);
 		}
 		else
@@ -144,7 +144,7 @@ void ManagerServer::ProcessRemoteClientDisconnected(const Ptr<RemoteManagerClien
 	RemoveRemoteClient(rc);
 	rc->OnDisconnected();
 
-	BOOST_LOG_TRIVIAL(info) << "Manager server logout : " << rc->server_name;
+	BOOST_LOG_TRIVIAL(info) << "Manager server logout : " << rc->GetServerName();
 }
 
 void ManagerServer::ScheduleNextUpdate(const time_point& now, const duration& timestep)
@@ -243,12 +243,10 @@ void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Manager
 	}
 
 	// 로그인 성공. RemoteClient 생성 및 추가.
-	auto new_rc = std::make_shared<RemoteManagerClient>(session);
-	new_rc->server_name = name;
-	new_rc->server_type = type;
+	auto new_rc = std::make_shared<RemoteManagerClient>(session, name, type);
 	AddRemoteClient(new_rc->GetSessionID(), new_rc);
 
-	BOOST_LOG_TRIVIAL(info) << "Manager server login : " << new_rc->server_name;
+	BOOST_LOG_TRIVIAL(info) << "Manager server login : " << new_rc->GetServerName();
 
 	Reply_LoginT reply;
 	reply.error_code = PSS::ErrorCode::OK;
@@ -275,12 +273,14 @@ void ManagerServer::OnGenerateCredential(const Ptr<net::Session>& session, const
 	if (iter != indexer.end())
 	{
 		// credential 을 새로 발급 하고 로그인 상태로 돌린다.
-		indexer.modify(iter, [&new_credential](UserSession& var) { var.credential_ = new_credential; var.login_ = true; });
+		indexer.modify(iter, [&new_credential, &rc](UserSession& var) { var.credential_ = new_credential; var.login_servers_[rc->GetServerName()] = true; });
 	}
 	else
 	{
 		// 새 삽입
-		user_session_set_.insert(UserSession(account_uid, new_credential));
+        UserSession user(account_uid, new_credential);
+        user.login_servers_[rc->GetServerName()] = true;
+		user_session_set_.emplace(std::move(user));
 	}
 	// 다시 찾는다.
 	iter = indexer.find(account_uid);
@@ -315,6 +315,8 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 	auto iter = indexer.find(credential);
 	if (iter == indexer.end())
 	{
+        BOOST_LOG_TRIVIAL(info) << "Failed to verify credential : " << credential;
+
 		// 없으면 실패
 		Reply_VerifyCredentialT reply;
         reply.error_code = PSS::ErrorCode::VERIFY_CREDENTIAL_FAILED;
@@ -326,7 +328,7 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 	}
 
 	// 다시 로그인 상태로 돌린다.
-	indexer.modify(iter, [](UserSession& user) { user.login_ = true; });
+	indexer.modify(iter, [&rc](UserSession& user) { user.login_servers_[rc->GetServerName()] = true; });
 
 	BOOST_LOG_TRIVIAL(info) << "Verify credential. account_uid: " << iter->account_uid_ << " credential: " << iter->credential_;
 
@@ -354,9 +356,9 @@ void ManagerServer::OnUserLogout(const Ptr<net::Session>& session, const PSS::Ma
 	const int account_uid = message->account_uid();
 	auto& indexer = user_session_set_.get<tags::account_uid>();
 	auto iter = indexer.find(account_uid);
-	if (iter != indexer.end() && iter->login_)
+	if (iter != indexer.end())
 	{
-		indexer.modify(iter, [](UserSession& user) { user.login_ = false; user.logout_time_ = clock_type::now(); });
+		indexer.modify(iter, [&rc](UserSession& user) { user.login_servers_[rc->GetServerName()] = false; user.logout_time_ = clock_type::now(); });
 		BOOST_LOG_TRIVIAL(info) << "User logout. account_uid: " << iter->account_uid_ << " credential: " << iter->credential_;
 	}
 }

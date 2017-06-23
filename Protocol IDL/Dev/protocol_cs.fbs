@@ -23,7 +23,7 @@ enum ErrorCode : int {
     DELETE_HERO_CANNOT_DELETE,
     // World
     WORLD_LOGIN_INVALID_CREDENTIAL = 200, // 로그인 실패
-    WORLD_LOGIN_INVALID_ACCOUNT,    // 계정이 잘못됨
+    WORLD_LOGIN_INVALID_ACCOUNT, // 계정이 잘못됨
     WORLD_LOGIN_INVALID_HERO, // 영웅이 존재하지 않음
     WORLD_LOGIN_INVALID_STATE, // 잘못된 상태
     WORLD_CANNOT_ENTER_ZONE, // 지역에 들어갈수 없다
@@ -188,22 +188,22 @@ table Actor {
 
 // 이동 정보
 table MoveInfo {
-    entity_id:string;
     position:Vec3;
     rotation:float;
     velocity:Vec3;
 }
 // 공격 정보
 table SkillInfo {
-    entity_id:string;
-    skill:int;
+    skill_id:int;
     rotation:float;
 }
-
 // 피격 정보
 table DamageInfo {
-    entity_id:string;
     damage:int;
+}
+// 상태 정보(점프, 앉기 등)
+table StateInfo {
+    state_id:int;
 }
 
 // 메시지 스키마 정의============================
@@ -254,17 +254,16 @@ table Notify_Appear {
 table Notify_Disappear {
     entity_id_list:[string];
 }
-// 케릭터의 이동 통지
-table Notify_ActionMove {
-    list:[MoveInfo];
+
+// 상태 업데이트
+union UpdateType {
+    MoveInfo,
+    SkillInfo,
+    DamageInfo,
 }
-// 케릭터의 공격 통지
-table Notify_ActionSkill {
-    list:[SkillInfo];
-}
-// 피격 통지
-table Notify_Damage {
-    list:[DamageInfo];
+table Notify_Update {
+    entity_id:string;
+    update_data:UpdateType;
 }
 
 // 다른 지역으로 이동 요청.
@@ -313,9 +312,7 @@ union MessageType {
     World.Request_ActionSkill,
     World.Notify_Appear,
     World.Notify_Disappear,
-    World.Notify_ActionMove,
-    World.Notify_ActionSkill,
-    World.Notify_Damage,
+    World.Notify_Update,
     //World.Request_ActionMoveZone,
     //World.Reply_MoveZoneSuccess,
     //World.Reply_MoveZoneFailed,

@@ -7,6 +7,59 @@
 #include "LoginServer.h"
 #include "WorldServer.h"
 
+#include "TestGrid.h"
+
+int run_servers()
+{
+    puts("Enterable commands:\n");
+    puts("m: Start manager server.\n");
+    puts("l: Start login server.\n");
+    puts("w: Start world server.\n");
+    puts("q: Quit.\n");
+
+    std::vector<Ptr<IServer>> server_list;
+    std::string input;
+
+    while (true)
+    {
+        std::cin >> input;
+
+        if (input == "m")
+        {
+            if (!Settings::GetInstance().Load("manager.cfg"))
+                return 0;
+
+            auto server = std::make_shared<ManagerServer>();
+            server->Run();
+            server_list.push_back(server);
+        }
+        else if (input == "l")
+        {
+            if (!Settings::GetInstance().Load("login.cfg"))
+                return 0;
+
+            auto server = std::make_shared<LoginServer>();
+            server->Run();
+            server_list.push_back(server);
+        }
+        else if (input == "w")
+        {
+            if (!Settings::GetInstance().Load("world.cfg"))
+                return 0;
+
+            auto server = std::make_shared<WorldServer>();
+            server->Run();
+            server_list.push_back(server);
+        }
+        else if (input == "q")
+        {
+            break;
+        }
+    }
+
+    return 0;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	try
@@ -20,51 +73,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (!Settings::GetInstance().Load(argv[1]))
 			return 0;*/
 
-		puts("Enterable commands:\n");
-		puts("m: Start manager server.\n");
-		puts("l: Start login server.\n");
-		puts("w: Start world server.\n");
-		puts("q: Quit.\n");
+        return run_servers();
 
-		std::vector<Ptr<IServer>> server_list;
-		std::string input;
-
-		while (true)
-		{
-			std::cin >> input;
-
-			if (input == "m")
-			{
-				if (!Settings::GetInstance().Load("manager.cfg"))
-					return 0;
-
-				auto server = std::make_shared<ManagerServer>();
-				server->Run();
-				server_list.push_back(server);
-			}
-			else if (input == "l")
-			{
-				if (!Settings::GetInstance().Load("login.cfg"))
-					return 0;
-
-				auto server = std::make_shared<LoginServer>();
-				server->Run();
-				server_list.push_back(server);
-			}
-			else if (input == "w")
-			{
-				if (!Settings::GetInstance().Load("world.cfg"))
-					return 0;
-
-				auto server = std::make_shared<WorldServer>();
-				server->Run();
-				server_list.push_back(server);
-			}
-			else if (input == "q")
-			{
-				break;
-			}
-		}
+        //TestGrid();
 	}
 	catch (const std::exception& e)
 	{

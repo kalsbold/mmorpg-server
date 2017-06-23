@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <unordered_map>
 #include <mutex>
 #include <type_traits>
 #include <chrono>
@@ -20,13 +21,20 @@ namespace PSS = ProtocolSS;
 class RemoteManagerClient : public RemoteClient
 {
 public:
-	using RemoteClient::RemoteClient;
+    RemoteManagerClient(const Ptr<net::Session>& net_session, const std::string& server_name, ServerType server_type)
+        : RemoteClient(net_session)
+        , server_name_(server_name)
+        , server_type_(server_type)
+    {}
+
+    const std::string GetServerName() const { return server_name_; }
+    ServerType GetServerType() const { return server_type_; }
 
 	// Inherited via RemoteClient
 	virtual void OnDisconnected() override {}
-
-	std::string server_name;
-	ServerType server_type;
+private:
+	std::string server_name_;
+	ServerType server_type_;
 };
 
 // 유저 인증 정보
@@ -35,10 +43,22 @@ struct UserSession
 	UserSession(int account_uid, const uuid& credential)
 		: account_uid_(account_uid), credential_(credential) {}
 
+    bool Login() const
+    {
+        // 한군대 라도 로그인 상태면 로그인.
+        for (auto pair : login_servers_)
+        {
+            if (pair.second == true)
+                return true;
+        }
+
+        return false;
+    }
+
 	int account_uid_;
 	uuid credential_;
 
-	bool login_ = true;
+    std::unordered_map<std::string, bool> login_servers_;
 	time_point logout_time_;
 };
 

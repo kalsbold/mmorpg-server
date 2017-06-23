@@ -1,81 +1,46 @@
 #pragma once
 #include "Common.h"
 #include "Actor.h"
-#include "RemoteClient.h"
+#include "RemoteWorldClient.h"
+#include "protocol_cs_helper.h"
+
+namespace PCS = ProtocolCS;
 
 // 플레이어 캐릭터
 class Hero : public Actor
 {
 public:
-    Hero(const uuid& entity_id, RemoteClient* rc, const db::Hero& db_data);
+    Hero(const uuid& entity_id, RemoteWorldClient* rc, const db::Hero& db_data);
     virtual ~Hero();
 
-    RemoteClient* GetRemoteClient()
-    {
-        return rc_;
-    }
+    RemoteWorldClient* GetRemoteClient();
 
-    void Send(const uint8_t * data, size_t size)
-    {
-        rc_->Send(data, size);
-    }
-
+    void Send(const uint8_t * data, size_t size);
     template <typename BufferT>
-    void Send(BufferT&& data)
-    {
-        rc_->Send(std::forward<BufferT>(data));
-    }
+    void Send(BufferT&& data);
 
-    virtual void SetLocationZone(Zone* zone) override;
+    void SetToDB(db::Hero& db_data);
+    void UpdateToDB(const Ptr<MySQLPool>& db);
+
+    fb::Offset<PWorld::Hero> Serialize(fb::FlatBufferBuilder& fbb) const;
+
+    virtual void SetCurrentZone(Zone* zone) override;
 
     virtual void Update(double delta_time) override
     {
 
     }
 
-    void SetTo(db::Hero& db_data)
+    void Move(const Vector3& position, float rotation, const Vector3& velocity);
+
+    void Skill()
     {
-        db_data.uid = uid_;
-        db_data.exp = exp_;
-        db_data.level = level_;
-        db_data.max_hp = max_hp_;
-        db_data.hp = hp_;
-        db_data.max_mp = max_mp_;
-        db_data.mp = mp_;
-        db_data.att = att_;
-        db_data.def = def_;
-        db_data.map_id = map_id_;
-        db_data.pos = GetPosition();
-        db_data.rotation = GetRotation();
+
     }
 
-    void UpdateToDB(const Ptr<MySQLPool>& db)
+    void OnDamage()
     {
-        db::Hero db_data;
-        SetTo(db_data);
-        db_data.Update(db);
-    }
 
-    fb::Offset<PWorld::Hero> Serialize(fb::FlatBufferBuilder& fbb) const
-    {
-        ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
-        return PWorld::CreateHeroDirect(fbb,
-            boost::uuids::to_string(GetEntityID()).c_str(),
-            uid_,
-            GetName().c_str(),
-            (ProtocolCS::ClassType)class_type_,
-            exp_,
-            level_,
-            max_hp_,
-            hp_,
-            max_mp_,
-            mp_,
-            att_,
-            def_,
-            map_id_,
-            &pos,
-            GetRotation()
-        );
     }
 
 private:
@@ -97,7 +62,7 @@ private:
         SetRotation(db_data.rotation);
     }
 
-    RemoteClient* rc_;
+    RemoteWorldClient* rc_;
 
 public:
     int            uid_;
@@ -112,3 +77,9 @@ public:
     int            def_;
     int            map_id_;
 };
+
+template<typename BufferT>
+inline void Hero::Send(BufferT && data)
+{
+    rc_->Send(std::forward<BufferT>(data));
+}

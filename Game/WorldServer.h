@@ -38,6 +38,8 @@ public:
 	const Ptr<RemoteWorldClient> GetRemoteClientByAccountUID(int account_uid);
 	const Ptr<RemoteWorldClient> GetAuthedRemoteClient(int session_id);
 
+    World* GetWorld() { return world_.get(); }
+
 	void NotifyUnauthedAccess(const Ptr<net::Session>& session);
 private:
 	// Network message handler type.
@@ -79,7 +81,7 @@ private:
 
 	void OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message);
     void OnLoadFinish(const Ptr<net::Session>& session, const PCS::World::Notify_LoadFinish* message);
-	void OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove* message);
+    void OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove* message);
 	void OnActionSkill(const Ptr<net::Session>& session, const PCS::World::Request_ActionSkill* message);
 
 	// ManagerClient Handlers=======================================================================================

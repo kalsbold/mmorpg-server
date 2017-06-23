@@ -20,7 +20,7 @@ bool Zone::Enter(const Ptr<Hero>& pc)
     auto r = players_.emplace(pc->GetEntityID(), pc);
     if (!r.second) return false;
 
-    pc->SetLocationZone(this);
+    pc->SetCurrentZone(this);
 
     // TO DO : 공간 분할을 고려할것(격자, 쿼드트리 등)
     // 주변 플레이어에 입장 통지
@@ -38,23 +38,6 @@ bool Zone::Enter(const Ptr<Hero>& pc)
         var.second->Send(fbb.GetBufferPointer(), fbb.GetSize());
     }
 
-    // 자신에게 주변 오브젝트 정보를 보낸다.
-    fbb.Clear();
-    actor_list.clear();
-    for (auto& var : players_)
-    {
-        auto offset = var.second->Serialize(fbb);
-        actor_list.push_back(PWorld::CreateActor(fbb, PWorld::ActorType::Hero, offset.Union()));
-    }
-    for (auto& var : monsters_)
-    {
-        auto offset = var.second->Serialize(fbb);
-        actor_list.push_back(PWorld::CreateActor(fbb, PWorld::ActorType::Monster, offset.Union()));
-    }
-    // 자신에게 보낸다.
-    notify_appear = PWorld::CreateNotify_AppearDirect(fbb, &actor_list);
-    PCS::Send(*(pc->GetRemoteClient()), fbb, notify_appear);
-
     return true;
 }
 
@@ -63,7 +46,7 @@ void Zone::Leave(const Ptr<Hero>& pc)
     size_t r = players_.erase(pc->GetEntityID());
     if (r == 0) return;
 
-    pc->SetLocationZone(nullptr);
+    pc->SetCurrentZone(nullptr);
 
     // 주변에 퇴장 통보
     // TO DO : 공간 분할을 고려할것(격자, 쿼드트리 등)

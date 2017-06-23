@@ -4,10 +4,13 @@
 #include "RemoteClient.h"
 #include "TypeDef.h"
 #include "DBSchema.h"
+#include "protocol_cs_generated.h"
 
+namespace PCS = ProtocolCS;
 namespace db = db_schema;
 
 class WorldServer;
+class World;
 class Hero;
 
 class RemoteWorldClient : public RemoteClient
@@ -23,6 +26,9 @@ public:
 
 	RemoteWorldClient(const Ptr<net::Session>& net_session, WorldServer* owner);
 	~RemoteWorldClient();
+    
+    // 종료 처리. 상태 DB Update 등 을 한다.
+    void Dispose();
 
 	State GetState() const { return state_; }
 
@@ -75,10 +81,9 @@ public:
 		hero_ = hero;
 	}
 
-	void UpdateToDB();
+    World* GetWorld();
 
-	// 종료 처리. 상태 DB Update 등 을 한다.
-	void Dispose();
+	void UpdateToDB();
 
 	// 클라이언트에서 연결을 끊었을때 callback
 	virtual void OnDisconnected() override
@@ -89,9 +94,12 @@ public:
 
 public:
 	int selected_hero_uid_;
-
-	// 메시지 처리
-    void OnActionMove(const Vector3& position, float rotation, const Vector3& velocity);
+    // 월드 입장
+    void EnterWorld();
+    // 이동
+    void ActionMove(const PCS::World::Request_ActionMove * message);
+    // 자신에게 주변 정보를 알린다.
+    void NotifyAppearActorsToMe();
 
 private:
 	const Ptr<MySQLPool>& GetDB();

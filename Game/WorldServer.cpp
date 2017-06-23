@@ -264,63 +264,16 @@ void WorldServer::OnLogin(const Ptr<net::Session>& session, const PCS::World::Re
 
 void WorldServer::OnLoadFinish(const Ptr<net::Session>& session, const PCS::World::Notify_LoadFinish * message)
 {
+    if (message == nullptr) return;
+
     auto rc = GetAuthedRemoteClient(session->GetID());
     if (!rc)
     {
         NotifyUnauthedAccess(session);
         return;
     }
-    // 이미 입장중 상태면 리턴
-    if (rc->GetState() == RemoteWorldClient::State::WorldEntering || rc->GetState() == RemoteWorldClient::State::WorldEntered)
-    {
-        return;
-    }
 
-    if (rc->GetState() != RemoteWorldClient::State::Connected)
-    {
-        PCS::World::Notify_EnterFailedT reply;
-        reply.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_STATE;
-        PCS::Send(*rc, reply);
-        return;
-    }
-
-    auto hero = rc->GetHero();
-    if (!hero)
-    {
-        PCS::World::Notify_EnterFailedT reply;
-        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_HERO;
-        PCS::Send(*rc, reply);
-        return;
-    }
-    Zone* zone = world_->FindFieldZone(hero->map_id_);
-    if (!zone)
-    {
-        PCS::World::Notify_EnterFailedT reply;
-        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
-        PCS::Send(*rc, reply);
-        return;
-    }
-
-    // 월드 입장
-    rc->SetState(RemoteWorldClient::State::WorldEntering);
-    world_->Dispatch([rc, zone, hero] {
-        if (zone->Enter(hero))
-        {
-            rc->SetState(RemoteWorldClient::State::WorldEntered);
-
-            PCS::World::Notify_EnterSuccessT reply;
-            PCS::Send(*rc, reply);
-            
-        }
-        else
-        {
-            rc->SetState(RemoteWorldClient::State::Connected);
-
-            PCS::World::Notify_EnterFailedT reply;
-            reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
-            PCS::Send(*rc, reply);
-        }
-    });
+    rc->EnterWorld();
 }
 
 void WorldServer::OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove * message)
@@ -339,10 +292,7 @@ void WorldServer::OnActionMove(const Ptr<net::Session>& session, const PCS::Worl
         return;
     }
 
-    auto* pos = message->position();
-    auto* vel = message->velocity();
-
-    rc->OnActionMove(Vector3(pos->x(), pos->y(), pos->z()), message->rotation(), Vector3(pos->x(), pos->y(), pos->z()));
+    rc->ActionMove(message);
 }
 
 void WorldServer::OnActionSkill(const Ptr<net::Session>& session, const PCS::World::Request_ActionSkill * message)
@@ -360,8 +310,6 @@ void WorldServer::OnActionSkill(const Ptr<net::Session>& session, const PCS::Wor
     {
         return;
     }
-
-
 }
 
 void WorldServer::RegisterHandlers()
@@ -420,48 +368,45 @@ void WorldServer::RegisterManagerClientHandlers()
                 return;
             }
 
-            // 계정 정보를 불러온다.
-            auto db_account = db::Account::Fetch(db_conn_, account_uid);
-            // 계정이 없다.
-            if (!db_account)
+            if (!rc->GetAccount())
             {
-                PCS::Login::Reply_LoginFailedT reply;
-                reply.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_ACCOUNT;
-                PCS::Send(*rc, reply);
-                return;
-            }
-            rc->SetAccount(db_account);
-
-            // 캐릭터 로드
-            auto db_hero = db::Hero::Fetch(GetDB(), rc->selected_hero_uid_, rc->GetAccount()->uid);
-            // 캐릭터 로드 실패
-            if (!db_hero)
-            {
-                PCS::Login::Reply_LoginFailedT reply;
-                reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_HERO;
-                PCS::Send(*rc, reply);
-                return;
-            }
-            rc->SetDBHero(db_hero);
-
-            Zone* zone = world_->FindFieldZone(db_hero->map_id);
-            if (zone == nullptr)
-            {
-                PCS::Login::Reply_LoginFailedT reply;
-                reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
-                PCS::Send(*rc, reply);
-                return;
+                // 계정 정보를 불러온다.
+                auto db_account = db::Account::Fetch(db_conn_, account_uid);
+                // 계정이 없다.
+                if (!db_account)
+                {
+                    PCS::Login::Reply_LoginFailedT reply;
+                    reply.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_ACCOUNT;
+                    PCS::Send(*rc, reply);
+                    return;
+                }
+                rc->SetAccount(db_account);
             }
 
-            // 케릭터 인스턴스 생성
-            auto hero = std::make_shared<Hero>(random_generator()(), rc.get(), *rc->GetDBHero());
-            rc->SetHero(hero);
+            if (!rc->GetHero())
+            {
+                // 캐릭터 로드
+                auto db_hero = db::Hero::Fetch(GetDB(), rc->selected_hero_uid_, rc->GetAccount()->uid);
+                // 캐릭터 로드 실패
+                if (!db_hero)
+                {
+                    PCS::Login::Reply_LoginFailedT reply;
+                    reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_HERO;
+                    PCS::Send(*rc, reply);
+                    return;
+                }
+                rc->SetDBHero(db_hero);
+
+                // 케릭터 인스턴스 생성
+                auto hero = std::make_shared<Hero>(random_generator()(), rc.get(), *rc->GetDBHero());
+                rc->SetHero(hero);
+            }
             
-            BOOST_LOG_TRIVIAL(info) << "World Login Success. account_uid : " << rc->GetAccount()->uid << " user_name: " << rc->GetAccount()->user_name;
+            BOOST_LOG_TRIVIAL(info) << "World Login Success. user_name: " << rc->GetAccount()->user_name;
 
             // 케릭터 정보를 전송한다.
             fb::FlatBufferBuilder fbb;
-            auto hero_offset = hero->Serialize(fbb);
+            auto hero_offset = rc->GetHero()->Serialize(fbb);
             auto reply_offset = PCS::World::CreateReply_LoginSuccess(fbb, hero_offset);
             PCS::Send(*rc, fbb, reply_offset);
         });

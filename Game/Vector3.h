@@ -374,6 +374,15 @@ namespace AO
 		}
 		//-------------------------------------------------------------------
 
+        inline Vector3 Min(Vector3 const& vec1, Vector3 const&vec2)
+        {
+            return Vector3(std::min(vec1.X, vec2.X), std::min(vec1.Y, vec2.Y), std::min(vec1.Z, vec2.Z));
+        }
+
+        inline Vector3 Max(Vector3 const& vec1, Vector3 const&vec2)
+        {
+            return Vector3(std::max(vec1.X, vec2.X), std::max(vec1.Y, vec2.Y), std::max(vec1.Z, vec2.Z));
+        }
 	}
 }
 

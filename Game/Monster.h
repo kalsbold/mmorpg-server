@@ -1,8 +1,11 @@
 #pragma once
 #include "Common.h"
 #include "Actor.h"
+#include "protocol_cs_helper.h"
 
 class Monster : public Actor
+
+
 {
 public:
 	Monster(const uuid& entity_id);
@@ -13,26 +16,11 @@ public:
 
 	}
 
-	fb::Offset<PWorld::Monster> Serialize(fb::FlatBufferBuilder& fbb) const
-	{
-		ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
-		return PWorld::CreateMonsterDirect(
-			fbb,
-			boost::uuids::to_string(GetEntityID()).c_str(),
-			type_id,
-			GetName().c_str(),
-			level_,
-			max_hp_,
-			hp_,
-			max_mp_,
-			mp_,
-			&pos,
-			GetRotation()
-		);
-	}
+    fb::Offset<PWorld::Monster> Serialize(fb::FlatBufferBuilder& fbb) const;
 
 private:
 
+public:
 	int			   type_id;
 	int            level_;
 	int            max_hp_;

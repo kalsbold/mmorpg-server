@@ -16,22 +16,17 @@ class Actor : public GameObject
 public:
 	Actor(const uuid& entity_id)
         : GameObject(entity_id)
-        , location_zone_(nullptr)
+        , current_zone_(nullptr)
     {}
 
-	virtual bool IsInZone()
+	virtual void SetCurrentZone(Zone* zone)
 	{
-		return location_zone_ != nullptr;
+		current_zone_ = zone;
 	}
 
-	virtual void SetLocationZone(Zone* zone)
+	virtual Zone* GetCurrentZone()
 	{
-		location_zone_ = zone;
-	}
-
-	virtual Zone* GetLocationZone()
-	{
-		return location_zone_;
+		return current_zone_;
 	}
 
 	const std::string& GetName() const { return name_; }
@@ -41,5 +36,5 @@ protected:
 
 private:
 	std::string name_;
-	Zone* location_zone_;
+	Zone* current_zone_;
 };
