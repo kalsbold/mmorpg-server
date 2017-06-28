@@ -8,8 +8,10 @@
 #include <map>
 #include <unordered_map>
 #include <tuple>
+#include <boost/signals2.hpp>
 #include <GisunNet.h>
 #include <flatbuffers\flatbuffers.h>
+#include "Vector3.h"
 
 using namespace gisun;
 
@@ -18,7 +20,7 @@ using UPtr = std::unique_ptr<T>;
 
 using namespace std::chrono_literals;
 
-// update frame time step.(20fps)
+// Update frame time step.(20fps)
 constexpr std::chrono::nanoseconds TIME_STEP(50ms);
 
 using double_seconds = std::chrono::duration<double>;
@@ -34,3 +36,5 @@ using timer = boost::asio::high_resolution_timer;
 
 using boost::asio::strand;
 using boost::uuids::random_generator;
+
+using namespace AO::Vector3;

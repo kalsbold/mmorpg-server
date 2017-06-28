@@ -4,7 +4,7 @@
 #include "ManagerClient.h"
 #include "Settings.h"
 #include "DBSchema.h"
-#include "StaticCachedData.h"
+#include "CachedResources.h"
 #include "protocol_ss_helper.h"
 #include "protocol_cs_helper.h"
 #include "World.h"
@@ -406,7 +406,7 @@ void WorldServer::RegisterManagerClientHandlers()
 
             // 케릭터 정보를 전송한다.
             fb::FlatBufferBuilder fbb;
-            auto hero_offset = rc->GetHero()->Serialize(fbb);
+            auto hero_offset = rc->GetHero()->SerializeAsHero(fbb);
             auto reply_offset = PCS::World::CreateReply_LoginSuccess(fbb, hero_offset);
             PCS::Send(*rc, fbb, reply_offset);
         });

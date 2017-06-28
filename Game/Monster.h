@@ -11,13 +11,15 @@ public:
 	Monster(const uuid& entity_id);
 	virtual ~Monster();
 
-	virtual void Update(double delta_time) override
-	{
+    fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const override;
 
-	}
+    fb::Offset<PCS::World::Monster> SerializeAsMonster(fb::FlatBufferBuilder& fbb) const;
 
-    fb::Offset<PWorld::Monster> Serialize(fb::FlatBufferBuilder& fbb) const;
 
+    virtual void Update(double delta_time) override
+    {
+
+    }
 private:
 
 public:

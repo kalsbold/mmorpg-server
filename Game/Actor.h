@@ -3,38 +3,66 @@
 #include "GameObject.h"
 #include "DBSchema.h"
 #include "protocol_cs_generated.h"
+#include <boost/signals2.hpp>
 
 namespace db = db_schema;
 namespace fb = flatbuffers;
 namespace PCS = ProtocolCS;
-namespace PWorld = ProtocolCS::World;
 
 class Zone;
+class ZoneCell;
 
 class Actor : public GameObject
 {
 public:
 	Actor(const uuid& entity_id)
         : GameObject(entity_id)
-        , current_zone_(nullptr)
+        , zone_(nullptr)
+        , current_cell_(nullptr)
     {}
 
-	virtual void SetCurrentZone(Zone* zone)
-	{
-		current_zone_ = zone;
-	}
-
-	virtual Zone* GetCurrentZone()
-	{
-		return current_zone_;
-	}
+    ~Actor()
+    {
+        ResetInterest();
+    }
 
 	const std::string& GetName() const { return name_; }
+
+    virtual void SetZone(Zone* zone)
+    {
+        if (zone_ == zone)
+            return;
+
+        zone_ = zone;
+    }
+
+    Zone* GetZone()
+    {
+        return zone_;
+    }
+
+    ZoneCell* GetCurrentCell()
+    {
+        return current_cell_;
+    }
+
+    void UpdateInterest();
+
+    void ResetInterest();
+
+    void PublishActorUpdate(PCS::World::Notify_UpdateT* message);
+
+    virtual fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const
+    {
+        return 0;
+    }
 
 protected:
 	void SetName(const std::string& name) { name_ = name; }
 
 private:
 	std::string name_;
-	Zone* current_zone_;
+	Zone* zone_;
+    ZoneCell* current_cell_;
+    std::vector<signals2::connection> cell_connections_;
 };

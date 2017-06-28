@@ -5,6 +5,7 @@
 #include "TypeDef.h"
 #include "DBSchema.h"
 #include "protocol_cs_generated.h"
+#include "ClientInterestArea.h"
 
 namespace PCS = ProtocolCS;
 namespace db = db_schema;
@@ -25,36 +26,24 @@ public:
 	};
 
 	RemoteWorldClient(const Ptr<net::Session>& net_session, WorldServer* owner);
-	~RemoteWorldClient();
+	virtual ~RemoteWorldClient();
     
     // 종료 처리. 상태 DB Update 등 을 한다.
     void Dispose();
+    bool IsDispose() const { return disposed_; }
 
+    // 상태
 	State GetState() const { return state_; }
+	void SetState(State state) { state_ = state; }
 
-	void SetState(State state)
-	{
-		state_ = state;
-	}
-
-	bool IsDispose() { return disposed_; }
-
+    // 계정 정보
 	const Ptr<db::Account>& GetAccount() const { return db_account_; }
+	void SetAccount(Ptr<db::Account> db_account) { db_account_ = db_account; }
 
-	void SetAccount(Ptr<db::Account> db_account)
-	{
-		db_account_ = db_account;
-	}
-
-	bool IsAuthenticated() const
-	{
-		return !credential_.is_nil();
-	}
-
-	void Authenticate(uuid credential)
-	{
-		credential_ = credential;
-	}
+    // 인증서 저장
+    void Authenticate(uuid credential) { credential_ = credential; }
+    // 인증 확인
+	bool IsAuthenticated() const { return !credential_.is_nil(); }
 
 	const uuid& GetCredential() const
 	{
@@ -83,26 +72,38 @@ public:
 
     World* GetWorld();
 
-	void UpdateToDB();
+    const Ptr<MySQLPool>& GetDB();
+	
+    void UpdateToDB();
 
 	// 클라이언트에서 연결을 끊었을때 callback
 	virtual void OnDisconnected() override
 	{
+        RemoteClient::OnDisconnected();
+
 		SetState(State::Disconnected);
 		Dispose();
 	}
-
-public:
-	int selected_hero_uid_;
+	
     // 월드 입장
     void EnterWorld();
     // 이동
     void ActionMove(const PCS::World::Request_ActionMove * message);
-    // 자신에게 주변 정보를 알린다.
-    void NotifyAppearActorsToMe();
+
+    int selected_hero_uid_;
 
 private:
-	const Ptr<MySQLPool>& GetDB();
+    void ExitWorld();
+
+    // callback handler
+    void OnUpdateHeroPosition(const Vector3& position)
+    {
+        if (interest_area_)
+        {
+            interest_area_->Position(position);
+            interest_area_->UpdateInterest();
+        }
+    }
 
 	std::atomic<bool>       disposed_;
 
@@ -113,6 +114,7 @@ private:
 	std::atomic<State>		state_;
 	Ptr<db::Hero>			db_hero_;
 	Ptr<Hero>				hero_;
+    Ptr<ClientInterestArea> interest_area_;
 
 	time_point last_position_update_time_;
 	time_point last_attack_time;

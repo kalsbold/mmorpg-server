@@ -14,9 +14,7 @@ public:
         assert(net_session->IsOpen());
     }
 
-    virtual ~RemoteClient()
-    {
-    }
+    virtual ~RemoteClient() {}
 
     int GetSessionID() const
     {
@@ -46,19 +44,19 @@ public:
         net_session_->Send(std::forward<BufferT>(data));
     }
 
-    bool IsDisconnected()
-    {
-        return !net_session_->IsOpen();
-    }
-
     // 연결을 종료한다.
     void Disconnect()
     {
         net_session_->Close();
     }
 
+    bool IsDisconnected()
+    {
+        return !net_session_->IsOpen();
+    }
+
     // 연결이 끊겼을때 callback
-    virtual void OnDisconnected() = 0;
+    virtual void OnDisconnected() {};
 
 private:
     Ptr<net::Session> net_session_;

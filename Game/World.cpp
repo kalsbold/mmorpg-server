@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "World.h"
-#include "StaticCachedData.h"
+#include "CachedResources.h"
 
 
 World::World(boost::asio::io_service & ios)

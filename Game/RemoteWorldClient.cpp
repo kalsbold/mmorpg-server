@@ -36,16 +36,7 @@ void RemoteWorldClient::Dispose()
     if (!disposed_.compare_exchange_strong(exp, true))
         return;
 
-    if (hero_)
-    {
-        // 월드에서 나간다.
-        GetWorld()->Dispatch([hero = hero_] {
-            Zone* zone = hero->GetCurrentZone();
-            if (zone == nullptr) return;
-
-            zone->Leave(hero);
-        });
-    }
+    ExitWorld();
     // DB 업데이트
     UpdateToDB();
 }
@@ -87,14 +78,18 @@ void RemoteWorldClient::EnterWorld()
     BOOST_LOG_TRIVIAL(info) << "World Entring . account_uid : " << GetAccount()->uid << " hero_name: " << hero->GetName();
 
     GetWorld()->Dispatch([this, zone, hero] {
-        if (zone->Enter(hero))
+        if (zone->Enter(hero, hero->GetPosition()))
         {
             this->SetState(RemoteWorldClient::State::WorldEntered);
 
+            // 관심 지역을 만든다
+            this->interest_area_ = std::make_shared<ClientInterestArea>(this, zone);
+            this->interest_area_->ViewDistance(Vector3(20.0f, 1.0f, 20.0f));
+            hero->poistion_update_handler = std::bind(&RemoteWorldClient::OnUpdateHeroPosition, this, std::placeholders::_1);
+            hero->poistion_update_handler(hero->GetPosition());
+
             PCS::World::Notify_EnterSuccessT reply;
             PCS::Send(*this, reply);
-
-            this->NotifyAppearActorsToMe();
         }
         else
         {
@@ -130,37 +125,22 @@ void RemoteWorldClient::ActionMove(const PCS::World::Request_ActionMove * messag
     });
 }
 
-// 자신에게 주변 정보를 알린다.
-void RemoteWorldClient::NotifyAppearActorsToMe()
+void RemoteWorldClient::ExitWorld()
 {
-    if (GetState() != RemoteWorldClient::State::WorldEntered)
-        return;
-
-    auto hero = GetHero();
-    if (!hero) return;
-
-    GetWorld()->Dispatch([this, hero = hero]() {
-        Zone* zone = hero->GetCurrentZone();
-        if (!zone) return;
-
-        // 자신에게 주변 오브젝트 정보를 보낸다.
-        fb::FlatBufferBuilder fbb;
-        std::vector<fb::Offset<PWorld::Actor>> actor_list;
-
-        for (auto& var : zone->players_)
-        {
-            auto offset = var.second->Serialize(fbb);
-            actor_list.push_back(PWorld::CreateActor(fbb, PWorld::ActorType::Hero, offset.Union()));
-        }
-        for (auto& var : zone->monsters_)
-        {
-            auto offset = var.second->Serialize(fbb);
-            actor_list.push_back(PWorld::CreateActor(fbb, PWorld::ActorType::Monster, offset.Union()));
-        }
-        // 자신에게 보낸다.
-        auto notify_appear = PWorld::CreateNotify_AppearDirect(fbb, &actor_list);
-        PCS::Send(*(hero->GetRemoteClient()), fbb, notify_appear);
-    });
+    if (hero_)
+    {
+        // 월드에서 나간다.
+        GetWorld()->Dispatch([this, hero = hero_] {
+            Zone* zone = hero->GetZone();
+            if (zone)
+            {
+                zone->Exit(hero);
+            }
+            // 관심지역 해제
+            this->interest_area_ = nullptr;
+            hero->poistion_update_handler = nullptr;
+        });
+    }
 }
 
 const Ptr<MySQLPool>& RemoteWorldClient::GetDB()

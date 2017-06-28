@@ -1,7 +1,4 @@
 #pragma once
-#include "Vector3.h"
-
-using namespace AO::Vector3;
 
 enum class ClassType : int
 {

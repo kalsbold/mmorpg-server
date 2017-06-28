@@ -4,7 +4,7 @@
 #include "ManagerClient.h"
 #include "Settings.h"
 #include "DBSchema.h"
-#include "StaticCachedData.h"
+#include "CachedResources.h"
 #include "protocol_ss_helper.h"
 #include "protocol_cs_helper.h"
 

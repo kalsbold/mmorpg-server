@@ -21,9 +21,9 @@ void Hero::Send(const uint8_t * data, size_t size)
     rc_->Send(data, size);
 }
 
-void Hero::SetCurrentZone(Zone * zone)
+void Hero::SetZone(Zone * zone)
 {
-	Actor::SetCurrentZone(zone);
+	Actor::SetZone(zone);
 	if (zone == nullptr) return;
 
 	map_id_ = zone->MapID();
@@ -37,37 +37,79 @@ void Hero::Move(const Vector3 & position, float rotation, const Vector3 & veloci
     // 최대 속도보다 빠르게 움직일수 없다. 
     //if (distance(GetPosition(), position) > HERO_MOVE_SPEED * delta_time)
     //    return;
-    Zone* zone = GetCurrentZone();
-    if (zone == nullptr) return;
+    if (GetZone() == nullptr) return;
 
-    auto& mapData = zone->MapData();
+    auto& mapData = GetZone()->MapData();
     if (mapData.height > t_pos.Z && 0 < t_pos.Z && mapData.width > t_pos.X && 0 < t_pos.X)
     {
         SetPosition(t_pos);
     }
     SetRotation(rotation);
+    if (poistion_update_handler)
+        poistion_update_handler(GetPosition());
 
-    t_pos = GetPosition();
+    UpdateInterest();
 
-    // 주변 플레이어에 통지
-    fb::FlatBufferBuilder fbb;
-    std::vector<fb::Offset<PWorld::MoveInfo>> list;
+    PCS::World::MoveInfoT move_info;
+    move_info.entity_id = uuids::to_string(GetEntityID());
+    move_info.position = std::make_unique<PCS::Vec3>(GetPosition().X, GetPosition().Y, GetPosition().Z);
+    move_info.rotation = GetRotation();
+    move_info.velocity = std::make_unique<PCS::Vec3>(velocity.X, velocity.Y, velocity.Z);
 
-    auto offset = PWorld::CreateMoveInfoDirect(fbb,
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.update_data.Set(std::move(move_info));
+    // 통지
+    PublishActorUpdate(&update_msg);
+}
+
+inline fb::Offset<PCS::World::Actor> Hero::SerializeAsActor(fb::FlatBufferBuilder & fbb) const
+{
+    //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
+    auto hero_offset = SerializeAsHero(fbb);
+    return PCS::World::CreateActor(fbb, PCS::World::ActorType::Hero, hero_offset.Union());
+}
+
+inline fb::Offset<PCS::World::Hero> Hero::SerializeAsHero(fb::FlatBufferBuilder & fbb) const
+{
+    //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
+    auto hero_offset = PCS::World::CreateHeroDirect(fbb,
         boost::uuids::to_string(GetEntityID()).c_str(),
-        &PCS::Vec3(t_pos.X, t_pos.Y, t_pos.Z),
-        GetRotation(),
-        &PCS::Vec3(velocity.X, velocity.Y, velocity.Z));
-    list.push_back(offset);
+        uid_,
+        GetName().c_str(),
+        (PCS::ClassType)class_type_,
+        exp_,
+        level_,
+        max_hp_,
+        hp_,
+        max_mp_,
+        mp_,
+        att_,
+        def_,
+        map_id_,
+        //&pos,
+        &PCS::Vec3(GetPosition().X, GetPosition().Y, GetPosition().Z),
+        GetRotation()
+    );
 
-    auto notify = PWorld::CreateNotify_ActionMoveDirect(fbb, &list);
-    PCS::FinishMessageRoot(fbb, notify);
+    return hero_offset;
+}
 
-    // 지역의 플레이어에게 보낸다.
-    for (auto& var : zone->players_)
-    {
-        var.second->Send(fbb.GetBufferPointer(), fbb.GetSize());
-    }
+inline void Hero::InitAttribute(const db::Hero & db_data)
+{
+    uid_ = db_data.uid;
+    SetName(db_data.name);
+    class_type_ = db_data.class_type;
+    exp_ = db_data.exp;
+    level_ = db_data.level;
+    max_hp_ = db_data.max_hp;
+    hp_ = db_data.hp;
+    max_mp_ = db_data.max_mp;
+    mp_ = db_data.mp;
+    att_ = db_data.att;
+    def_ = db_data.def;
+    map_id_ = db_data.map_id;
+    SetPosition(db_data.pos);
+    SetRotation(db_data.rotation);
 }
 
 void Hero::SetToDB(db::Hero & db_data)
@@ -93,24 +135,3 @@ void Hero::UpdateToDB(const Ptr<MySQLPool>& db)
     db_data.Update(db);
 }
 
-fb::Offset<PWorld::Hero> Hero::Serialize(fb::FlatBufferBuilder & fbb) const
-{
-    ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
-    return PWorld::CreateHeroDirect(fbb,
-        boost::uuids::to_string(GetEntityID()).c_str(),
-        uid_,
-        GetName().c_str(),
-        (ProtocolCS::ClassType)class_type_,
-        exp_,
-        level_,
-        max_hp_,
-        hp_,
-        max_mp_,
-        mp_,
-        att_,
-        def_,
-        map_id_,
-        &pos,
-        GetRotation()
-    );
-}

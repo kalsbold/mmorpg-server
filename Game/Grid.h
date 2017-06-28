@@ -4,10 +4,10 @@
 #include <vector>
 #include "BoundingBox.h"
 
-class Cell
+class BasicCell
 {
 public:
-    Cell(int x, int y, int z)
+    BasicCell(int x, int y, int z)
         : x_(x), y_(y), z_(z)
     {}
 
@@ -21,7 +21,7 @@ private:
     int z_;
 };
 
-template <typename T = Cell>
+template <typename T = BasicCell>
 class Grid
 {
 public:
@@ -34,13 +34,13 @@ public:
 		tile_y_ = (int)std::ceil(area_.Size().Y / (double)tileDimensions_.Y);
         tile_z_ = (int)std::ceil(area_.Size().Z / (double)tileDimensions_.Z);
 
-        for (size_t x = 0; x < tile_x_; x++)
+        for (int x = 0; x < tile_x_; x++)
         {
             cells_.emplace_back(std::vector<std::vector<CellType>>());
-            for (size_t y = 0; y < tile_y_; y++)
+            for (int y = 0; y < tile_y_; y++)
             {
                 cells_[x].emplace_back(std::vector<CellType>());
-                for (size_t z = 0; z < tile_z_; z++)
+                for (int z = 0; z < tile_z_; z++)
                 {
                     cells_[x][y].emplace_back(CellType(x, y, z));
                 }
@@ -49,7 +49,6 @@ public:
 	}
 	~Grid()
 	{
-
 	}
 
     const BoundingBox& Area() const { return area_; }
@@ -104,11 +103,11 @@ public:
         int z1 = std::min((int)std::ceil(max.Z / tileDimensions_.Z), tile_z_);
 
         std::vector<CellType*> result;
-        for (size_t x = x0; x < x1; x++)
+        for (int x = x0; x < x1; x++)
         {
-            for (size_t y = y0; y < y1; y++)
+            for (int y = y0; y < y1; y++)
             {
-                for (size_t z = z0; z < z1; z++)
+                for (int z = z0; z < z1; z++)
                 {
                     result.push_back(&(cells_[x][y][z]));
                 }

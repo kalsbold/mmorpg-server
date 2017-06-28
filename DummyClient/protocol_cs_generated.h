@@ -72,9 +72,6 @@ struct HeroT;
 struct Monster;
 struct MonsterT;
 
-struct Actor;
-struct ActorT;
-
 struct MoveInfo;
 struct MoveInfoT;
 
@@ -2303,91 +2300,6 @@ inline flatbuffers::Offset<Monster> CreateMonsterDirect(
 
 flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder &_fbb, const MonsterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct ActorT : public flatbuffers::NativeTable {
-  typedef Actor TableType;
-  ActorTypeUnion entity;
-  ActorT() {
-  }
-};
-
-struct Actor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef ActorT NativeTableType;
-  enum {
-    VT_ENTITY_TYPE = 4,
-    VT_ENTITY = 6
-  };
-  ActorType entity_type() const {
-    return static_cast<ActorType>(GetField<uint8_t>(VT_ENTITY_TYPE, 0));
-  }
-  bool mutate_entity_type(ActorType _entity_type) {
-    return SetField<uint8_t>(VT_ENTITY_TYPE, static_cast<uint8_t>(_entity_type), 0);
-  }
-  const void *entity() const {
-    return GetPointer<const void *>(VT_ENTITY);
-  }
-  template<typename T> const T *entity_as() const;
-  const Hero *entity_as_Hero() const {
-    return entity_type() == ActorType::Hero ? static_cast<const Hero *>(entity()) : nullptr;
-  }
-  const Monster *entity_as_Monster() const {
-    return entity_type() == ActorType::Monster ? static_cast<const Monster *>(entity()) : nullptr;
-  }
-  void *mutable_entity() {
-    return GetPointer<void *>(VT_ENTITY);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<uint8_t>(verifier, VT_ENTITY_TYPE) &&
-           VerifyOffset(verifier, VT_ENTITY) &&
-           VerifyActorType(verifier, entity(), entity_type()) &&
-           verifier.EndTable();
-  }
-  ActorT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(ActorT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Actor> Pack(flatbuffers::FlatBufferBuilder &_fbb, const ActorT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-template<> inline const Hero *Actor::entity_as<Hero>() const {
-  return entity_as_Hero();
-}
-
-template<> inline const Monster *Actor::entity_as<Monster>() const {
-  return entity_as_Monster();
-}
-
-struct ActorBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_entity_type(ActorType entity_type) {
-    fbb_.AddElement<uint8_t>(Actor::VT_ENTITY_TYPE, static_cast<uint8_t>(entity_type), 0);
-  }
-  void add_entity(flatbuffers::Offset<void> entity) {
-    fbb_.AddOffset(Actor::VT_ENTITY, entity);
-  }
-  ActorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ActorBuilder &operator=(const ActorBuilder &);
-  flatbuffers::Offset<Actor> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<Actor>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<Actor> CreateActor(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    ActorType entity_type = ActorType::NONE,
-    flatbuffers::Offset<void> entity = 0) {
-  ActorBuilder builder_(_fbb);
-  builder_.add_entity(entity);
-  builder_.add_entity_type(entity_type);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<Actor> CreateActor(flatbuffers::FlatBufferBuilder &_fbb, const ActorT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
 struct MoveInfoT : public flatbuffers::NativeTable {
   typedef MoveInfo TableType;
   std::string entity_id;
@@ -3285,7 +3197,7 @@ flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkill(flatbuffers::
 
 struct Notify_AppearT : public flatbuffers::NativeTable {
   typedef Notify_Appear TableType;
-  std::unique_ptr<ActorT> entity;
+  ActorTypeUnion entity;
   Notify_AppearT() {
   }
 };
@@ -3293,18 +3205,33 @@ struct Notify_AppearT : public flatbuffers::NativeTable {
 struct Notify_Appear FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Notify_AppearT NativeTableType;
   enum {
-    VT_ENTITY = 4
+    VT_ENTITY_TYPE = 4,
+    VT_ENTITY = 6
   };
-  const Actor *entity() const {
-    return GetPointer<const Actor *>(VT_ENTITY);
+  ActorType entity_type() const {
+    return static_cast<ActorType>(GetField<uint8_t>(VT_ENTITY_TYPE, 0));
   }
-  Actor *mutable_entity() {
-    return GetPointer<Actor *>(VT_ENTITY);
+  bool mutate_entity_type(ActorType _entity_type) {
+    return SetField<uint8_t>(VT_ENTITY_TYPE, static_cast<uint8_t>(_entity_type), 0);
+  }
+  const void *entity() const {
+    return GetPointer<const void *>(VT_ENTITY);
+  }
+  template<typename T> const T *entity_as() const;
+  const Hero *entity_as_Hero() const {
+    return entity_type() == ActorType::Hero ? static_cast<const Hero *>(entity()) : nullptr;
+  }
+  const Monster *entity_as_Monster() const {
+    return entity_type() == ActorType::Monster ? static_cast<const Monster *>(entity()) : nullptr;
+  }
+  void *mutable_entity() {
+    return GetPointer<void *>(VT_ENTITY);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, VT_ENTITY_TYPE) &&
            VerifyOffset(verifier, VT_ENTITY) &&
-           verifier.VerifyTable(entity()) &&
+           VerifyActorType(verifier, entity(), entity_type()) &&
            verifier.EndTable();
   }
   Notify_AppearT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -3312,10 +3239,21 @@ struct Notify_Appear FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static flatbuffers::Offset<Notify_Appear> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
+template<> inline const Hero *Notify_Appear::entity_as<Hero>() const {
+  return entity_as_Hero();
+}
+
+template<> inline const Monster *Notify_Appear::entity_as<Monster>() const {
+  return entity_as_Monster();
+}
+
 struct Notify_AppearBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_entity(flatbuffers::Offset<Actor> entity) {
+  void add_entity_type(ActorType entity_type) {
+    fbb_.AddElement<uint8_t>(Notify_Appear::VT_ENTITY_TYPE, static_cast<uint8_t>(entity_type), 0);
+  }
+  void add_entity(flatbuffers::Offset<void> entity) {
     fbb_.AddOffset(Notify_Appear::VT_ENTITY, entity);
   }
   Notify_AppearBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -3324,7 +3262,7 @@ struct Notify_AppearBuilder {
   }
   Notify_AppearBuilder &operator=(const Notify_AppearBuilder &);
   flatbuffers::Offset<Notify_Appear> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
+    const auto end = fbb_.EndTable(start_, 2);
     auto o = flatbuffers::Offset<Notify_Appear>(end);
     return o;
   }
@@ -3332,9 +3270,11 @@ struct Notify_AppearBuilder {
 
 inline flatbuffers::Offset<Notify_Appear> CreateNotify_Appear(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<Actor> entity = 0) {
+    ActorType entity_type = ActorType::NONE,
+    flatbuffers::Offset<void> entity = 0) {
   Notify_AppearBuilder builder_(_fbb);
   builder_.add_entity(entity);
+  builder_.add_entity_type(entity_type);
   return builder_.Finish();
 }
 
@@ -4293,34 +4233,6 @@ inline flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder
       _rotation);
 }
 
-inline ActorT *Actor::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new ActorT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void Actor::UnPackTo(ActorT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-  { auto _e = entity_type(); _o->entity.type = _e; };
-  { auto _e = entity(); if (_e) _o->entity.value = ActorTypeUnion::UnPack(_e, entity_type(), _resolver); };
-}
-
-inline flatbuffers::Offset<Actor> Actor::Pack(flatbuffers::FlatBufferBuilder &_fbb, const ActorT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateActor(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<Actor> CreateActor(flatbuffers::FlatBufferBuilder &_fbb, const ActorT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  auto _entity_type = _o->entity.type;
-  auto _entity = _o->entity.Pack(_fbb);
-  return ProtocolCS::World::CreateActor(
-      _fbb,
-      _entity_type,
-      _entity);
-}
-
 inline MoveInfoT *MoveInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new MoveInfoT();
   UnPackTo(_o, _resolver);
@@ -4660,7 +4572,8 @@ inline Notify_AppearT *Notify_Appear::UnPack(const flatbuffers::resolver_functio
 inline void Notify_Appear::UnPackTo(Notify_AppearT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = entity(); if (_e) _o->entity = std::unique_ptr<ActorT>(_e->UnPack(_resolver)); };
+  { auto _e = entity_type(); _o->entity.type = _e; };
+  { auto _e = entity(); if (_e) _o->entity.value = ActorTypeUnion::UnPack(_e, entity_type(), _resolver); };
 }
 
 inline flatbuffers::Offset<Notify_Appear> Notify_Appear::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4670,9 +4583,11 @@ inline flatbuffers::Offset<Notify_Appear> Notify_Appear::Pack(flatbuffers::FlatB
 inline flatbuffers::Offset<Notify_Appear> CreateNotify_Appear(flatbuffers::FlatBufferBuilder &_fbb, const Notify_AppearT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _entity = _o->entity ? CreateActor(_fbb, _o->entity.get(), _rehasher) : 0;
+  auto _entity_type = _o->entity.type;
+  auto _entity = _o->entity.Pack(_fbb);
   return ProtocolCS::World::CreateNotify_Appear(
       _fbb,
+      _entity_type,
       _entity);
 }
 
@@ -5422,7 +5337,7 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       break;
     }
     case MessageType::World_Notify_Appear: {
-      assert(false);  // ProtocolCS::World::Notify_AppearT not copyable.
+      value = new ProtocolCS::World::Notify_AppearT(*reinterpret_cast<ProtocolCS::World::Notify_AppearT *>(u.value));
       break;
     }
     case MessageType::World_Notify_Disappear: {

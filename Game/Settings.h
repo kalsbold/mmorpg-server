@@ -62,6 +62,8 @@ public:
 				return false;
 			}
 			po::store(po::parse_config_file(ifs, desc), vm);
+
+            //po::store(po::parse_config_file(filepath, desc), vm);
 		}
 		catch (po::unknown_option & e)
 		{
@@ -81,9 +83,14 @@ public:
 			std::cerr << e.what() << "\n";
 			return false;
 		}
+        catch (po::reading_file & e)
+        {
+            // 예외 4: 파일 open 실패
+            std::cerr << e.what() << "\n";
+            return false;
+        }
 		catch (std::exception & e)
 		{
-			// 예외 4: 이외의 예외 발생
 			std::cerr << e.what() << "\n";
 			return false;
 		}
