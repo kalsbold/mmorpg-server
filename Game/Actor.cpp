@@ -3,10 +3,22 @@
 #include "Zone.h"
 #include "InterestArea.h"
 
+Actor::Actor(const uuid & entity_id)
+    : GameObject(entity_id)
+    , zone_(nullptr)
+    , current_cell_(nullptr)
+{}
+
+Actor::~Actor()
+{
+    ResetInterest();
+}
+
 void Actor::UpdateInterest()
 {
     // 관찰자에게 이동변경 알림
-    //move_signal(GetPosition(), GetRotation());
+    poistion_update_signal(GetPosition());
+
     if (zone_ == nullptr) return;
 
     ZoneCell* prev_cell = current_cell_;
@@ -61,4 +73,10 @@ void Actor::PublishActorUpdate(PCS::World::Notify_UpdateT * message)
         return;
 
     current_cell_->actor_update_signal(message);
+}
+
+void Actor::Spawn(const Vector3 & position)
+{
+    SetPosition(position);
+    UpdateInterest();
 }

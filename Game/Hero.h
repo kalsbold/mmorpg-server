@@ -1,17 +1,21 @@
 #pragma once
 #include "Common.h"
 #include "Actor.h"
+#include "ILivingEntity.h"
 #include "RemoteWorldClient.h"
 #include "protocol_cs_helper.h"
 
+using namespace boost;
 namespace PCS = ProtocolCS;
 
 // 플레이어 캐릭터
-class Hero : public Actor
+class Hero : public Actor, public ILivingEntity
 {
 public:
-    Hero(const uuid& entity_id, RemoteWorldClient* rc, const db::Hero& db_data);
+    Hero(const uuid& entity_id, RemoteWorldClient* rc);
     virtual ~Hero();
+
+    void Init(const db::Hero& db_data);
 
     RemoteWorldClient* GetRemoteClient();
 
@@ -23,12 +27,9 @@ public:
     }
 
     void SetToDB(db::Hero& db_data);
-
     void UpdateToDB(const Ptr<MySQLPool>& db);
 
-    virtual void SetZone(Zone* zone) override;
-
-    void Move(const Vector3& position, float rotation, const Vector3& velocity);
+    void ActionMove(const Vector3& position, float rotation, const Vector3& velocity);
 
     void Skill()
     {
@@ -49,14 +50,32 @@ public:
 
     }
 
-    std::function<void(const Vector3&)> poistion_update_handler;
+    int Uid() { return uid_; }
+    ClassType Type() { return class_type_; }
+    int Exp() { return exp_; }
+    int Level() { return level_; }
+    int MaxMp() { return max_mp_; }
+    int Mp() { return mp_; }
+    int Att() { return att_; }
+    int Def() { return def_; }
+
+    // Inherited via Actor
+    virtual void SetZone(Zone* zone) override;
+
+    // Inherited via ILivingEntity
+    virtual bool IsDead() const override;
+    virtual void Die() override;
+    virtual int MaxHp() const override;
+    virtual void MaxHp(int max_hp) override;
+    virtual int Hp() const override;
+    virtual void Hp(int hp) override;
+    virtual signals2::connection ConnectDeathSignal(std::function<void(ILivingEntity*)> handler) override;
 
 private:
-    void InitAttribute(const db::Hero& db_data);
-
     RemoteWorldClient* rc_;
 
-public:
+    signals2::signal<void(ILivingEntity*)> death_signal_;
+
     int            uid_;
     ClassType      class_type_;
     int            exp_;

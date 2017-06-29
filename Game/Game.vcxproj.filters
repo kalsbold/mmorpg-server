@@ -40,6 +40,12 @@
     <Filter Include="GameWorld\Zone">
       <UniqueIdentifier>{18be0341-5b0c-423f-ba8e-d767ddc75628}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameWorld\Monster">
+      <UniqueIdentifier>{66444a30-8280-44eb-8453-bedc97f214c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameWorld\Hero">
+      <UniqueIdentifier>{a4a97398-d07e-473b-ab14-32c6b759f65e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -64,9 +70,6 @@
     </ClInclude>
     <ClInclude Include="DBSchema.h">
       <Filter>DB</Filter>
-    </ClInclude>
-    <ClInclude Include="ManagerServer.h">
-      <Filter>Server\Manager Server</Filter>
     </ClInclude>
     <ClInclude Include="protocol_cs_generated.h">
       <Filter>Protocol</Filter>
@@ -107,12 +110,6 @@
     <ClInclude Include="Actor.h">
       <Filter>GameWorld\Actor</Filter>
     </ClInclude>
-    <ClInclude Include="Monster.h">
-      <Filter>GameWorld\Actor</Filter>
-    </ClInclude>
-    <ClInclude Include="Hero.h">
-      <Filter>GameWorld\Actor</Filter>
-    </ClInclude>
     <ClInclude Include="BoundingBox.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -149,6 +146,21 @@
     <ClInclude Include="ClientInterestArea.h">
       <Filter>GameWorld\Zone</Filter>
     </ClInclude>
+    <ClInclude Include="Hero.h">
+      <Filter>GameWorld\Hero</Filter>
+    </ClInclude>
+    <ClInclude Include="Monster.h">
+      <Filter>GameWorld\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="ILivingEntity.h">
+      <Filter>GameWorld\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="ManagerServer.h">
+      <Filter>Server\Manager Server</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterSpawner.h">
+      <Filter>GameWorld\Monster</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -168,14 +180,8 @@
     <ClCompile Include="WorldServer.cpp">
       <Filter>Server\World Server</Filter>
     </ClCompile>
-    <ClCompile Include="Monster.cpp">
-      <Filter>GameWorld\Actor</Filter>
-    </ClCompile>
     <ClCompile Include="RemoteWorldClient.cpp">
       <Filter>Server\World Server</Filter>
-    </ClCompile>
-    <ClCompile Include="Hero.cpp">
-      <Filter>GameWorld\Actor</Filter>
     </ClCompile>
     <ClCompile Include="GameObject.cpp">
       <Filter>GameWorld</Filter>
@@ -194,6 +200,15 @@
     </ClCompile>
     <ClCompile Include="ClientInterestArea.cpp">
       <Filter>GameWorld\Zone</Filter>
+    </ClCompile>
+    <ClCompile Include="Hero.cpp">
+      <Filter>GameWorld\Hero</Filter>
+    </ClCompile>
+    <ClCompile Include="Monster.cpp">
+      <Filter>GameWorld\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterSpawner.cpp">
+      <Filter>GameWorld\Monster</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

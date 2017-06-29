@@ -41,9 +41,15 @@ public:
     World* GetWorld() { return world_.get(); }
 
 	void NotifyUnauthedAccess(const Ptr<net::Session>& session);
+
 private:
 	// Network message handler type.
 	using MessageHandler = std::function<void(const Ptr<net::Session>&, const PCS::MessageRoot* message_root)>;
+
+    void LoadResources();
+
+    // 프레임 업데이트
+    void DoUpdate(double delta_time);
 
 	template <typename T, typename Handler>
 	void RegisterMessageHandler(Handler&& handler)
@@ -56,12 +62,6 @@ private:
 		};
 
 		message_handlers_.insert(std::pair<decltype(key), decltype(func)>(key, func));
-	}
-
-	// 프레임 업데이트
-	void DoUpdate(double delta_time)
-	{
-
 	}
 
 	void AddRemoteClient(int session_id, Ptr<RemoteWorldClient> remote_client);
@@ -95,7 +95,7 @@ private:
 	Ptr<ManagerClient> manager_client_;
 
 	Ptr<boost::asio::strand> strand_;
-	Ptr<timer> update_timer_;
+	Ptr<timer_type> update_timer_;
 
 	std::string name_;
 	std::map<PCS::MessageType, MessageHandler> message_handlers_;

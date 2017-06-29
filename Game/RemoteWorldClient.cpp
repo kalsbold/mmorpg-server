@@ -53,9 +53,8 @@ void RemoteWorldClient::EnterWorld()
         return;
     }
 
-    auto db_data = GetDBHero();
-    auto hero = GetHero();
-    if (!db_data || !hero)
+    auto db_hero = GetDBHero();
+    if (!db_hero)
     {
         PCS::World::Notify_EnterFailedT reply;
         reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_HERO;
@@ -63,7 +62,7 @@ void RemoteWorldClient::EnterWorld()
         return;
     }
 
-    Zone* zone = GetWorld()->FindFieldZone(db_data->map_id);
+    Zone* zone = GetWorld()->FindFieldZone(db_hero->map_id);
     if (zone == nullptr)
     {
         PCS::World::Notify_EnterFailedT reply;
@@ -71,6 +70,11 @@ void RemoteWorldClient::EnterWorld()
         PCS::Send(*this, reply);
         return;
     }
+
+    // 케릭터 인스턴스 생성
+    auto hero = std::make_shared<Hero>(random_generator()(), this);
+    hero->Init(*db_hero);
+    SetHero(hero);
 
     // 월드 입장
     SetState(RemoteWorldClient::State::WorldEntering);
@@ -82,19 +86,22 @@ void RemoteWorldClient::EnterWorld()
         {
             this->SetState(RemoteWorldClient::State::WorldEntered);
 
+            // 입장 성공 메시지를 보낸다
+            fb::FlatBufferBuilder fbb;
+            auto offset_msg = PCS::World::CreateNotify_EnterSuccess(fbb, hero->SerializeAsHero(fbb));
+            PCS::Send(*this, fbb, offset_msg);
+
             // 관심 지역을 만든다
             this->interest_area_ = std::make_shared<ClientInterestArea>(this, zone);
             this->interest_area_->ViewDistance(Vector3(20.0f, 1.0f, 20.0f));
-            hero->poistion_update_handler = std::bind(&RemoteWorldClient::OnUpdateHeroPosition, this, std::placeholders::_1);
-            hero->poistion_update_handler(hero->GetPosition());
-
-            PCS::World::Notify_EnterSuccessT reply;
-            PCS::Send(*this, reply);
+            hero->poistion_update_signal.connect(std::bind(&RemoteWorldClient::OnUpdateHeroPosition, this, std::placeholders::_1));
+            hero->poistion_update_signal(hero->GetPosition());
         }
         else
         {
             this->SetState(RemoteWorldClient::State::Connected);
-
+            
+            // 입장 실패 메시지를 보낸다
             PCS::World::Notify_EnterFailedT reply;
             reply.error_code = PCS::ErrorCode::WORLD_CANNOT_ENTER_ZONE;
             PCS::Send(*this, reply);
@@ -121,7 +128,7 @@ void RemoteWorldClient::ActionMove(const PCS::World::Request_ActionMove * messag
     auto velocity = Vector3(pos->x(), pos->y(), pos->z());
 
     GetWorld()->Dispatch([this, hero = hero_, position, rotation, velocity]() {
-        hero->Move(position, rotation, velocity);
+        hero->ActionMove(position, rotation, velocity);
     });
 }
 
@@ -138,7 +145,7 @@ void RemoteWorldClient::ExitWorld()
             }
             // 관심지역 해제
             this->interest_area_ = nullptr;
-            hero->poistion_update_handler = nullptr;
+            hero->poistion_update_signal.disconnect_all_slots();
         });
     }
 }

@@ -17,17 +17,6 @@ class RemoteLoginClient;
 class LoginServer : public IServer
 {
 public:
-	/*
-	// The clock type.
-	using clock = std::chrono::high_resolution_clock;
-	// The duration type of the clock.
-	using duration = clock::duration;
-	// The time point type of the clock.
-	using time_point = clock::time_point;
-	// Timer type
-	using timer = boost::asio::high_resolution_timer;
-	*/
-
 	LoginServer();
 	virtual ~LoginServer();
 
@@ -101,7 +90,7 @@ private:
 	Ptr<ManagerClient> manager_client_;
 
 	Ptr<boost::asio::strand> strand_;
-	Ptr<timer> update_timer_;
+	Ptr<timer_type> update_timer_;
 
 	Ptr<MySQLPool> db_conn_;
 

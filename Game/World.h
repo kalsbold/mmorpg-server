@@ -50,6 +50,42 @@ public:
 		strand_.dispatch(std::forward<Handler>(handler));
 	}
 
+    template <typename Handler>
+    Ptr<timer_type> RunAt(time_point time, Handler&& handler)
+    {
+        auto timer = std::make_shared<timer_type>(strand_.get_io_service(), time);
+        timer->async_wait(strand_.wrap([timer, handler = std::forward<Handler>(handler)](const auto& error)
+        {
+            if (!error)
+            {
+                if (handler) handler(timer);
+            }
+            else
+            {
+                BOOST_LOG_TRIVIAL(info) << error;
+            }
+        }));
+        return timer;
+    }
+
+    template <typename Handler>
+    Ptr<timer_type> RunAfter(duration duration, Handler&& handler)
+    {
+        auto timer = std::make_shared<timer_type>(strand_.get_io_service(), duration);
+        timer->async_wait(strand_.wrap([timer, handler = std::forward<Handler>(handler)](const auto& error)
+        {
+            if (!error)
+            {
+                handler(timer);
+            }
+            else
+            {
+                BOOST_LOG_TRIVIAL(info) << error;
+            }
+        }));
+        return timer;
+    }
+
 	void DoUpdate(float delta_time);
 
 private:

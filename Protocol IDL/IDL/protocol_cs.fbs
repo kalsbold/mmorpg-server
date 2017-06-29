@@ -170,6 +170,7 @@ table Hero {
 // 몬스터
 table Monster {
     entity_id:string;
+    uid:int;
     type_id:int;
     name:string;
     level:int;
@@ -230,6 +231,7 @@ table Notify_LoadFinish {
 }
 // 진입 성공 
 table Notify_EnterSuccess {
+    hero:Hero;
 }
 // 진입 실패
 table Notify_EnterFailed {

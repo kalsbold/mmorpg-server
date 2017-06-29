@@ -53,7 +53,7 @@ void ManagerServer::Run()
 
 	// Frame Update 시작.
 	strand_ = std::make_shared<boost::asio::strand>(ios_loop_->GetIoService());
-	update_timer_ = std::make_shared<timer>(strand_->get_io_service());
+	update_timer_ = std::make_shared<timer_type>(strand_->get_io_service());
 	ScheduleNextUpdate(clock_type::now(), TIME_STEP);
 
 	// NetServer 를 시작시킨다.

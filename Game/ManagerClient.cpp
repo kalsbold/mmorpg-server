@@ -43,7 +43,7 @@ void ManagerClient::Connect(const std::string& address, uint16_t port)
 
 	// Frame Update 시작.
 	auto& strand = net_client_->GetStrand();
-	update_timer_ = std::make_shared<timer>(strand.get_io_service());
+	update_timer_ = std::make_shared<timer_type>(strand.get_io_service());
 	ScheduleNextUpdate(clock_type::now(), TIME_STEP);
 	// 접속 시작.
 	net_client_->Connect(address, std::to_string(port));

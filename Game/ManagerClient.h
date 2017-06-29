@@ -20,17 +20,6 @@ class IServer;
 class ManagerClient
 {
 public:
-	/*
-	// The clock type.
-	using clock = std::chrono::high_resolution_clock;
-	// The duration type of the clock.
-	using duration = clock::duration;
-	// The time point type of the clock.
-	using time_point = clock::time_point;
-	// Timer type
-	using timer = boost::asio::high_resolution_timer;
-	*/
-
 	ManagerClient(const net::ClientConfig& config, IServer* owner, ServerType type, std::string client_name);
 	virtual ~ManagerClient();
 
@@ -82,7 +71,7 @@ private:
 
 	Ptr<net::IoServiceLoop> ios_loop_;
 	Ptr<net::NetClient> net_client_;
-	Ptr<timer> update_timer_;
+	Ptr<timer_type> update_timer_;
 
 	IServer*	owner_;
 	ServerType	type_;

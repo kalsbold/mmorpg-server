@@ -15,16 +15,8 @@ class ZoneCell;
 class Actor : public GameObject
 {
 public:
-	Actor(const uuid& entity_id)
-        : GameObject(entity_id)
-        , zone_(nullptr)
-        , current_cell_(nullptr)
-    {}
-
-    ~Actor()
-    {
-        ResetInterest();
-    }
+    Actor(const uuid& entity_id);
+    ~Actor();
 
 	const std::string& GetName() const { return name_; }
 
@@ -52,10 +44,11 @@ public:
 
     void PublishActorUpdate(PCS::World::Notify_UpdateT* message);
 
-    virtual fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const
-    {
-        return 0;
-    }
+    void Spawn(const Vector3& position);
+
+    virtual fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const = 0;
+
+    signals2::signal<void(const Vector3&)> poistion_update_signal;
 
 protected:
 	void SetName(const std::string& name) { name_ = name; }

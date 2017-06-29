@@ -2,6 +2,10 @@
 #include "Common.h"
 #include "TypeDef.h"
 #include "MySQL.h"
+#include "protocol_cs_generated.h"
+
+namespace fb = flatbuffers;
+namespace PCS = ProtocolCS;
 
 namespace db_schema {
 
@@ -236,6 +240,29 @@ public:
 		def = attribute.def;
 	}
 
+    fb::Offset<PCS::World::Hero> Serialize(fb::FlatBufferBuilder & fbb) const
+    {
+        //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
+        return PCS::World::CreateHeroDirect(fbb,
+            nullptr,
+            uid,
+            name.c_str(),
+            (PCS::ClassType)class_type,
+            exp,
+            level,
+            max_hp,
+            hp,
+            max_mp,
+            mp,
+            att,
+            def,
+            map_id,
+            //&pos,
+            &PCS::Vec3(pos.X, pos.Y, pos.Z),
+            rotation
+        );
+    }
+
 private:
 	static void Set(Ptr<Hero>& c, ResultSetPtr& result_set)
 	{
@@ -257,6 +284,29 @@ private:
 		c->pos.Z = (float)result_set->getDouble("pos_z");
 		c->rotation = (float)result_set->getDouble("rotation");
 	}
+};
+
+class Monster
+{
+public:
+    int            uid;
+    int            type_id;
+    std::string    name;
+    int            level;
+    int            max_hp;
+    int            max_mp;
+    int            att;
+    int            def;
+};
+
+class MonsterSpawn
+{
+public:
+    int      uid;
+    int      map_id;
+    int      monster_uid;
+    Vector3  pos;
+    duration interval_s;
 };
 
 }

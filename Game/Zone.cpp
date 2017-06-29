@@ -4,6 +4,7 @@
 #include "Hero.h"
 #include "Monster.h"
 #include "World.h"
+#include "MonsterSpawner.h"
 #include "CachedResources.h"
 #include "protocol_cs_helper.h"
 
@@ -13,38 +14,53 @@ Zone::Zone(const uuid & entity_id, const Map & map_data, World * owner)
     , entity_id_(entity_id)
     , map_data_(map_data)
     , owner_(owner)
-{}
+{
+    mon_spawner_ = std::make_shared<MonsterSpawner>(this);
+    mon_spawner_->Start();
+}
 
 Zone::~Zone()
 {}
 
-bool Zone::Enter(const Ptr<Hero>& pc, const Vector3& position)
+bool Zone::Enter(const Ptr<Actor>& actor, const Vector3& position)
 {
-    auto r = players_.emplace(pc->GetEntityID(), pc);
+    auto r = actors_.emplace(actor->GetEntityID(), actor);
     if (!r.second) return false;
 
-    pc->SetZone(this);
-    pc->SetPosition(position);
-    pc->UpdateInterest();
+    actor->SetZone(this);
+    actor->Spawn(position);
+
+    return true;
 }
 
-void Zone::Exit(const Ptr<Hero>& pc)
+void Zone::Exit(const Ptr<Actor>& actor)
 {
-    size_t r = players_.erase(pc->GetEntityID());
-    if (r == 0) return;
+    actor->ResetInterest();
+    actor->SetZone(nullptr);
 
-    pc->SetZone(nullptr);
-    pc->ResetInterest();
+    actors_.erase(actor->GetEntityID());
+}
+
+void Zone::Exit(const uuid & entity_id)
+{
+    auto iter = actors_.find(entity_id);
+    if (iter == actors_.end())
+        return;
+
+    auto actor = iter->second;
+    actor->ResetInterest();
+    actor->SetZone(nullptr);
+
+
+    actors_.erase(entity_id);
 }
 
 void Zone::Update(float delta_time)
 {
-    for (auto& var : players_)
+    for (auto& var : actors_)
     {
         var.second->Update(delta_time);
     }
-    for (auto& var : monsters_)
-    {
-        var.second->Update(delta_time);
-    }
+
+    mon_spawner_->Update(delta_time);
 }

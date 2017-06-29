@@ -11,6 +11,7 @@ class World;
 class Actor;
 class Hero;
 class Monster;
+class MonsterSpawner;
 
 constexpr float CELL_SIZE = 10.0f;
 
@@ -29,8 +30,9 @@ public:
 	int MapID() const { return map_data_.id; }
 	const Map& MapData() const { return map_data_; }
 
-	bool Enter(const Ptr<Hero>& pc, const Vector3& position);
-	void Exit(const Ptr<Hero>& pc);
+	bool Enter(const Ptr<Actor>& actor, const Vector3& position);
+	void Exit(const Ptr<Actor>& actor);
+    void Exit(const uuid& entity_id);
 
 	World* GetWorld() { return owner_; }
 	void Update(float delta_time);
@@ -42,8 +44,7 @@ private:
 	Map map_data_;
 	
 public:
-	// 지역에 속한 플레이어
-	std::map<uuid, Ptr<Hero>> players_;
-	// 지역에 속한 게임 오브젝트
-	std::map<uuid, Ptr<Monster>> monsters_;
+	// 지역에 속한 Actor
+	std::unordered_map<uuid, Ptr<Actor>, std::hash<boost::uuids::uuid>> actors_;
+    Ptr<MonsterSpawner> mon_spawner_;
 };

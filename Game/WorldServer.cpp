@@ -56,15 +56,15 @@ void WorldServer::Run()
         settings.db_connection_pool);
 
     // 필요한 데이터 로딩.
-    HeroAttributeTable::Load(db_conn_);
-    MapTable::Load(db_conn_);
+    LoadResources();
+
     // 게임 로직을 처리하는 World 시작.
     world_ = std::make_shared<World>(ios_loop_->GetIoService());
     world_->Start();
 
     // Frame Update 시작.
     strand_ = std::make_shared<boost::asio::strand>(ios_loop_->GetIoService());
-    update_timer_ = std::make_shared<timer>(strand_->get_io_service());
+    update_timer_ = std::make_shared<timer_type>(strand_->get_io_service());
     ScheduleNextUpdate(clock_type::now(), TIME_STEP);
 
     // NetServer 를 시작시킨다.
@@ -185,6 +185,20 @@ void WorldServer::NotifyUnauthedAccess(const Ptr<net::Session>& session)
     FinishMessageRootBuffer(fbb, root);
 
     session->Send(fbb.GetBufferPointer(), fbb.GetSize());
+}
+
+void WorldServer::LoadResources()
+{
+    HeroAttributeTable::Load(db_conn_);
+    MapTable::Load(db_conn_);
+    MonsterTable::Load(db_conn_);
+    MonsterSpawnTable::Load(db_conn_);
+}
+
+// 프레임 업데이트
+void WorldServer::DoUpdate(double delta_time)
+{
+
 }
 
 void WorldServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t* buf, size_t bytes)
@@ -368,45 +382,35 @@ void WorldServer::RegisterManagerClientHandlers()
                 return;
             }
 
-            if (!rc->GetAccount())
+            // 계정 정보를 불러온다.
+            auto db_account = db::Account::Fetch(db_conn_, account_uid);
+            // 계정이 없다.
+            if (!db_account)
             {
-                // 계정 정보를 불러온다.
-                auto db_account = db::Account::Fetch(db_conn_, account_uid);
-                // 계정이 없다.
-                if (!db_account)
-                {
-                    PCS::Login::Reply_LoginFailedT reply;
-                    reply.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_ACCOUNT;
-                    PCS::Send(*rc, reply);
-                    return;
-                }
-                rc->SetAccount(db_account);
+                PCS::Login::Reply_LoginFailedT reply;
+                reply.error_code = PCS::ErrorCode::WORLD_LOGIN_INVALID_ACCOUNT;
+                PCS::Send(*rc, reply);
+                return;
             }
+            rc->SetAccount(db_account);
 
-            if (!rc->GetHero())
+            // 캐릭터 정보를 불러온다.
+            auto db_hero = db::Hero::Fetch(GetDB(), rc->selected_hero_uid_, rc->GetAccount()->uid);
+            // 캐릭터 로드 실패
+            if (!db_hero)
             {
-                // 캐릭터 로드
-                auto db_hero = db::Hero::Fetch(GetDB(), rc->selected_hero_uid_, rc->GetAccount()->uid);
-                // 캐릭터 로드 실패
-                if (!db_hero)
-                {
-                    PCS::Login::Reply_LoginFailedT reply;
-                    reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_HERO;
-                    PCS::Send(*rc, reply);
-                    return;
-                }
-                rc->SetDBHero(db_hero);
-
-                // 케릭터 인스턴스 생성
-                auto hero = std::make_shared<Hero>(random_generator()(), rc.get(), *rc->GetDBHero());
-                rc->SetHero(hero);
+                PCS::Login::Reply_LoginFailedT reply;
+                reply.error_code = PCS::ErrorCode::WORLD_CANNOT_LOAD_HERO;
+                PCS::Send(*rc, reply);
+                return;
             }
+            rc->SetDBHero(db_hero);
             
             BOOST_LOG_TRIVIAL(info) << "World Login Success. user_name: " << rc->GetAccount()->user_name;
 
             // 케릭터 정보를 전송한다.
             fb::FlatBufferBuilder fbb;
-            auto hero_offset = rc->GetHero()->SerializeAsHero(fbb);
+            auto hero_offset = db_hero->Serialize(fbb);
             auto reply_offset = PCS::World::CreateReply_LoginSuccess(fbb, hero_offset);
             PCS::Send(*rc, fbb, reply_offset);
         });

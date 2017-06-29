@@ -17,8 +17,17 @@ public struct Notify_EnterSuccess : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p.bb_pos = _i; __p.bb = _bb; }
   public Notify_EnterSuccess __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
+  public Hero? Hero { get { int o = __p.__offset(4); return o != 0 ? (Hero?)(new Hero()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
-  public static void StartNotify_EnterSuccess(FlatBufferBuilder builder) { builder.StartObject(0); }
+  public static Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(FlatBufferBuilder builder,
+      Offset<Hero> heroOffset = default(Offset<Hero>)) {
+    builder.StartObject(1);
+    Notify_EnterSuccess.AddHero(builder, heroOffset);
+    return Notify_EnterSuccess.EndNotify_EnterSuccess(builder);
+  }
+
+  public static void StartNotify_EnterSuccess(FlatBufferBuilder builder) { builder.StartObject(1); }
+  public static void AddHero(FlatBufferBuilder builder, Offset<Hero> heroOffset) { builder.AddOffset(0, heroOffset.Value, 0); }
   public static Offset<Notify_EnterSuccess> EndNotify_EnterSuccess(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Notify_EnterSuccess>(o);

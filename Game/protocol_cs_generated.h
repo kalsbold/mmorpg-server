@@ -2089,6 +2089,7 @@ flatbuffers::Offset<Hero> CreateHero(flatbuffers::FlatBufferBuilder &_fbb, const
 struct MonsterT : public flatbuffers::NativeTable {
   typedef Monster TableType;
   std::string entity_id;
+  int32_t uid;
   int32_t type_id;
   std::string name;
   int32_t level;
@@ -2099,7 +2100,8 @@ struct MonsterT : public flatbuffers::NativeTable {
   std::unique_ptr<ProtocolCS::Vec3> pos;
   float rotation;
   MonsterT()
-      : type_id(0),
+      : uid(0),
+        type_id(0),
         level(0),
         max_hp(0),
         hp(0),
@@ -2113,21 +2115,28 @@ struct Monster FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef MonsterT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
-    VT_TYPE_ID = 6,
-    VT_NAME = 8,
-    VT_LEVEL = 10,
-    VT_MAX_HP = 12,
-    VT_HP = 14,
-    VT_MAX_MP = 16,
-    VT_MP = 18,
-    VT_POS = 20,
-    VT_ROTATION = 22
+    VT_UID = 6,
+    VT_TYPE_ID = 8,
+    VT_NAME = 10,
+    VT_LEVEL = 12,
+    VT_MAX_HP = 14,
+    VT_HP = 16,
+    VT_MAX_MP = 18,
+    VT_MP = 20,
+    VT_POS = 22,
+    VT_ROTATION = 24
   };
   const flatbuffers::String *entity_id() const {
     return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
   }
   flatbuffers::String *mutable_entity_id() {
     return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  int32_t uid() const {
+    return GetField<int32_t>(VT_UID, 0);
+  }
+  bool mutate_uid(int32_t _uid) {
+    return SetField<int32_t>(VT_UID, _uid, 0);
   }
   int32_t type_id() const {
     return GetField<int32_t>(VT_TYPE_ID, 0);
@@ -2187,6 +2196,7 @@ struct Monster FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ENTITY_ID) &&
            verifier.Verify(entity_id()) &&
+           VerifyField<int32_t>(verifier, VT_UID) &&
            VerifyField<int32_t>(verifier, VT_TYPE_ID) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
@@ -2209,6 +2219,9 @@ struct MonsterBuilder {
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
     fbb_.AddOffset(Monster::VT_ENTITY_ID, entity_id);
+  }
+  void add_uid(int32_t uid) {
+    fbb_.AddElement<int32_t>(Monster::VT_UID, uid, 0);
   }
   void add_type_id(int32_t type_id) {
     fbb_.AddElement<int32_t>(Monster::VT_TYPE_ID, type_id, 0);
@@ -2243,7 +2256,7 @@ struct MonsterBuilder {
   }
   MonsterBuilder &operator=(const MonsterBuilder &);
   flatbuffers::Offset<Monster> Finish() {
-    const auto end = fbb_.EndTable(start_, 10);
+    const auto end = fbb_.EndTable(start_, 11);
     auto o = flatbuffers::Offset<Monster>(end);
     return o;
   }
@@ -2252,6 +2265,7 @@ struct MonsterBuilder {
 inline flatbuffers::Offset<Monster> CreateMonster(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
+    int32_t uid = 0,
     int32_t type_id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     int32_t level = 0,
@@ -2271,6 +2285,7 @@ inline flatbuffers::Offset<Monster> CreateMonster(
   builder_.add_level(level);
   builder_.add_name(name);
   builder_.add_type_id(type_id);
+  builder_.add_uid(uid);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
 }
@@ -2278,6 +2293,7 @@ inline flatbuffers::Offset<Monster> CreateMonster(
 inline flatbuffers::Offset<Monster> CreateMonsterDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
+    int32_t uid = 0,
     int32_t type_id = 0,
     const char *name = nullptr,
     int32_t level = 0,
@@ -2290,6 +2306,7 @@ inline flatbuffers::Offset<Monster> CreateMonsterDirect(
   return ProtocolCS::World::CreateMonster(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
+      uid,
       type_id,
       name ? _fbb.CreateString(name) : 0,
       level,
@@ -3003,14 +3020,26 @@ flatbuffers::Offset<Notify_LoadFinish> CreateNotify_LoadFinish(flatbuffers::Flat
 
 struct Notify_EnterSuccessT : public flatbuffers::NativeTable {
   typedef Notify_EnterSuccess TableType;
+  std::unique_ptr<HeroT> hero;
   Notify_EnterSuccessT() {
   }
 };
 
 struct Notify_EnterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Notify_EnterSuccessT NativeTableType;
+  enum {
+    VT_HERO = 4
+  };
+  const Hero *hero() const {
+    return GetPointer<const Hero *>(VT_HERO);
+  }
+  Hero *mutable_hero() {
+    return GetPointer<Hero *>(VT_HERO);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_HERO) &&
+           verifier.VerifyTable(hero()) &&
            verifier.EndTable();
   }
   Notify_EnterSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -3021,21 +3050,26 @@ struct Notify_EnterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table 
 struct Notify_EnterSuccessBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
+  void add_hero(flatbuffers::Offset<Hero> hero) {
+    fbb_.AddOffset(Notify_EnterSuccess::VT_HERO, hero);
+  }
   Notify_EnterSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   Notify_EnterSuccessBuilder &operator=(const Notify_EnterSuccessBuilder &);
   flatbuffers::Offset<Notify_EnterSuccess> Finish() {
-    const auto end = fbb_.EndTable(start_, 0);
+    const auto end = fbb_.EndTable(start_, 1);
     auto o = flatbuffers::Offset<Notify_EnterSuccess>(end);
     return o;
   }
 };
 
 inline flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(
-    flatbuffers::FlatBufferBuilder &_fbb) {
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<Hero> hero = 0) {
   Notify_EnterSuccessBuilder builder_(_fbb);
+  builder_.add_hero(hero);
   return builder_.Finish();
 }
 
@@ -4251,6 +4285,7 @@ inline void Monster::UnPackTo(MonsterT *_o, const flatbuffers::resolver_function
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
+  { auto _e = uid(); _o->uid = _e; };
   { auto _e = type_id(); _o->type_id = _e; };
   { auto _e = name(); if (_e) _o->name = _e->str(); };
   { auto _e = level(); _o->level = _e; };
@@ -4270,6 +4305,7 @@ inline flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
+  auto _uid = _o->uid;
   auto _type_id = _o->type_id;
   auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
   auto _level = _o->level;
@@ -4282,6 +4318,7 @@ inline flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder
   return ProtocolCS::World::CreateMonster(
       _fbb,
       _entity_id,
+      _uid,
       _type_id,
       _name,
       _level,
@@ -4551,6 +4588,7 @@ inline Notify_EnterSuccessT *Notify_EnterSuccess::UnPack(const flatbuffers::reso
 inline void Notify_EnterSuccess::UnPackTo(Notify_EnterSuccessT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
+  { auto _e = hero(); if (_e) _o->hero = std::unique_ptr<HeroT>(_e->UnPack(_resolver)); };
 }
 
 inline flatbuffers::Offset<Notify_EnterSuccess> Notify_EnterSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4560,8 +4598,10 @@ inline flatbuffers::Offset<Notify_EnterSuccess> Notify_EnterSuccess::Pack(flatbu
 inline flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
+  auto _hero = _o->hero ? CreateHero(_fbb, _o->hero.get(), _rehasher) : 0;
   return ProtocolCS::World::CreateNotify_EnterSuccess(
-      _fbb);
+      _fbb,
+      _hero);
 }
 
 inline Notify_EnterFailedT *Notify_EnterFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -5406,7 +5446,7 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       break;
     }
     case MessageType::World_Notify_EnterSuccess: {
-      value = new ProtocolCS::World::Notify_EnterSuccessT(*reinterpret_cast<ProtocolCS::World::Notify_EnterSuccessT *>(u.value));
+      assert(false);  // ProtocolCS::World::Notify_EnterSuccessT not copyable.
       break;
     }
     case MessageType::World_Notify_EnterFailed: {

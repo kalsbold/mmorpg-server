@@ -30,6 +30,7 @@ public:
     const std::string GetServerName() const { return server_name_; }
     ServerType GetServerType() const { return server_type_; }
 
+
 	// Inherited via RemoteClient
 	virtual void OnDisconnected() override {}
 private:
@@ -151,7 +152,7 @@ private:
 	Ptr<net::NetServer> net_server_;
 
 	Ptr<boost::asio::strand> strand_;
-	Ptr<timer> update_timer_;
+	Ptr<timer_type> update_timer_;
 
 	Ptr<MySQLPool> db_conn_;
 

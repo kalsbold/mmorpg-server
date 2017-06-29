@@ -2,11 +2,10 @@
 #include "Hero.h"
 #include "Zone.h"
 
-Hero::Hero(const uuid & entity_id, RemoteWorldClient * rc, const db::Hero & db_data)
+Hero::Hero(const uuid & entity_id, RemoteWorldClient * rc)
 	: Actor(entity_id)
 	, rc_(rc)
 {
-	InitAttribute(db_data);
 }
 
 Hero::~Hero() {}
@@ -29,10 +28,10 @@ void Hero::SetZone(Zone * zone)
 	map_id_ = zone->MapID();
 }
 
-void Hero::Move(const Vector3 & position, float rotation, const Vector3 & velocity)
+void Hero::ActionMove(const Vector3 & position, float rotation, const Vector3 & velocity)
 {
-    Vector3 t_pos(position);
-    t_pos.Y = 0; // Y는 못움직이게
+    Vector3 pos(position);
+    pos.Y = 0.0f; // Y는 0
 
     // 최대 속도보다 빠르게 움직일수 없다. 
     //if (distance(GetPosition(), position) > HERO_MOVE_SPEED * delta_time)
@@ -40,14 +39,14 @@ void Hero::Move(const Vector3 & position, float rotation, const Vector3 & veloci
     if (GetZone() == nullptr) return;
 
     auto& mapData = GetZone()->MapData();
-    if (mapData.height > t_pos.Z && 0 < t_pos.Z && mapData.width > t_pos.X && 0 < t_pos.X)
+    // 맵 경계 체크
+    if (!(mapData.height > position.Z && 0 < position.Z && mapData.width > position.X && 0 < position.X))
     {
-        SetPosition(t_pos);
+        pos = GetPosition();
     }
+   
     SetRotation(rotation);
-    if (poistion_update_handler)
-        poistion_update_handler(GetPosition());
-
+    SetPosition(pos);
     UpdateInterest();
 
     PCS::World::MoveInfoT move_info;
@@ -94,7 +93,7 @@ inline fb::Offset<PCS::World::Hero> Hero::SerializeAsHero(fb::FlatBufferBuilder 
     return hero_offset;
 }
 
-inline void Hero::InitAttribute(const db::Hero & db_data)
+void Hero::Init(const db::Hero & db_data)
 {
     uid_ = db_data.uid;
     SetName(db_data.name);
@@ -110,6 +109,55 @@ inline void Hero::InitAttribute(const db::Hero & db_data)
     map_id_ = db_data.map_id;
     SetPosition(db_data.pos);
     SetRotation(db_data.rotation);
+}
+
+bool Hero::IsDead() const
+{
+    return hp_ <= 0;
+}
+
+void Hero::Die()
+{
+    if (IsDead())
+        return;
+
+    if (Hp() != 0)
+        Hp(0);
+        
+    death_signal_(this);
+}
+
+int Hero::MaxHp() const
+{
+    return max_hp_;
+}
+
+void Hero::MaxHp(int max_hp)
+{
+    if (max_hp < Hp())
+    {
+        Hp(max_hp);
+    }
+
+    max_hp_ = max_hp;
+}
+
+int Hero::Hp() const
+{
+    return hp_;
+}
+
+void Hero::Hp(int hp)
+{
+    if (hp > MaxHp())
+        return;
+
+    hp_ = hp;
+}
+
+signals2::connection Hero::ConnectDeathSignal(std::function<void(ILivingEntity*)> handler)
+{
+    return death_signal_.connect(handler);
 }
 
 void Hero::SetToDB(db::Hero & db_data)
