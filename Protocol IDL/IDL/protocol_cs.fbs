@@ -188,14 +188,14 @@ table Actor {
 }
 
 // 이동 정보
-table MoveInfo {
+table MoveActionInfo {
     entity_id:string;
     position:Vec3;
     rotation:float;
     velocity:Vec3;
 }
 // 공격 정보
-table SkillInfo {
+table SkillActionInfo {
     entity_id:string;
     skill_id:int;
     rotation:float;
@@ -205,10 +205,25 @@ table DamageInfo {
     entity_id:string;
     damage:int;
 }
-// 상태 정보(점프, 앉기 등)
+
+enum StateType : int {
+    NONE = 0,
+    Alive,
+    Jump,
+    Dead,
+}
+// 상태 정보()
 table StateInfo {
     entity_id:string;
-    state_id:int;
+    state:StateType;
+}
+// 능력치 정보
+table AttributeInfo {
+    entity_id:string;
+    max_hp:int;
+    hp:int;
+    max_mp:int;
+    mp:int;
 }
 
 // 메시지 스키마 정의============================
@@ -251,6 +266,9 @@ table Request_ActionSkill {
     targets:[string];
     rotation:float;
 }
+// 죽었을 경우 부활 요청
+table Request_Respawn {
+}
 
 // 원격 캐릭터 스폰
 table Notify_Appear {
@@ -263,12 +281,15 @@ table Notify_Disappear {
 
 // 상태 업데이트
 union UpdateType {
-    MoveInfo,
-    SkillInfo,
+    Actor,
+    MoveActionInfo,
+    SkillActionInfo,
     DamageInfo,
     StateInfo,
+    AttributeInfo,
 }
 table Notify_Update {
+    entity_id:string;
     update_data:UpdateType;
 }
 
@@ -319,6 +340,7 @@ union MessageType {
     World.Notify_Appear,
     World.Notify_Disappear,
     World.Notify_Update,
+    World.Request_Respawn,
     //World.Request_ActionMoveZone,
     //World.Reply_MoveZoneSuccess,
     //World.Reply_MoveZoneFailed,

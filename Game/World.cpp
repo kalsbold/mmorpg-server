@@ -47,7 +47,7 @@ void World::CreateFieldZones()
 	auto& map_table = MapTable::GetInstance().GetAll();
 	for (auto& map_data : map_table)
 	{
-		if (map_data.type == MapType::FIELD)
+		if (map_data.type == MapType::Field)
 			CreateZone(map_data);
 	}
 }

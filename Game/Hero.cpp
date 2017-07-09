@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "Hero.h"
+#include "Monster.h"
 #include "Zone.h"
+#include "CachedResources.h"
 
 Hero::Hero(const uuid & entity_id, RemoteWorldClient * rc)
 	: Actor(entity_id)
@@ -30,6 +32,9 @@ void Hero::SetZone(Zone * zone)
 
 void Hero::ActionMove(const Vector3 & position, float rotation, const Vector3 & velocity)
 {
+    if (IsDead())
+        return;
+
     Vector3 pos(position);
     pos.Y = 0.0f; // Y는 0
 
@@ -49,16 +54,86 @@ void Hero::ActionMove(const Vector3 & position, float rotation, const Vector3 & 
     SetPosition(pos);
     UpdateInterest();
 
-    PCS::World::MoveInfoT move_info;
-    move_info.entity_id = uuids::to_string(GetEntityID());
+    PCS::World::MoveActionInfoT move_info;
+    //move_info.entity_id = uuids::to_string(GetEntityID());
     move_info.position = std::make_unique<PCS::Vec3>(GetPosition().X, GetPosition().Y, GetPosition().Z);
     move_info.rotation = GetRotation();
     move_info.velocity = std::make_unique<PCS::Vec3>(velocity.X, velocity.Y, velocity.Z);
 
     PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
     update_msg.update_data.Set(std::move(move_info));
     // 통지
     PublishActorUpdate(&update_msg);
+}
+
+void Hero::ActionSkill(int skill_id, float rotation, const std::vector<uuid>& targets)
+{
+    if (IsDead())
+        return;
+
+    // 스킬 사용 조건 검사
+    auto* skill = SkillTable::GetInstance().Get(skill_id);
+    if (!(skill && skill->class_type == HeroClassType() && skill->cost <= Mp()))
+        return;
+    
+    // mp 소비
+    Mp(Mp() - skill->cost);
+    SetRotation(rotation);
+
+    // 통지 메시지
+    PCS::World::SkillActionInfoT skill_info;
+    //skill_info.entity_id = uuids::to_string(GetEntityID());
+    skill_info.skill_id = skill_id;
+    skill_info.rotation = rotation;
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(skill_info));
+    // 통지
+    PublishActorUpdate(&update_msg);
+
+    Zone* zone = GetZone();
+    if (zone == nullptr) return;
+    // target을 찾아서 데미지를 준다.
+    for (auto& entity_id : targets)
+    {
+        auto iter = zone->actors_.find(entity_id);
+        if (iter == zone->actors_.end())
+            continue;
+
+        auto actor = iter->second;
+        ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor.get());
+        if (entity)
+        {
+            entity->TakeDamage(skill->damage + Att());
+        }
+    }
+}
+
+void Hero::TakeDamage(int damage)
+{
+    if (IsDead())
+        return;
+
+    // 방어도 만큼 데미지 감소
+    damage = std::max(1, damage - Def());
+    Hp(Hp() - damage);
+
+    BOOST_LOG_TRIVIAL(info) << "Take damage " << GetName() << ". Amount : " << damage;
+
+    // 데미지를 통지
+    PCS::World::DamageInfoT data;
+    //data.entity_id = uuids::to_string(GetEntityID());
+    data.damage = damage;
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(data));
+    PublishActorUpdate(&update_msg);
+
+    if (Hp() <= 0)
+    {
+        Die();
+    }
 }
 
 inline fb::Offset<PCS::World::Actor> Hero::SerializeAsActor(fb::FlatBufferBuilder & fbb) const
@@ -66,6 +141,13 @@ inline fb::Offset<PCS::World::Actor> Hero::SerializeAsActor(fb::FlatBufferBuilde
     //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto hero_offset = SerializeAsHero(fbb);
     return PCS::World::CreateActor(fbb, PCS::World::ActorType::Hero, hero_offset.Union());
+}
+
+void Hero::SerializeAsActorT(PCS::World::ActorT& out) const
+{
+    PCS::World::HeroT hero_t;
+    SerializeAsHeroT(hero_t);
+    out.entity.Set(std::move(hero_t));
 }
 
 inline fb::Offset<PCS::World::Hero> Hero::SerializeAsHero(fb::FlatBufferBuilder & fbb) const
@@ -93,6 +175,56 @@ inline fb::Offset<PCS::World::Hero> Hero::SerializeAsHero(fb::FlatBufferBuilder 
     return hero_offset;
 }
 
+void Hero::SerializeAsHeroT(PCS::World::HeroT & out) const
+{
+    out.entity_id     = uuids::to_string(GetEntityID());
+    out.uid           = uid_;
+    out.name          = GetName();
+    out.class_type    = (PCS::ClassType)class_type_;
+    out.exp           = exp_;
+    out.level         = level_;
+    out.max_hp        = max_hp_;
+    out.hp            = hp_;
+    out.max_mp        = max_mp_;
+    out.mp            = mp_;
+    out.att           = att_;
+    out.def           = def_;
+    out.map_id        = map_id_;
+    out.pos.reset(new PCS::Vec3(GetPosition().X, GetPosition().Y, GetPosition().Z));
+    out.rotation      = GetRotation();
+}
+
+inline void Hero::Update(double delta_time)
+{
+    if (!IsDead())
+    {
+        // Hp Mp 재생
+        if (clock_type::now() >= restor_time_)
+        {
+            int prev_hp = Hp();
+            int prev_mp = Mp();
+            Hp(prev_hp + 5);
+            Mp(prev_mp + 5);
+            restor_time_ = clock_type::now() + 5s;
+
+            if (prev_hp != Hp() || prev_mp != Mp())
+            {
+                // 메시지 통지
+                PCS::World::AttributeInfoT data;
+                //data.entity_id = uuids::to_string(GetEntityID());
+                data.max_hp = MaxHp();
+                data.hp = Hp();
+                data.max_mp = MaxMp();
+                data.mp = Mp();
+                PCS::World::Notify_UpdateT update_msg;
+                update_msg.entity_id = uuids::to_string(GetEntityID());
+                update_msg.update_data.Set(std::move(data));
+                PublishActorUpdate(&update_msg);
+            }
+        }
+    }
+}
+
 void Hero::Init(const db::Hero & db_data)
 {
     uid_ = db_data.uid;
@@ -118,12 +250,20 @@ bool Hero::IsDead() const
 
 void Hero::Die()
 {
-    if (IsDead())
-        return;
-
     if (Hp() != 0)
         Hp(0);
         
+    BOOST_LOG_TRIVIAL(info) << "Hero Die : " << GetName();
+
+    // 죽음을 통지
+    PCS::World::StateInfoT data;
+    //data.entity_id = uuids::to_string(GetEntityID());
+    data.state = PCS::World::StateType::Dead;
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(data));
+    PublishActorUpdate(&update_msg);
+
     death_signal_(this);
 }
 
@@ -134,12 +274,8 @@ int Hero::MaxHp() const
 
 void Hero::MaxHp(int max_hp)
 {
-    if (max_hp < Hp())
-    {
-        Hp(max_hp);
-    }
-
-    max_hp_ = max_hp;
+    max_hp_ = std::max(1, max_hp);
+    Hp(std::min(Hp(), MaxHp()));
 }
 
 int Hero::Hp() const
@@ -149,10 +285,7 @@ int Hero::Hp() const
 
 void Hero::Hp(int hp)
 {
-    if (hp > MaxHp())
-        return;
-
-    hp_ = hp;
+    hp_ = boost::algorithm::clamp(hp, 0, MaxHp());
 }
 
 signals2::connection Hero::ConnectDeathSignal(std::function<void(ILivingEntity*)> handler)

@@ -5,15 +5,12 @@
 namespace ProtocolCS.World
 {
 
-public enum UpdateType : byte
+public enum StateType : int
 {
  NONE = 0,
- Actor = 1,
- MoveActionInfo = 2,
- SkillActionInfo = 3,
- DamageInfo = 4,
- StateInfo = 5,
- AttributeInfo = 6,
+ Alive = 1,
+ Jump = 2,
+ Dead = 3,
 };
 
 

@@ -53,7 +53,7 @@ public:
     template <typename Handler>
     Ptr<timer_type> RunAt(time_point time, Handler&& handler)
     {
-        auto timer = std::make_shared<timer_type>(strand_.get_io_service(), time);
+        Ptr<timer_type> timer = std::make_shared<timer_type>(strand_.get_io_service(), time);
         timer->async_wait(strand_.wrap([timer, handler = std::forward<Handler>(handler)](const auto& error)
         {
             if (!error)
@@ -71,8 +71,8 @@ public:
     template <typename Handler>
     Ptr<timer_type> RunAfter(duration duration, Handler&& handler)
     {
-        auto timer = std::make_shared<timer_type>(strand_.get_io_service(), duration);
-        timer->async_wait(strand_.wrap([timer, handler = std::forward<Handler>(handler)](const auto& error)
+        Ptr<timer_type> timer = std::make_shared<timer_type>(strand_.get_io_service(), duration);
+        timer->async_wait(strand_.wrap([timer, handler = std::forward<Handler>(handler)](const boost::system::error_code& error)
         {
             if (!error)
             {

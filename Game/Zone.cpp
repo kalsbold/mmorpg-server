@@ -22,15 +22,12 @@ Zone::Zone(const uuid & entity_id, const Map & map_data, World * owner)
 Zone::~Zone()
 {}
 
-bool Zone::Enter(const Ptr<Actor>& actor, const Vector3& position)
+void Zone::Enter(const Ptr<Actor>& actor, const Vector3& position)
 {
     auto r = actors_.emplace(actor->GetEntityID(), actor);
-    if (!r.second) return false;
 
     actor->SetZone(this);
     actor->Spawn(position);
-
-    return true;
 }
 
 void Zone::Exit(const Ptr<Actor>& actor)

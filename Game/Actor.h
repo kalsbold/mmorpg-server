@@ -47,6 +47,7 @@ public:
     void Spawn(const Vector3& position);
 
     virtual fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const = 0;
+    virtual void SerializeAsActorT(PCS::World::ActorT& out) const = 0;
 
     signals2::signal<void(const Vector3&)> poistion_update_signal;
 

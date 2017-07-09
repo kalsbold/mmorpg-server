@@ -45,9 +45,8 @@ public:
 private:
 	// Network message handler type.
 	using MessageHandler = std::function<void(const Ptr<net::Session>&, const PCS::MessageRoot* message_root)>;
-
+    // 리소스 로드
     void LoadResources();
-
     // 프레임 업데이트
     void DoUpdate(double delta_time);
 
@@ -58,6 +57,11 @@ private:
 		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const PCS::MessageRoot* message_root)
 		{
 			auto* message = message_root->message_as<T>();
+            if (message == nullptr)
+            {
+                BOOST_LOG_TRIVIAL(info) << "Can not cast message_type : " << PCS::EnumNameMessageType(PCS::MessageTypeTraits<T>::enum_value);
+            }
+            
 			handler(session, message);
 		};
 
@@ -83,6 +87,7 @@ private:
     void OnLoadFinish(const Ptr<net::Session>& session, const PCS::World::Notify_LoadFinish* message);
     void OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove* message);
 	void OnActionSkill(const Ptr<net::Session>& session, const PCS::World::Request_ActionSkill* message);
+    void OnRespawn(const Ptr<net::Session>& session, const PCS::World::Request_Respawn* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();

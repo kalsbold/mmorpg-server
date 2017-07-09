@@ -30,7 +30,7 @@ public:
 	int MapID() const { return map_data_.id; }
 	const Map& MapData() const { return map_data_; }
 
-	bool Enter(const Ptr<Actor>& actor, const Vector3& position);
+	void Enter(const Ptr<Actor>& actor, const Vector3& position);
 	void Exit(const Ptr<Actor>& actor);
     void Exit(const uuid& entity_id);
 

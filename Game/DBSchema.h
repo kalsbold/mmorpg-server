@@ -309,4 +309,28 @@ public:
     duration interval_s;
 };
 
+
+class Skill
+{
+public:
+    int           skill_id;
+    ClassType     class_type;
+    TargetingType targeting_type;
+    float         range;
+    float         radius;
+    float         angle;
+    int           cost;
+    float         cast_time;
+    float         cool_down;
+    int           damage;
+};
+
+class HeroSpawn
+{
+public:
+    int      uid;
+    int      map_id;
+    Vector3  pos;
+};
+
 }

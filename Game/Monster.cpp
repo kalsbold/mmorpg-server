@@ -86,11 +86,19 @@ bool Monster::IsDead() const
 
 void Monster::Die()
 {
-    if (IsDead())
-        return;
-
     if (Hp() != 0)
         Hp(0);
+
+    BOOST_LOG_TRIVIAL(info) << "Monster Die : " << GetName();
+
+    // 죽음을 통지
+    PCS::World::StateInfoT data;
+    //data.entity_id = uuids::to_string(GetEntityID());
+    data.state = PCS::World::StateType::Dead;
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(data));
+    PublishActorUpdate(&update_msg);
 
     death_signal_(this);
 }
@@ -102,12 +110,8 @@ int Monster::MaxHp() const
 
 void Monster::MaxHp(int max_hp)
 {
-    if (max_hp < Hp())
-    {
-        Hp(max_hp);
-    }
-
-    max_hp_ = max_hp;
+    max_hp_ = std::max(1, max_hp);
+    Hp(std::min(Hp(), MaxHp()));
 }
 
 int Monster::Hp() const
@@ -117,15 +121,60 @@ int Monster::Hp() const
 
 void Monster::Hp(int hp)
 {
-    if (hp > MaxHp())
+    hp_ = boost::algorithm::clamp(hp, 0, MaxHp());
+}
+
+void Monster::TakeDamage(int damage)
+{
+    if (IsDead())
         return;
 
-    hp_ = hp;
+    // 방어도 만큼 데미지 감소
+    damage = std::max(1, damage - Def());
+    Hp(Hp() - damage);
+
+    BOOST_LOG_TRIVIAL(info) << "Take damage " << GetName() << ". Amount : " << damage;
+
+    // 데미지를 통지
+    PCS::World::DamageInfoT data;
+    //data.entity_id = uuids::to_string(GetEntityID());
+    data.damage = damage;
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(data));
+    PublishActorUpdate(&update_msg);
+
+    if (Hp() <= 0)
+    {
+        Die();
+    }
 }
 
 signals2::connection Monster::ConnectDeathSignal(std::function<void(ILivingEntity*)> handler)
 {
     return death_signal_.connect(handler);
+}
+
+void Monster::SerializeAsMonsterT(PCS::World::MonsterT & out) const
+{
+    out.entity_id     = uuids::to_string(GetEntityID());
+    out.uid           = uid_;
+    out.name          = GetName();
+    out.type_id       = type_id_;
+    out.level         = level_;
+    out.max_hp        = max_hp_;
+    out.hp            = hp_;
+    out.max_mp        = max_mp_;
+    out.mp            = mp_;
+    out.pos.reset(new PCS::Vec3(GetPosition().X, GetPosition().Y, GetPosition().Z));
+    out.rotation      = GetRotation();
+}
+
+void Monster::SerializeAsActorT(PCS::World::ActorT & out) const
+{
+    PCS::World::MonsterT monster_t;
+    SerializeAsMonsterT(monster_t);
+    out.entity.Set(std::move(monster_t));
 }
 
 void Monster::Init(const db::Monster & db_data)

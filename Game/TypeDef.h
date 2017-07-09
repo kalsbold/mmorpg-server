@@ -11,8 +11,16 @@ enum class ClassType : int
 enum class MapType : int
 {
 	NONE = 0,
-	FIELD = 1,
-	DUNGEON = 2,
+	Field = 1,
+	Dungeon = 2,
+};
+
+enum class TargetingType : int
+{
+    NONE = 0,
+    Self,
+    One,
+    Around,
 };
 
 constexpr float HERO_MOVE_SPEED = 3.0f;

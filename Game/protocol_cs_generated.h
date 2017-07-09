@@ -75,17 +75,20 @@ struct MonsterT;
 struct Actor;
 struct ActorT;
 
-struct MoveInfo;
-struct MoveInfoT;
+struct MoveActionInfo;
+struct MoveActionInfoT;
 
-struct SkillInfo;
-struct SkillInfoT;
+struct SkillActionInfo;
+struct SkillActionInfoT;
 
 struct DamageInfo;
 struct DamageInfoT;
 
 struct StateInfo;
 struct StateInfoT;
+
+struct AttributeInfo;
+struct AttributeInfoT;
 
 struct Request_Login;
 struct Request_LoginT;
@@ -110,6 +113,9 @@ struct Request_ActionMoveT;
 
 struct Request_ActionSkill;
 struct Request_ActionSkillT;
+
+struct Request_Respawn;
+struct Request_RespawnT;
 
 struct Notify_Appear;
 struct Notify_AppearT;
@@ -280,23 +286,52 @@ struct ActorTypeUnion {
 bool VerifyActorType(flatbuffers::Verifier &verifier, const void *obj, ActorType type);
 bool VerifyActorTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
 
+enum class StateType : int32_t {
+  NONE = 0,
+  Alive = 1,
+  Jump = 2,
+  Dead = 3,
+  MIN = NONE,
+  MAX = Dead
+};
+
+inline const char **EnumNamesStateType() {
+  static const char *names[] = {
+    "NONE",
+    "Alive",
+    "Jump",
+    "Dead",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameStateType(StateType e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesStateType()[index];
+}
+
 enum class UpdateType : uint8_t {
   NONE = 0,
-  MoveInfo = 1,
-  SkillInfo = 2,
-  DamageInfo = 3,
-  StateInfo = 4,
+  Actor = 1,
+  MoveActionInfo = 2,
+  SkillActionInfo = 3,
+  DamageInfo = 4,
+  StateInfo = 5,
+  AttributeInfo = 6,
   MIN = NONE,
-  MAX = StateInfo
+  MAX = AttributeInfo
 };
 
 inline const char **EnumNamesUpdateType() {
   static const char *names[] = {
     "NONE",
-    "MoveInfo",
-    "SkillInfo",
+    "Actor",
+    "MoveActionInfo",
+    "SkillActionInfo",
     "DamageInfo",
     "StateInfo",
+    "AttributeInfo",
     nullptr
   };
   return names;
@@ -311,12 +346,16 @@ template<typename T> struct UpdateTypeTraits {
   static const UpdateType enum_value = UpdateType::NONE;
 };
 
-template<> struct UpdateTypeTraits<MoveInfo> {
-  static const UpdateType enum_value = UpdateType::MoveInfo;
+template<> struct UpdateTypeTraits<Actor> {
+  static const UpdateType enum_value = UpdateType::Actor;
 };
 
-template<> struct UpdateTypeTraits<SkillInfo> {
-  static const UpdateType enum_value = UpdateType::SkillInfo;
+template<> struct UpdateTypeTraits<MoveActionInfo> {
+  static const UpdateType enum_value = UpdateType::MoveActionInfo;
+};
+
+template<> struct UpdateTypeTraits<SkillActionInfo> {
+  static const UpdateType enum_value = UpdateType::SkillActionInfo;
 };
 
 template<> struct UpdateTypeTraits<DamageInfo> {
@@ -325,6 +364,10 @@ template<> struct UpdateTypeTraits<DamageInfo> {
 
 template<> struct UpdateTypeTraits<StateInfo> {
   static const UpdateType enum_value = UpdateType::StateInfo;
+};
+
+template<> struct UpdateTypeTraits<AttributeInfo> {
+  static const UpdateType enum_value = UpdateType::AttributeInfo;
 };
 
 struct UpdateTypeUnion {
@@ -356,13 +399,17 @@ struct UpdateTypeUnion {
   static void *UnPack(const void *obj, UpdateType type, const flatbuffers::resolver_function_t *resolver);
   flatbuffers::Offset<void> Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher = nullptr) const;
 
-  MoveInfoT *AsMoveInfo() {
-    return type == UpdateType::MoveInfo ?
-      reinterpret_cast<MoveInfoT *>(value) : nullptr;
+  ActorT *AsActor() {
+    return type == UpdateType::Actor ?
+      reinterpret_cast<ActorT *>(value) : nullptr;
   }
-  SkillInfoT *AsSkillInfo() {
-    return type == UpdateType::SkillInfo ?
-      reinterpret_cast<SkillInfoT *>(value) : nullptr;
+  MoveActionInfoT *AsMoveActionInfo() {
+    return type == UpdateType::MoveActionInfo ?
+      reinterpret_cast<MoveActionInfoT *>(value) : nullptr;
+  }
+  SkillActionInfoT *AsSkillActionInfo() {
+    return type == UpdateType::SkillActionInfo ?
+      reinterpret_cast<SkillActionInfoT *>(value) : nullptr;
   }
   DamageInfoT *AsDamageInfo() {
     return type == UpdateType::DamageInfo ?
@@ -371,6 +418,10 @@ struct UpdateTypeUnion {
   StateInfoT *AsStateInfo() {
     return type == UpdateType::StateInfo ?
       reinterpret_cast<StateInfoT *>(value) : nullptr;
+  }
+  AttributeInfoT *AsAttributeInfo() {
+    return type == UpdateType::AttributeInfo ?
+      reinterpret_cast<AttributeInfoT *>(value) : nullptr;
   }
 };
 
@@ -407,8 +458,9 @@ enum class MessageType : uint8_t {
   World_Notify_Appear = 24,
   World_Notify_Disappear = 25,
   World_Notify_Update = 26,
+  World_Request_Respawn = 27,
   MIN = NONE,
-  MAX = World_Notify_Update
+  MAX = World_Request_Respawn
 };
 
 inline const char **EnumNamesMessageType() {
@@ -440,6 +492,7 @@ inline const char **EnumNamesMessageType() {
     "World_Notify_Appear",
     "World_Notify_Disappear",
     "World_Notify_Update",
+    "World_Request_Respawn",
     nullptr
   };
   return names;
@@ -556,6 +609,10 @@ template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Disappear> {
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Update> {
   static const MessageType enum_value = MessageType::World_Notify_Update;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Request_Respawn> {
+  static const MessageType enum_value = MessageType::World_Request_Respawn;
 };
 
 struct MessageTypeUnion {
@@ -690,6 +747,10 @@ struct MessageTypeUnion {
   ProtocolCS::World::Notify_UpdateT *AsWorld_Notify_Update() {
     return type == MessageType::World_Notify_Update ?
       reinterpret_cast<ProtocolCS::World::Notify_UpdateT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Request_RespawnT *AsWorld_Request_Respawn() {
+    return type == MessageType::World_Request_Respawn ?
+      reinterpret_cast<ProtocolCS::World::Request_RespawnT *>(value) : nullptr;
   }
 };
 
@@ -2405,19 +2466,19 @@ inline flatbuffers::Offset<Actor> CreateActor(
 
 flatbuffers::Offset<Actor> CreateActor(flatbuffers::FlatBufferBuilder &_fbb, const ActorT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct MoveInfoT : public flatbuffers::NativeTable {
-  typedef MoveInfo TableType;
+struct MoveActionInfoT : public flatbuffers::NativeTable {
+  typedef MoveActionInfo TableType;
   std::string entity_id;
   std::unique_ptr<ProtocolCS::Vec3> position;
   float rotation;
   std::unique_ptr<ProtocolCS::Vec3> velocity;
-  MoveInfoT()
+  MoveActionInfoT()
       : rotation(0.0f) {
   }
 };
 
-struct MoveInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef MoveInfoT NativeTableType;
+struct MoveActionInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef MoveActionInfoT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
     VT_POSITION = 6,
@@ -2457,45 +2518,45 @@ struct MoveInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<ProtocolCS::Vec3>(verifier, VT_VELOCITY) &&
            verifier.EndTable();
   }
-  MoveInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(MoveInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<MoveInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  MoveActionInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(MoveActionInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<MoveActionInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveActionInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct MoveInfoBuilder {
+struct MoveActionInfoBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(MoveInfo::VT_ENTITY_ID, entity_id);
+    fbb_.AddOffset(MoveActionInfo::VT_ENTITY_ID, entity_id);
   }
   void add_position(const ProtocolCS::Vec3 *position) {
-    fbb_.AddStruct(MoveInfo::VT_POSITION, position);
+    fbb_.AddStruct(MoveActionInfo::VT_POSITION, position);
   }
   void add_rotation(float rotation) {
-    fbb_.AddElement<float>(MoveInfo::VT_ROTATION, rotation, 0.0f);
+    fbb_.AddElement<float>(MoveActionInfo::VT_ROTATION, rotation, 0.0f);
   }
   void add_velocity(const ProtocolCS::Vec3 *velocity) {
-    fbb_.AddStruct(MoveInfo::VT_VELOCITY, velocity);
+    fbb_.AddStruct(MoveActionInfo::VT_VELOCITY, velocity);
   }
-  MoveInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  MoveActionInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  MoveInfoBuilder &operator=(const MoveInfoBuilder &);
-  flatbuffers::Offset<MoveInfo> Finish() {
+  MoveActionInfoBuilder &operator=(const MoveActionInfoBuilder &);
+  flatbuffers::Offset<MoveActionInfo> Finish() {
     const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<MoveInfo>(end);
+    auto o = flatbuffers::Offset<MoveActionInfo>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<MoveInfo> CreateMoveInfo(
+inline flatbuffers::Offset<MoveActionInfo> CreateMoveActionInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
     const ProtocolCS::Vec3 *position = 0,
     float rotation = 0.0f,
     const ProtocolCS::Vec3 *velocity = 0) {
-  MoveInfoBuilder builder_(_fbb);
+  MoveActionInfoBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_rotation(rotation);
   builder_.add_position(position);
@@ -2503,13 +2564,13 @@ inline flatbuffers::Offset<MoveInfo> CreateMoveInfo(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<MoveInfo> CreateMoveInfoDirect(
+inline flatbuffers::Offset<MoveActionInfo> CreateMoveActionInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
     const ProtocolCS::Vec3 *position = 0,
     float rotation = 0.0f,
     const ProtocolCS::Vec3 *velocity = 0) {
-  return ProtocolCS::World::CreateMoveInfo(
+  return ProtocolCS::World::CreateMoveActionInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
       position,
@@ -2517,21 +2578,21 @@ inline flatbuffers::Offset<MoveInfo> CreateMoveInfoDirect(
       velocity);
 }
 
-flatbuffers::Offset<MoveInfo> CreateMoveInfo(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<MoveActionInfo> CreateMoveActionInfo(flatbuffers::FlatBufferBuilder &_fbb, const MoveActionInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct SkillInfoT : public flatbuffers::NativeTable {
-  typedef SkillInfo TableType;
+struct SkillActionInfoT : public flatbuffers::NativeTable {
+  typedef SkillActionInfo TableType;
   std::string entity_id;
   int32_t skill_id;
   float rotation;
-  SkillInfoT()
+  SkillActionInfoT()
       : skill_id(0),
         rotation(0.0f) {
   }
 };
 
-struct SkillInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef SkillInfoT NativeTableType;
+struct SkillActionInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef SkillActionInfoT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
     VT_SKILL_ID = 6,
@@ -2563,60 +2624,60 @@ struct SkillInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
   }
-  SkillInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(SkillInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<SkillInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  SkillActionInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(SkillActionInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<SkillActionInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const SkillActionInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct SkillInfoBuilder {
+struct SkillActionInfoBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
-    fbb_.AddOffset(SkillInfo::VT_ENTITY_ID, entity_id);
+    fbb_.AddOffset(SkillActionInfo::VT_ENTITY_ID, entity_id);
   }
   void add_skill_id(int32_t skill_id) {
-    fbb_.AddElement<int32_t>(SkillInfo::VT_SKILL_ID, skill_id, 0);
+    fbb_.AddElement<int32_t>(SkillActionInfo::VT_SKILL_ID, skill_id, 0);
   }
   void add_rotation(float rotation) {
-    fbb_.AddElement<float>(SkillInfo::VT_ROTATION, rotation, 0.0f);
+    fbb_.AddElement<float>(SkillActionInfo::VT_ROTATION, rotation, 0.0f);
   }
-  SkillInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  SkillActionInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  SkillInfoBuilder &operator=(const SkillInfoBuilder &);
-  flatbuffers::Offset<SkillInfo> Finish() {
+  SkillActionInfoBuilder &operator=(const SkillActionInfoBuilder &);
+  flatbuffers::Offset<SkillActionInfo> Finish() {
     const auto end = fbb_.EndTable(start_, 3);
-    auto o = flatbuffers::Offset<SkillInfo>(end);
+    auto o = flatbuffers::Offset<SkillActionInfo>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<SkillInfo> CreateSkillInfo(
+inline flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
     int32_t skill_id = 0,
     float rotation = 0.0f) {
-  SkillInfoBuilder builder_(_fbb);
+  SkillActionInfoBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
   builder_.add_skill_id(skill_id);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<SkillInfo> CreateSkillInfoDirect(
+inline flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
     int32_t skill_id = 0,
     float rotation = 0.0f) {
-  return ProtocolCS::World::CreateSkillInfo(
+  return ProtocolCS::World::CreateSkillActionInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
       skill_id,
       rotation);
 }
 
-flatbuffers::Offset<SkillInfo> CreateSkillInfo(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfo(flatbuffers::FlatBufferBuilder &_fbb, const SkillActionInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct DamageInfoT : public flatbuffers::NativeTable {
   typedef DamageInfo TableType;
@@ -2703,9 +2764,9 @@ flatbuffers::Offset<DamageInfo> CreateDamageInfo(flatbuffers::FlatBufferBuilder 
 struct StateInfoT : public flatbuffers::NativeTable {
   typedef StateInfo TableType;
   std::string entity_id;
-  int32_t state_id;
+  StateType state;
   StateInfoT()
-      : state_id(0) {
+      : state(StateType::NONE) {
   }
 };
 
@@ -2713,7 +2774,7 @@ struct StateInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef StateInfoT NativeTableType;
   enum {
     VT_ENTITY_ID = 4,
-    VT_STATE_ID = 6
+    VT_STATE = 6
   };
   const flatbuffers::String *entity_id() const {
     return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
@@ -2721,17 +2782,17 @@ struct StateInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   flatbuffers::String *mutable_entity_id() {
     return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
   }
-  int32_t state_id() const {
-    return GetField<int32_t>(VT_STATE_ID, 0);
+  StateType state() const {
+    return static_cast<StateType>(GetField<int32_t>(VT_STATE, 0));
   }
-  bool mutate_state_id(int32_t _state_id) {
-    return SetField<int32_t>(VT_STATE_ID, _state_id, 0);
+  bool mutate_state(StateType _state) {
+    return SetField<int32_t>(VT_STATE, static_cast<int32_t>(_state), 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ENTITY_ID) &&
            verifier.Verify(entity_id()) &&
-           VerifyField<int32_t>(verifier, VT_STATE_ID) &&
+           VerifyField<int32_t>(verifier, VT_STATE) &&
            verifier.EndTable();
   }
   StateInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2745,8 +2806,8 @@ struct StateInfoBuilder {
   void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
     fbb_.AddOffset(StateInfo::VT_ENTITY_ID, entity_id);
   }
-  void add_state_id(int32_t state_id) {
-    fbb_.AddElement<int32_t>(StateInfo::VT_STATE_ID, state_id, 0);
+  void add_state(StateType state) {
+    fbb_.AddElement<int32_t>(StateInfo::VT_STATE, static_cast<int32_t>(state), 0);
   }
   StateInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2763,9 +2824,9 @@ struct StateInfoBuilder {
 inline flatbuffers::Offset<StateInfo> CreateStateInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
-    int32_t state_id = 0) {
+    StateType state = StateType::NONE) {
   StateInfoBuilder builder_(_fbb);
-  builder_.add_state_id(state_id);
+  builder_.add_state(state);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
 }
@@ -2773,14 +2834,147 @@ inline flatbuffers::Offset<StateInfo> CreateStateInfo(
 inline flatbuffers::Offset<StateInfo> CreateStateInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
-    int32_t state_id = 0) {
+    StateType state = StateType::NONE) {
   return ProtocolCS::World::CreateStateInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
-      state_id);
+      state);
 }
 
 flatbuffers::Offset<StateInfo> CreateStateInfo(flatbuffers::FlatBufferBuilder &_fbb, const StateInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct AttributeInfoT : public flatbuffers::NativeTable {
+  typedef AttributeInfo TableType;
+  std::string entity_id;
+  int32_t max_hp;
+  int32_t hp;
+  int32_t max_mp;
+  int32_t mp;
+  AttributeInfoT()
+      : max_hp(0),
+        hp(0),
+        max_mp(0),
+        mp(0) {
+  }
+};
+
+struct AttributeInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef AttributeInfoT NativeTableType;
+  enum {
+    VT_ENTITY_ID = 4,
+    VT_MAX_HP = 6,
+    VT_HP = 8,
+    VT_MAX_MP = 10,
+    VT_MP = 12
+  };
+  const flatbuffers::String *entity_id() const {
+    return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  flatbuffers::String *mutable_entity_id() {
+    return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  int32_t max_hp() const {
+    return GetField<int32_t>(VT_MAX_HP, 0);
+  }
+  bool mutate_max_hp(int32_t _max_hp) {
+    return SetField<int32_t>(VT_MAX_HP, _max_hp, 0);
+  }
+  int32_t hp() const {
+    return GetField<int32_t>(VT_HP, 0);
+  }
+  bool mutate_hp(int32_t _hp) {
+    return SetField<int32_t>(VT_HP, _hp, 0);
+  }
+  int32_t max_mp() const {
+    return GetField<int32_t>(VT_MAX_MP, 0);
+  }
+  bool mutate_max_mp(int32_t _max_mp) {
+    return SetField<int32_t>(VT_MAX_MP, _max_mp, 0);
+  }
+  int32_t mp() const {
+    return GetField<int32_t>(VT_MP, 0);
+  }
+  bool mutate_mp(int32_t _mp) {
+    return SetField<int32_t>(VT_MP, _mp, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_ENTITY_ID) &&
+           verifier.Verify(entity_id()) &&
+           VerifyField<int32_t>(verifier, VT_MAX_HP) &&
+           VerifyField<int32_t>(verifier, VT_HP) &&
+           VerifyField<int32_t>(verifier, VT_MAX_MP) &&
+           VerifyField<int32_t>(verifier, VT_MP) &&
+           verifier.EndTable();
+  }
+  AttributeInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(AttributeInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<AttributeInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const AttributeInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct AttributeInfoBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
+    fbb_.AddOffset(AttributeInfo::VT_ENTITY_ID, entity_id);
+  }
+  void add_max_hp(int32_t max_hp) {
+    fbb_.AddElement<int32_t>(AttributeInfo::VT_MAX_HP, max_hp, 0);
+  }
+  void add_hp(int32_t hp) {
+    fbb_.AddElement<int32_t>(AttributeInfo::VT_HP, hp, 0);
+  }
+  void add_max_mp(int32_t max_mp) {
+    fbb_.AddElement<int32_t>(AttributeInfo::VT_MAX_MP, max_mp, 0);
+  }
+  void add_mp(int32_t mp) {
+    fbb_.AddElement<int32_t>(AttributeInfo::VT_MP, mp, 0);
+  }
+  AttributeInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  AttributeInfoBuilder &operator=(const AttributeInfoBuilder &);
+  flatbuffers::Offset<AttributeInfo> Finish() {
+    const auto end = fbb_.EndTable(start_, 5);
+    auto o = flatbuffers::Offset<AttributeInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<AttributeInfo> CreateAttributeInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> entity_id = 0,
+    int32_t max_hp = 0,
+    int32_t hp = 0,
+    int32_t max_mp = 0,
+    int32_t mp = 0) {
+  AttributeInfoBuilder builder_(_fbb);
+  builder_.add_mp(mp);
+  builder_.add_max_mp(max_mp);
+  builder_.add_hp(hp);
+  builder_.add_max_hp(max_hp);
+  builder_.add_entity_id(entity_id);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<AttributeInfo> CreateAttributeInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *entity_id = nullptr,
+    int32_t max_hp = 0,
+    int32_t hp = 0,
+    int32_t max_mp = 0,
+    int32_t mp = 0) {
+  return ProtocolCS::World::CreateAttributeInfo(
+      _fbb,
+      entity_id ? _fbb.CreateString(entity_id) : 0,
+      max_hp,
+      hp,
+      max_mp,
+      mp);
+}
+
+flatbuffers::Offset<AttributeInfo> CreateAttributeInfo(flatbuffers::FlatBufferBuilder &_fbb, const AttributeInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Request_LoginT : public flatbuffers::NativeTable {
   typedef Request_Login TableType;
@@ -3317,6 +3511,46 @@ inline flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkillDirect(
 
 flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkill(flatbuffers::FlatBufferBuilder &_fbb, const Request_ActionSkillT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
+struct Request_RespawnT : public flatbuffers::NativeTable {
+  typedef Request_Respawn TableType;
+  Request_RespawnT() {
+  }
+};
+
+struct Request_Respawn FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_RespawnT NativeTableType;
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+  Request_RespawnT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_RespawnT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_Respawn> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_RespawnT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Request_RespawnBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  Request_RespawnBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Request_RespawnBuilder &operator=(const Request_RespawnBuilder &);
+  flatbuffers::Offset<Request_Respawn> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<Request_Respawn>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Request_Respawn> CreateRequest_Respawn(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  Request_RespawnBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Request_Respawn> CreateRequest_Respawn(flatbuffers::FlatBufferBuilder &_fbb, const Request_RespawnT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
 struct Notify_AppearT : public flatbuffers::NativeTable {
   typedef Notify_Appear TableType;
   std::unique_ptr<ActorT> entity;
@@ -3441,6 +3675,7 @@ flatbuffers::Offset<Notify_Disappear> CreateNotify_Disappear(flatbuffers::FlatBu
 
 struct Notify_UpdateT : public flatbuffers::NativeTable {
   typedef Notify_Update TableType;
+  std::string entity_id;
   UpdateTypeUnion update_data;
   Notify_UpdateT() {
   }
@@ -3449,9 +3684,16 @@ struct Notify_UpdateT : public flatbuffers::NativeTable {
 struct Notify_Update FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Notify_UpdateT NativeTableType;
   enum {
-    VT_UPDATE_DATA_TYPE = 4,
-    VT_UPDATE_DATA = 6
+    VT_ENTITY_ID = 4,
+    VT_UPDATE_DATA_TYPE = 6,
+    VT_UPDATE_DATA = 8
   };
+  const flatbuffers::String *entity_id() const {
+    return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  flatbuffers::String *mutable_entity_id() {
+    return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
+  }
   UpdateType update_data_type() const {
     return static_cast<UpdateType>(GetField<uint8_t>(VT_UPDATE_DATA_TYPE, 0));
   }
@@ -3462,11 +3704,14 @@ struct Notify_Update FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const void *>(VT_UPDATE_DATA);
   }
   template<typename T> const T *update_data_as() const;
-  const MoveInfo *update_data_as_MoveInfo() const {
-    return update_data_type() == UpdateType::MoveInfo ? static_cast<const MoveInfo *>(update_data()) : nullptr;
+  const Actor *update_data_as_Actor() const {
+    return update_data_type() == UpdateType::Actor ? static_cast<const Actor *>(update_data()) : nullptr;
   }
-  const SkillInfo *update_data_as_SkillInfo() const {
-    return update_data_type() == UpdateType::SkillInfo ? static_cast<const SkillInfo *>(update_data()) : nullptr;
+  const MoveActionInfo *update_data_as_MoveActionInfo() const {
+    return update_data_type() == UpdateType::MoveActionInfo ? static_cast<const MoveActionInfo *>(update_data()) : nullptr;
+  }
+  const SkillActionInfo *update_data_as_SkillActionInfo() const {
+    return update_data_type() == UpdateType::SkillActionInfo ? static_cast<const SkillActionInfo *>(update_data()) : nullptr;
   }
   const DamageInfo *update_data_as_DamageInfo() const {
     return update_data_type() == UpdateType::DamageInfo ? static_cast<const DamageInfo *>(update_data()) : nullptr;
@@ -3474,11 +3719,16 @@ struct Notify_Update FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const StateInfo *update_data_as_StateInfo() const {
     return update_data_type() == UpdateType::StateInfo ? static_cast<const StateInfo *>(update_data()) : nullptr;
   }
+  const AttributeInfo *update_data_as_AttributeInfo() const {
+    return update_data_type() == UpdateType::AttributeInfo ? static_cast<const AttributeInfo *>(update_data()) : nullptr;
+  }
   void *mutable_update_data() {
     return GetPointer<void *>(VT_UPDATE_DATA);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_ENTITY_ID) &&
+           verifier.Verify(entity_id()) &&
            VerifyField<uint8_t>(verifier, VT_UPDATE_DATA_TYPE) &&
            VerifyOffset(verifier, VT_UPDATE_DATA) &&
            VerifyUpdateType(verifier, update_data(), update_data_type()) &&
@@ -3489,12 +3739,16 @@ struct Notify_Update FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static flatbuffers::Offset<Notify_Update> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_UpdateT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-template<> inline const MoveInfo *Notify_Update::update_data_as<MoveInfo>() const {
-  return update_data_as_MoveInfo();
+template<> inline const Actor *Notify_Update::update_data_as<Actor>() const {
+  return update_data_as_Actor();
 }
 
-template<> inline const SkillInfo *Notify_Update::update_data_as<SkillInfo>() const {
-  return update_data_as_SkillInfo();
+template<> inline const MoveActionInfo *Notify_Update::update_data_as<MoveActionInfo>() const {
+  return update_data_as_MoveActionInfo();
+}
+
+template<> inline const SkillActionInfo *Notify_Update::update_data_as<SkillActionInfo>() const {
+  return update_data_as_SkillActionInfo();
 }
 
 template<> inline const DamageInfo *Notify_Update::update_data_as<DamageInfo>() const {
@@ -3505,9 +3759,16 @@ template<> inline const StateInfo *Notify_Update::update_data_as<StateInfo>() co
   return update_data_as_StateInfo();
 }
 
+template<> inline const AttributeInfo *Notify_Update::update_data_as<AttributeInfo>() const {
+  return update_data_as_AttributeInfo();
+}
+
 struct Notify_UpdateBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
+  void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
+    fbb_.AddOffset(Notify_Update::VT_ENTITY_ID, entity_id);
+  }
   void add_update_data_type(UpdateType update_data_type) {
     fbb_.AddElement<uint8_t>(Notify_Update::VT_UPDATE_DATA_TYPE, static_cast<uint8_t>(update_data_type), 0);
   }
@@ -3520,7 +3781,7 @@ struct Notify_UpdateBuilder {
   }
   Notify_UpdateBuilder &operator=(const Notify_UpdateBuilder &);
   flatbuffers::Offset<Notify_Update> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
+    const auto end = fbb_.EndTable(start_, 3);
     auto o = flatbuffers::Offset<Notify_Update>(end);
     return o;
   }
@@ -3528,12 +3789,26 @@ struct Notify_UpdateBuilder {
 
 inline flatbuffers::Offset<Notify_Update> CreateNotify_Update(
     flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> entity_id = 0,
     UpdateType update_data_type = UpdateType::NONE,
     flatbuffers::Offset<void> update_data = 0) {
   Notify_UpdateBuilder builder_(_fbb);
   builder_.add_update_data(update_data);
+  builder_.add_entity_id(entity_id);
   builder_.add_update_data_type(update_data_type);
   return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Notify_Update> CreateNotify_UpdateDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *entity_id = nullptr,
+    UpdateType update_data_type = UpdateType::NONE,
+    flatbuffers::Offset<void> update_data = 0) {
+  return ProtocolCS::World::CreateNotify_Update(
+      _fbb,
+      entity_id ? _fbb.CreateString(entity_id) : 0,
+      update_data_type,
+      update_data);
 }
 
 flatbuffers::Offset<Notify_Update> CreateNotify_Update(flatbuffers::FlatBufferBuilder &_fbb, const Notify_UpdateT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
@@ -3640,6 +3915,9 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const ProtocolCS::World::Notify_Update *message_as_World_Notify_Update() const {
     return message_type() == MessageType::World_Notify_Update ? static_cast<const ProtocolCS::World::Notify_Update *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Request_Respawn *message_as_World_Request_Respawn() const {
+    return message_type() == MessageType::World_Request_Respawn ? static_cast<const ProtocolCS::World::Request_Respawn *>(message()) : nullptr;
   }
   void *mutable_message() {
     return GetPointer<void *>(VT_MESSAGE);
@@ -3758,6 +4036,10 @@ template<> inline const ProtocolCS::World::Notify_Disappear *MessageRoot::messag
 
 template<> inline const ProtocolCS::World::Notify_Update *MessageRoot::message_as<ProtocolCS::World::Notify_Update>() const {
   return message_as_World_Notify_Update();
+}
+
+template<> inline const ProtocolCS::World::Request_Respawn *MessageRoot::message_as<ProtocolCS::World::Request_Respawn>() const {
+  return message_as_World_Request_Respawn();
 }
 
 struct MessageRootBuilder {
@@ -4358,13 +4640,13 @@ inline flatbuffers::Offset<Actor> CreateActor(flatbuffers::FlatBufferBuilder &_f
       _entity);
 }
 
-inline MoveInfoT *MoveInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new MoveInfoT();
+inline MoveActionInfoT *MoveActionInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new MoveActionInfoT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void MoveInfo::UnPackTo(MoveInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void MoveActionInfo::UnPackTo(MoveActionInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
@@ -4373,18 +4655,18 @@ inline void MoveInfo::UnPackTo(MoveInfoT *_o, const flatbuffers::resolver_functi
   { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
 }
 
-inline flatbuffers::Offset<MoveInfo> MoveInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateMoveInfo(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<MoveActionInfo> MoveActionInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MoveActionInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateMoveActionInfo(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<MoveInfo> CreateMoveInfo(flatbuffers::FlatBufferBuilder &_fbb, const MoveInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<MoveActionInfo> CreateMoveActionInfo(flatbuffers::FlatBufferBuilder &_fbb, const MoveActionInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
   auto _position = _o->position ? _o->position.get() : 0;
   auto _rotation = _o->rotation;
   auto _velocity = _o->velocity ? _o->velocity.get() : 0;
-  return ProtocolCS::World::CreateMoveInfo(
+  return ProtocolCS::World::CreateMoveActionInfo(
       _fbb,
       _entity_id,
       _position,
@@ -4392,13 +4674,13 @@ inline flatbuffers::Offset<MoveInfo> CreateMoveInfo(flatbuffers::FlatBufferBuild
       _velocity);
 }
 
-inline SkillInfoT *SkillInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new SkillInfoT();
+inline SkillActionInfoT *SkillActionInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new SkillActionInfoT();
   UnPackTo(_o, _resolver);
   return _o;
 }
 
-inline void SkillInfo::UnPackTo(SkillInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void SkillActionInfo::UnPackTo(SkillActionInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
@@ -4406,17 +4688,17 @@ inline void SkillInfo::UnPackTo(SkillInfoT *_o, const flatbuffers::resolver_func
   { auto _e = rotation(); _o->rotation = _e; };
 }
 
-inline flatbuffers::Offset<SkillInfo> SkillInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateSkillInfo(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<SkillActionInfo> SkillActionInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const SkillActionInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateSkillActionInfo(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<SkillInfo> CreateSkillInfo(flatbuffers::FlatBufferBuilder &_fbb, const SkillInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfo(flatbuffers::FlatBufferBuilder &_fbb, const SkillActionInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
   auto _skill_id = _o->skill_id;
   auto _rotation = _o->rotation;
-  return ProtocolCS::World::CreateSkillInfo(
+  return ProtocolCS::World::CreateSkillActionInfo(
       _fbb,
       _entity_id,
       _skill_id,
@@ -4461,7 +4743,7 @@ inline void StateInfo::UnPackTo(StateInfoT *_o, const flatbuffers::resolver_func
   (void)_o;
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
-  { auto _e = state_id(); _o->state_id = _e; };
+  { auto _e = state(); _o->state = _e; };
 }
 
 inline flatbuffers::Offset<StateInfo> StateInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const StateInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4472,11 +4754,48 @@ inline flatbuffers::Offset<StateInfo> CreateStateInfo(flatbuffers::FlatBufferBui
   (void)_rehasher;
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
-  auto _state_id = _o->state_id;
+  auto _state = _o->state;
   return ProtocolCS::World::CreateStateInfo(
       _fbb,
       _entity_id,
-      _state_id);
+      _state);
+}
+
+inline AttributeInfoT *AttributeInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new AttributeInfoT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void AttributeInfo::UnPackTo(AttributeInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
+  { auto _e = max_hp(); _o->max_hp = _e; };
+  { auto _e = hp(); _o->hp = _e; };
+  { auto _e = max_mp(); _o->max_mp = _e; };
+  { auto _e = mp(); _o->mp = _e; };
+}
+
+inline flatbuffers::Offset<AttributeInfo> AttributeInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const AttributeInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateAttributeInfo(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<AttributeInfo> CreateAttributeInfo(flatbuffers::FlatBufferBuilder &_fbb, const AttributeInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
+  auto _max_hp = _o->max_hp;
+  auto _hp = _o->hp;
+  auto _max_mp = _o->max_mp;
+  auto _mp = _o->mp;
+  return ProtocolCS::World::CreateAttributeInfo(
+      _fbb,
+      _entity_id,
+      _max_hp,
+      _hp,
+      _max_mp,
+      _mp);
 }
 
 inline Request_LoginT *Request_Login::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -4691,6 +5010,28 @@ inline flatbuffers::Offset<Request_ActionSkill> CreateRequest_ActionSkill(flatbu
       _rotation);
 }
 
+inline Request_RespawnT *Request_Respawn::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_RespawnT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Request_Respawn::UnPackTo(Request_RespawnT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+}
+
+inline flatbuffers::Offset<Request_Respawn> Request_Respawn::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_RespawnT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_Respawn(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Request_Respawn> CreateRequest_Respawn(flatbuffers::FlatBufferBuilder &_fbb, const Request_RespawnT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  return ProtocolCS::World::CreateRequest_Respawn(
+      _fbb);
+}
+
 inline Notify_AppearT *Notify_Appear::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new Notify_AppearT();
   UnPackTo(_o, _resolver);
@@ -4750,6 +5091,7 @@ inline Notify_UpdateT *Notify_Update::UnPack(const flatbuffers::resolver_functio
 inline void Notify_Update::UnPackTo(Notify_UpdateT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
+  { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
   { auto _e = update_data_type(); _o->update_data.type = _e; };
   { auto _e = update_data(); if (_e) _o->update_data.value = UpdateTypeUnion::UnPack(_e, update_data_type(), _resolver); };
 }
@@ -4761,10 +5103,12 @@ inline flatbuffers::Offset<Notify_Update> Notify_Update::Pack(flatbuffers::FlatB
 inline flatbuffers::Offset<Notify_Update> CreateNotify_Update(flatbuffers::FlatBufferBuilder &_fbb, const Notify_UpdateT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
+  auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
   auto _update_data_type = _o->update_data.type;
   auto _update_data = _o->update_data.Pack(_fbb);
   return ProtocolCS::World::CreateNotify_Update(
       _fbb,
+      _entity_id,
       _update_data_type,
       _update_data);
 }
@@ -4895,12 +5239,16 @@ inline bool VerifyUpdateType(flatbuffers::Verifier &verifier, const void *obj, U
     case UpdateType::NONE: {
       return true;
     }
-    case UpdateType::MoveInfo: {
-      auto ptr = reinterpret_cast<const MoveInfo *>(obj);
+    case UpdateType::Actor: {
+      auto ptr = reinterpret_cast<const Actor *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case UpdateType::SkillInfo: {
-      auto ptr = reinterpret_cast<const SkillInfo *>(obj);
+    case UpdateType::MoveActionInfo: {
+      auto ptr = reinterpret_cast<const MoveActionInfo *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case UpdateType::SkillActionInfo: {
+      auto ptr = reinterpret_cast<const SkillActionInfo *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case UpdateType::DamageInfo: {
@@ -4909,6 +5257,10 @@ inline bool VerifyUpdateType(flatbuffers::Verifier &verifier, const void *obj, U
     }
     case UpdateType::StateInfo: {
       auto ptr = reinterpret_cast<const StateInfo *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case UpdateType::AttributeInfo: {
+      auto ptr = reinterpret_cast<const AttributeInfo *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -4928,12 +5280,16 @@ inline bool VerifyUpdateTypeVector(flatbuffers::Verifier &verifier, const flatbu
 
 inline void *UpdateTypeUnion::UnPack(const void *obj, UpdateType type, const flatbuffers::resolver_function_t *resolver) {
   switch (type) {
-    case UpdateType::MoveInfo: {
-      auto ptr = reinterpret_cast<const MoveInfo *>(obj);
+    case UpdateType::Actor: {
+      auto ptr = reinterpret_cast<const Actor *>(obj);
       return ptr->UnPack(resolver);
     }
-    case UpdateType::SkillInfo: {
-      auto ptr = reinterpret_cast<const SkillInfo *>(obj);
+    case UpdateType::MoveActionInfo: {
+      auto ptr = reinterpret_cast<const MoveActionInfo *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case UpdateType::SkillActionInfo: {
+      auto ptr = reinterpret_cast<const SkillActionInfo *>(obj);
       return ptr->UnPack(resolver);
     }
     case UpdateType::DamageInfo: {
@@ -4944,19 +5300,27 @@ inline void *UpdateTypeUnion::UnPack(const void *obj, UpdateType type, const fla
       auto ptr = reinterpret_cast<const StateInfo *>(obj);
       return ptr->UnPack(resolver);
     }
+    case UpdateType::AttributeInfo: {
+      auto ptr = reinterpret_cast<const AttributeInfo *>(obj);
+      return ptr->UnPack(resolver);
+    }
     default: return nullptr;
   }
 }
 
 inline flatbuffers::Offset<void> UpdateTypeUnion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher) const {
   switch (type) {
-    case UpdateType::MoveInfo: {
-      auto ptr = reinterpret_cast<const MoveInfoT *>(value);
-      return CreateMoveInfo(_fbb, ptr, _rehasher).Union();
+    case UpdateType::Actor: {
+      auto ptr = reinterpret_cast<const ActorT *>(value);
+      return CreateActor(_fbb, ptr, _rehasher).Union();
     }
-    case UpdateType::SkillInfo: {
-      auto ptr = reinterpret_cast<const SkillInfoT *>(value);
-      return CreateSkillInfo(_fbb, ptr, _rehasher).Union();
+    case UpdateType::MoveActionInfo: {
+      auto ptr = reinterpret_cast<const MoveActionInfoT *>(value);
+      return CreateMoveActionInfo(_fbb, ptr, _rehasher).Union();
+    }
+    case UpdateType::SkillActionInfo: {
+      auto ptr = reinterpret_cast<const SkillActionInfoT *>(value);
+      return CreateSkillActionInfo(_fbb, ptr, _rehasher).Union();
     }
     case UpdateType::DamageInfo: {
       auto ptr = reinterpret_cast<const DamageInfoT *>(value);
@@ -4966,18 +5330,26 @@ inline flatbuffers::Offset<void> UpdateTypeUnion::Pack(flatbuffers::FlatBufferBu
       auto ptr = reinterpret_cast<const StateInfoT *>(value);
       return CreateStateInfo(_fbb, ptr, _rehasher).Union();
     }
+    case UpdateType::AttributeInfo: {
+      auto ptr = reinterpret_cast<const AttributeInfoT *>(value);
+      return CreateAttributeInfo(_fbb, ptr, _rehasher).Union();
+    }
     default: return 0;
   }
 }
 
 inline UpdateTypeUnion::UpdateTypeUnion(const UpdateTypeUnion &u) FLATBUFFERS_NOEXCEPT : type(u.type), value(nullptr) {
   switch (type) {
-    case UpdateType::MoveInfo: {
-      assert(false);  // MoveInfoT not copyable.
+    case UpdateType::Actor: {
+      value = new ActorT(*reinterpret_cast<ActorT *>(u.value));
       break;
     }
-    case UpdateType::SkillInfo: {
-      value = new SkillInfoT(*reinterpret_cast<SkillInfoT *>(u.value));
+    case UpdateType::MoveActionInfo: {
+      assert(false);  // MoveActionInfoT not copyable.
+      break;
+    }
+    case UpdateType::SkillActionInfo: {
+      value = new SkillActionInfoT(*reinterpret_cast<SkillActionInfoT *>(u.value));
       break;
     }
     case UpdateType::DamageInfo: {
@@ -4988,6 +5360,10 @@ inline UpdateTypeUnion::UpdateTypeUnion(const UpdateTypeUnion &u) FLATBUFFERS_NO
       value = new StateInfoT(*reinterpret_cast<StateInfoT *>(u.value));
       break;
     }
+    case UpdateType::AttributeInfo: {
+      value = new AttributeInfoT(*reinterpret_cast<AttributeInfoT *>(u.value));
+      break;
+    }
     default:
       break;
   }
@@ -4995,13 +5371,18 @@ inline UpdateTypeUnion::UpdateTypeUnion(const UpdateTypeUnion &u) FLATBUFFERS_NO
 
 inline void UpdateTypeUnion::Reset() {
   switch (type) {
-    case UpdateType::MoveInfo: {
-      auto ptr = reinterpret_cast<MoveInfoT *>(value);
+    case UpdateType::Actor: {
+      auto ptr = reinterpret_cast<ActorT *>(value);
       delete ptr;
       break;
     }
-    case UpdateType::SkillInfo: {
-      auto ptr = reinterpret_cast<SkillInfoT *>(value);
+    case UpdateType::MoveActionInfo: {
+      auto ptr = reinterpret_cast<MoveActionInfoT *>(value);
+      delete ptr;
+      break;
+    }
+    case UpdateType::SkillActionInfo: {
+      auto ptr = reinterpret_cast<SkillActionInfoT *>(value);
       delete ptr;
       break;
     }
@@ -5012,6 +5393,11 @@ inline void UpdateTypeUnion::Reset() {
     }
     case UpdateType::StateInfo: {
       auto ptr = reinterpret_cast<StateInfoT *>(value);
+      delete ptr;
+      break;
+    }
+    case UpdateType::AttributeInfo: {
+      auto ptr = reinterpret_cast<AttributeInfoT *>(value);
       delete ptr;
       break;
     }
@@ -5130,6 +5516,10 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
     }
     case MessageType::World_Notify_Update: {
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Update *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Request_Respawn: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Respawn *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -5253,6 +5643,10 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_Update *>(obj);
       return ptr->UnPack(resolver);
     }
+    case MessageType::World_Request_Respawn: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Respawn *>(obj);
+      return ptr->UnPack(resolver);
+    }
     default: return nullptr;
   }
 }
@@ -5363,6 +5757,10 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolCS::World::Notify_UpdateT *>(value);
       return CreateNotify_Update(_fbb, ptr, _rehasher).Union();
     }
+    case MessageType::World_Request_Respawn: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_RespawnT *>(value);
+      return CreateRequest_Respawn(_fbb, ptr, _rehasher).Union();
+    }
     default: return 0;
   }
 }
@@ -5471,6 +5869,10 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
     }
     case MessageType::World_Notify_Update: {
       value = new ProtocolCS::World::Notify_UpdateT(*reinterpret_cast<ProtocolCS::World::Notify_UpdateT *>(u.value));
+      break;
+    }
+    case MessageType::World_Request_Respawn: {
+      value = new ProtocolCS::World::Request_RespawnT(*reinterpret_cast<ProtocolCS::World::Request_RespawnT *>(u.value));
       break;
     }
     default:
@@ -5607,6 +6009,11 @@ inline void MessageTypeUnion::Reset() {
     }
     case MessageType::World_Notify_Update: {
       auto ptr = reinterpret_cast<ProtocolCS::World::Notify_UpdateT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Request_Respawn: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Request_RespawnT *>(value);
       delete ptr;
       break;
     }

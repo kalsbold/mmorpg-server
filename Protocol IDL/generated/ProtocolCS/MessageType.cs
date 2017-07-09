@@ -34,6 +34,7 @@ public enum MessageType : byte
  World_Notify_Appear = 24,
  World_Notify_Disappear = 25,
  World_Notify_Update = 26,
+ World_Request_Respawn = 27,
 };
 
 

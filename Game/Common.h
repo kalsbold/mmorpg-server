@@ -8,12 +8,14 @@
 #include <map>
 #include <unordered_map>
 #include <tuple>
+#include <random>
 #include <boost/signals2.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/string_generator.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/algorithm/clamp.hpp>
 #include <GisunNet.h>
 #include <flatbuffers\flatbuffers.h>
 #include "Vector3.h"

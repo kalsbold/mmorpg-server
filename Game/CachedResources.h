@@ -221,3 +221,104 @@ private:
 };
 
 
+class SkillTable : public Singleton<SkillTable>
+{
+public:
+    std::unordered_map<int, db::Skill>& GetAll()
+    {
+        return data_;
+    }
+
+    const db::Skill* Get(int uid)
+    {
+        auto iter = data_.find(uid);
+
+        return (iter != data_.end()) ? &(iter->second) : nullptr;
+    }
+
+    static bool Load(Ptr<MySQLPool> db)
+    {
+        auto& instance = GetInstance();
+
+        try
+        {
+            instance.data_.clear();
+
+            auto result_set = db->Excute("SELECT * FROM skill_tb");
+            while (result_set->next())
+            {
+                db::Skill row;
+                row.skill_id = result_set->getInt("skill_id");
+                row.class_type = (ClassType)result_set->getInt("class_type");
+                row.targeting_type = (TargetingType)result_set->getInt("targeting_type");
+                row.range = (float)result_set->getDouble("range");
+                row.radius = (float)result_set->getDouble("radius");
+                row.angle = (float)result_set->getDouble("angle");
+                row.cost = result_set->getInt("cost");
+                row.cast_time = (float)result_set->getDouble("cast_time");
+                row.cool_down = (float)result_set->getDouble("cool_down");
+                row.damage = result_set->getInt("damage");
+
+                instance.data_.emplace(row.skill_id, row);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << e.what() << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
+private:
+    std::unordered_map<int, db::Skill> data_;
+};
+
+class HeroSpawnTable : public Singleton<HeroSpawnTable>
+{
+public:
+    std::unordered_map<int, db::HeroSpawn>& GetAll()
+    {
+        return data_;
+    }
+
+    const db::HeroSpawn* Get(int uid)
+    {
+        auto iter = data_.find(uid);
+
+        return (iter != data_.end()) ? &(iter->second) : nullptr;
+    }
+
+    static bool Load(Ptr<MySQLPool> db)
+    {
+        auto& instance = GetInstance();
+
+        try
+        {
+            instance.data_.clear();
+
+            auto result_set = db->Excute("SELECT * FROM hero_spawn_tb");
+            while (result_set->next())
+            {
+                db::HeroSpawn row;
+                row.uid = result_set->getInt("uid");
+                row.map_id = result_set->getInt("map_id");
+                row.pos = Vector3((float)result_set->getDouble("pos_x"), (float)result_set->getDouble("pos_y"), (float)result_set->getDouble("pos_z"));
+
+                instance.data_.emplace(row.uid, row);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << e.what() << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
+private:
+    std::unordered_map<int, db::HeroSpawn> data_;
+};
+

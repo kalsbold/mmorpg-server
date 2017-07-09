@@ -19,21 +19,21 @@ public struct StateInfo : IFlatbufferObject
 
   public string EntityId { get { int o = __p.__offset(4); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
   public ArraySegment<byte>? GetEntityIdBytes() { return __p.__vector_as_arraysegment(4); }
-  public int StateId { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
-  public bool MutateStateId(int state_id) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, state_id); return true; } else { return false; } }
+  public StateType State { get { int o = __p.__offset(6); return o != 0 ? (StateType)__p.bb.GetInt(o + __p.bb_pos) : StateType.NONE; } }
+  public bool MutateState(StateType state) { int o = __p.__offset(6); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, (int)state); return true; } else { return false; } }
 
   public static Offset<StateInfo> CreateStateInfo(FlatBufferBuilder builder,
       StringOffset entity_idOffset = default(StringOffset),
-      int state_id = 0) {
+      StateType state = StateType.NONE) {
     builder.StartObject(2);
-    StateInfo.AddStateId(builder, state_id);
+    StateInfo.AddState(builder, state);
     StateInfo.AddEntityId(builder, entity_idOffset);
     return StateInfo.EndStateInfo(builder);
   }
 
   public static void StartStateInfo(FlatBufferBuilder builder) { builder.StartObject(2); }
   public static void AddEntityId(FlatBufferBuilder builder, StringOffset entityIdOffset) { builder.AddOffset(0, entityIdOffset.Value, 0); }
-  public static void AddStateId(FlatBufferBuilder builder, int stateId) { builder.AddInt(1, stateId, 0); }
+  public static void AddState(FlatBufferBuilder builder, StateType state) { builder.AddInt(1, (int)state, 0); }
   public static Offset<StateInfo> EndStateInfo(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<StateInfo>(o);

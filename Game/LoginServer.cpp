@@ -396,8 +396,6 @@ void LoginServer::OnCreateHero(const Ptr<net::Session>& session, const PCS::Logi
 
 	// 초기 능력치로 셋.
 	db_hero->SetAttribute(*attribute);
-	db_hero->map_id = 1001;	// 시작맵
-	db_hero->pos = Vector3(10.0f, 0.0f, 10.0f); // 시작 좌표
 	db_hero->Update(GetDB());
 
 	BOOST_LOG_TRIVIAL(info) << "Create Hero : " << db_hero->name;

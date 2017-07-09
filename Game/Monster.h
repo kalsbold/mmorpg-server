@@ -15,9 +15,12 @@ public:
 
     void Init(const db::Monster& db_data);
 
-    fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const override;
-
+    // Inherited via Actor
+    virtual fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const override;
+    virtual void SerializeAsActorT(PCS::World::ActorT & out) const override;
+    
     fb::Offset<PCS::World::Monster> SerializeAsMonster(fb::FlatBufferBuilder& fbb) const;
+    void SerializeAsMonsterT(PCS::World::MonsterT & out) const;
 
 
     virtual void Update(double delta_time) override
@@ -33,13 +36,15 @@ public:
     int Att();
     int Def();
 
+    int MaxHp() const;
+    void MaxHp(int max_hp);
+    int Hp() const;
+    void Hp(int hp);
+
     // Inherited via ILivingEntity
     virtual bool IsDead() const override;
     virtual void Die() override;
-    virtual int MaxHp() const override;
-    virtual void MaxHp(int max_hp) override;
-    virtual int Hp() const override;
-    virtual void Hp(int hp) override;
+    virtual void TakeDamage(int damage) override;
     virtual signals2::connection ConnectDeathSignal(std::function<void(ILivingEntity*)> handler) override;
 
 private:
@@ -55,4 +60,6 @@ private:
 	int            att_;
 	int            def_;
 	int            map_id_;
+
+    
 };

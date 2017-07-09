@@ -89,6 +89,10 @@ public:
     void EnterWorld();
     // 이동
     void ActionMove(const PCS::World::Request_ActionMove * message);
+    // 스킬 사용
+    void ActionSkill(const PCS::World::Request_ActionSkill * message);
+    // 부활
+    void Respawn();
 
     int selected_hero_uid_;
 
@@ -105,6 +109,8 @@ private:
         }
     }
 
+    void OnHeroDeath();
+
 	std::atomic<bool>       disposed_;
 
 	WorldServer*            owner_;
@@ -117,6 +123,7 @@ private:
     Ptr<ClientInterestArea> interest_area_;
 
 	time_point last_position_update_time_;
-	time_point last_attack_time;
+	time_point last_attack_time_;
 
+    Ptr<timer_type> respawn_timer_;
 };

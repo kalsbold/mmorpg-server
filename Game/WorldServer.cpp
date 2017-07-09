@@ -55,7 +55,7 @@ void WorldServer::Run()
         settings.db_schema,
         settings.db_connection_pool);
 
-    // 필요한 데이터 로딩.
+    // 필요한 데이터 로드.
     LoadResources();
 
     // 게임 로직을 처리하는 World 시작.
@@ -193,12 +193,14 @@ void WorldServer::LoadResources()
     MapTable::Load(db_conn_);
     MonsterTable::Load(db_conn_);
     MonsterSpawnTable::Load(db_conn_);
+    SkillTable::Load(db_conn_);
+    HeroSpawnTable::Load(db_conn_);
 }
 
 // 프레임 업데이트
 void WorldServer::DoUpdate(double delta_time)
 {
-
+    world_->DoUpdate(delta_time);
 }
 
 void WorldServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t* buf, size_t bytes)
@@ -207,17 +209,17 @@ void WorldServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t*
     const auto* message_root = PCS::GetMessageRoot(buf);
     if (message_root == nullptr)
     {
-        BOOST_LOG_TRIVIAL(info) << "Invalid MessageRoot";
+        BOOST_LOG_TRIVIAL(debug) << "Invalid MessageRoot";
         return;
     }
 
     auto message_type = message_root->message_type();
-    BOOST_LOG_TRIVIAL(info) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
+    BOOST_LOG_TRIVIAL(debug) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
 
     auto iter = message_handlers_.find(message_type);
     if (iter == message_handlers_.end())
     {
-        BOOST_LOG_TRIVIAL(info) << "Can not find the message handler. message_type : " << PCS::EnumNameMessageType(message_type);
+        BOOST_LOG_TRIVIAL(debug) << "Can not find the message handler. message_type : " << PCS::EnumNameMessageType(message_type);
         return;
     }
 
@@ -228,13 +230,13 @@ void WorldServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t*
     }
     catch (sql::SQLException& e)
     {
-        BOOST_LOG_TRIVIAL(info) << "SQL Exception: " << e.what()
+        BOOST_LOG_TRIVIAL(warning) << "SQL Exception: " << e.what()
             << ", (MySQL error code : " << e.getErrorCode()
             << ", SQLState: " << e.getSQLState() << " )";
     }
     catch (std::exception& e)
     {
-        BOOST_LOG_TRIVIAL(info) << "Exception: " << e.what();
+        BOOST_LOG_TRIVIAL(warning) << "Exception: " << e.what();
     }
 }
 
@@ -324,6 +326,27 @@ void WorldServer::OnActionSkill(const Ptr<net::Session>& session, const PCS::Wor
     {
         return;
     }
+
+    rc->ActionSkill(message);
+}
+
+void WorldServer::OnRespawn(const Ptr<net::Session>& session, const PCS::World::Request_Respawn * message)
+{
+    if (message == nullptr) return;
+
+    auto rc = GetAuthedRemoteClient(session->GetID());
+    if (!rc)
+    {
+        NotifyUnauthedAccess(session);
+        return;
+    }
+    // 입장 상태가 아니면 리턴
+    if (rc->GetState() != RemoteWorldClient::State::WorldEntered)
+    {
+        return;
+    }
+
+    rc->Respawn();
 }
 
 void WorldServer::RegisterHandlers()
@@ -332,7 +355,7 @@ void WorldServer::RegisterHandlers()
     RegisterMessageHandler<PCS::World::Notify_LoadFinish>([this](auto& session, auto* msg) { OnLoadFinish(session, msg); });
     RegisterMessageHandler<PCS::World::Request_ActionMove>([this](auto& session, auto* msg) { OnActionMove(session, msg); });
     RegisterMessageHandler<PCS::World::Request_ActionSkill>([this](auto& session, auto* msg) { OnActionSkill(session, msg); });
-
+    RegisterMessageHandler<PCS::World::Request_Respawn>([this](auto& session, auto* msg) { OnRespawn(session, msg); });
 }
 
 void WorldServer::RegisterManagerClientHandlers()
