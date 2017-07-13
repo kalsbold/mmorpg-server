@@ -47,7 +47,7 @@ void ClientInterestArea::OnActorEnter(Actor * actor)
     if (actor == nullptr) return;
 
     flatbuffers::FlatBufferBuilder fbb;
-    auto actor_offset = actor->SerializeAsActor(fbb);
+    auto actor_offset = actor->Serialize(fbb);
     auto notify = PCS::World::CreateNotify_Appear(fbb, actor_offset);
     PCS::Send(*rc_, fbb, notify);
 }

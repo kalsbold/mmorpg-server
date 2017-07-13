@@ -75,6 +75,15 @@ public:
 	MapType	    type;
 };
 
+class MapGate
+{
+public:
+    int uid;
+    int map_id;
+    Vector3 pos;
+    int dest_uid;
+};
+
 class HeroAttribute
 {
 public:

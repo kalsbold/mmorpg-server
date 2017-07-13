@@ -191,6 +191,7 @@ void WorldServer::LoadResources()
 {
     HeroAttributeTable::Load(db_conn_);
     MapTable::Load(db_conn_);
+    MapGateTable::Load(db_conn_);
     MonsterTable::Load(db_conn_);
     MonsterSpawnTable::Load(db_conn_);
     SkillTable::Load(db_conn_);
@@ -346,7 +347,26 @@ void WorldServer::OnRespawn(const Ptr<net::Session>& session, const PCS::World::
         return;
     }
 
-    rc->Respawn();
+    rc->RespawnImmediately();
+}
+
+void WorldServer::OnEnterGate(const Ptr<net::Session>& session, const PCS::World::Request_EnterGate * message)
+{
+    if (message == nullptr) return;
+
+    auto rc = GetAuthedRemoteClient(session->GetID());
+    if (!rc)
+    {
+        NotifyUnauthedAccess(session);
+        return;
+    }
+    // 입장 상태가 아니면 리턴
+    if (rc->GetState() != RemoteWorldClient::State::WorldEntered)
+    {
+        return;
+    }
+
+    rc->EnterGate(message);
 }
 
 void WorldServer::RegisterHandlers()
@@ -356,6 +376,7 @@ void WorldServer::RegisterHandlers()
     RegisterMessageHandler<PCS::World::Request_ActionMove>([this](auto& session, auto* msg) { OnActionMove(session, msg); });
     RegisterMessageHandler<PCS::World::Request_ActionSkill>([this](auto& session, auto* msg) { OnActionSkill(session, msg); });
     RegisterMessageHandler<PCS::World::Request_Respawn>([this](auto& session, auto* msg) { OnRespawn(session, msg); });
+    RegisterMessageHandler<PCS::World::Request_EnterGate>([this](auto& session, auto* msg) { OnEnterGate(session, msg); });
 }
 
 void WorldServer::RegisterManagerClientHandlers()

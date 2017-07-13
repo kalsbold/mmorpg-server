@@ -8,6 +8,7 @@
 using namespace boost;
 namespace PCS = ProtocolCS;
 
+constexpr float HERO_MOVE_SPEED = 3.0f;
 
 // 플레이어 캐릭터
 class Hero : public Actor, public ILivingEntity
@@ -34,8 +35,10 @@ public:
 
     void ActionSkill(int skill_id, float rotation, const std::vector<uuid>& targets);
 
-    fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const override;
-    void SerializeAsActorT(PCS::World::ActorT& out) const override;
+    // Inherited via Actor
+    virtual fb::Offset<PCS::World::Actor> Serialize(fb::FlatBufferBuilder& fbb) const override;
+    virtual void SerializeT(PCS::World::ActorT& out) const override;
+
     fb::Offset<PCS::World::Hero> SerializeAsHero(fb::FlatBufferBuilder& fbb) const;
     void SerializeAsHeroT(PCS::World::HeroT& out) const;
 
@@ -63,7 +66,7 @@ public:
     // Inherited via ILivingEntity
     virtual bool IsDead() const override;
     virtual void Die() override;
-    virtual void TakeDamage(int damage) override;
+    virtual void TakeDamage(const uuid& attacker, int damage) override;
     virtual signals2::connection ConnectDeathSignal(std::function<void(ILivingEntity*)> handler) override;
 
 private:

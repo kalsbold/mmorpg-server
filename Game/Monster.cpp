@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Monster.h"
 #include "Zone.h"
+#include "MonsterAI.h"
 
 Monster::Monster(const uuid & entity_id)
 	: Actor(entity_id)
@@ -15,7 +16,7 @@ Monster::~Monster()
     }
 }
 
-fb::Offset<PCS::World::Actor> Monster::SerializeAsActor(fb::FlatBufferBuilder & fbb) const
+fb::Offset<PCS::World::Actor> Monster::Serialize(fb::FlatBufferBuilder & fbb) const
 {
     //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto mon_offset = SerializeAsMonster(fbb);
@@ -89,6 +90,7 @@ void Monster::Die()
     if (Hp() != 0)
         Hp(0);
 
+    ai_->process_event(EvDie());
     BOOST_LOG_TRIVIAL(info) << "Monster Die : " << GetName();
 
     // 죽음을 통지
@@ -124,10 +126,12 @@ void Monster::Hp(int hp)
     hp_ = boost::algorithm::clamp(hp, 0, MaxHp());
 }
 
-void Monster::TakeDamage(int damage)
+void Monster::TakeDamage(const uuid& attacker, int damage)
 {
     if (IsDead())
         return;
+
+    ai_->process_event(EvCombat(attacker));
 
     // 방어도 만큼 데미지 감소
     damage = std::max(1, damage - Def());
@@ -170,7 +174,77 @@ void Monster::SerializeAsMonsterT(PCS::World::MonsterT & out) const
     out.rotation      = GetRotation();
 }
 
-void Monster::SerializeAsActorT(PCS::World::ActorT & out) const
+void Monster::ActionMove(const Vector3 & position, float delta_time)
+{
+    if (IsDead())
+        return;
+
+    Vector3 target_pos(position);
+    target_pos.Y = 0.0f; // Y는 0
+    if (GetZone() == nullptr) return;
+
+    Vector3 delta = target_pos - GetPosition();
+    Vector3 velocity = delta_time != 0.0f ? (delta / delta_time) : Vector3::Zero;
+    
+    SetPosition(target_pos);
+    UpdateInterest();
+
+    PCS::World::MoveActionInfoT move_info;
+    //move_info.entity_id = uuids::to_string(GetEntityID());
+    move_info.position = std::make_unique<PCS::Vec3>(GetPosition().X, GetPosition().Y, GetPosition().Z);
+    move_info.rotation = GetRotation();
+    move_info.velocity = std::make_unique<PCS::Vec3>(velocity.X, velocity.Y, velocity.Z);
+
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(move_info));
+    // 통지
+    PublishActorUpdate(&update_msg);
+}
+
+void Monster::ActionAttack(const uuid & target)
+{
+    if (IsDead())
+        return;
+
+    Zone* zone = GetZone();
+    if (zone == nullptr) return;
+
+    // target을 찾는다.
+    auto iter = zone->actors_.find(target);
+    if (iter == zone->actors_.end())
+        return;
+    
+    auto actor = iter->second;
+
+    // 통지 메시지
+    PCS::World::SkillActionInfoT skill_info;
+    //skill_info.entity_id = uuids::to_string(GetEntityID());
+    skill_info.skill_id = 0;
+    skill_info.rotation = GetRotation();
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(GetEntityID());
+    update_msg.update_data.Set(std::move(skill_info));
+    // 통지
+    PublishActorUpdate(&update_msg);
+ 
+    // 데미지를 준다.
+    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor.get());
+    if (entity)
+    {
+        entity->TakeDamage(GetEntityID(), Att());
+    }
+}
+
+void Monster::Update(double delta_time)
+{
+    if (ai_)
+    {
+        ai_->process_event(EvUpdate(delta_time));
+    }
+}
+
+void Monster::SerializeT(PCS::World::ActorT & out) const
 {
     PCS::World::MonsterT monster_t;
     SerializeAsMonsterT(monster_t);
@@ -189,5 +263,11 @@ void Monster::Init(const db::Monster & db_data)
     mp_ = db_data.max_mp;
     att_ = db_data.att;
     def_ = db_data.def;
+}
+
+void Monster::InitAI()
+{
+    ai_ = std::make_unique<MonsterAI>(this);
+    ai_->initiate();
 }
 

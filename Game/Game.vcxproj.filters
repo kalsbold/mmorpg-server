@@ -161,6 +161,9 @@
     <ClInclude Include="MonsterSpawner.h">
       <Filter>GameWorld\Monster</Filter>
     </ClInclude>
+    <ClInclude Include="MonsterAI.h">
+      <Filter>GameWorld\Monster</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -210,5 +213,6 @@
     <ClCompile Include="MonsterSpawner.cpp">
       <Filter>GameWorld\Monster</Filter>
     </ClCompile>
+    <ClCompile Include="MonsterAI.cpp" />
   </ItemGroup>
 </Project>

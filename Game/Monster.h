@@ -7,6 +7,10 @@
 using namespace boost;
 namespace PCS = ProtocolCS;
 
+constexpr float MON_MOVE_SPEED = 2.0f;
+
+struct MonsterAI;
+
 class Monster : public Actor, public ILivingEntity
 {
 public:
@@ -14,19 +18,19 @@ public:
 	virtual ~Monster();
 
     void Init(const db::Monster& db_data);
+    void InitAI();
 
     // Inherited via Actor
-    virtual fb::Offset<PCS::World::Actor> SerializeAsActor(fb::FlatBufferBuilder& fbb) const override;
-    virtual void SerializeAsActorT(PCS::World::ActorT & out) const override;
+    virtual fb::Offset<PCS::World::Actor> Serialize(fb::FlatBufferBuilder& fbb) const override;
+    virtual void SerializeT(PCS::World::ActorT & out) const override;
     
     fb::Offset<PCS::World::Monster> SerializeAsMonster(fb::FlatBufferBuilder& fbb) const;
     void SerializeAsMonsterT(PCS::World::MonsterT & out) const;
 
+    void ActionMove(const Vector3 & position, float delta_time);
+    void ActionAttack(const uuid& target);
 
-    virtual void Update(double delta_time) override
-    {
-
-    }
+    virtual void Update(double delta_time) override;
 
     int Uid();
     int TypeId();
@@ -44,7 +48,7 @@ public:
     // Inherited via ILivingEntity
     virtual bool IsDead() const override;
     virtual void Die() override;
-    virtual void TakeDamage(int damage) override;
+    virtual void TakeDamage(const uuid& attacker, int damage) override;
     virtual signals2::connection ConnectDeathSignal(std::function<void(ILivingEntity*)> handler) override;
 
 private:
@@ -61,5 +65,5 @@ private:
 	int            def_;
 	int            map_id_;
 
-    
+    UPtr<MonsterAI> ai_;
 };

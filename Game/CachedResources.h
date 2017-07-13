@@ -62,6 +62,57 @@ private:
 	std::vector<db::Map> data_;
 };
 
+class MapGateTable : public Singleton<MapGateTable>
+{
+public:
+    const std::vector<db::MapGate>& GetAll()
+    {
+        return data_;
+    }
+
+    const db::MapGate* Get(int uid)
+    {
+        auto iter = std::find_if(data_.begin(), data_.end(), [uid](const db::MapGate& map)
+        {
+            return map.uid == uid;
+        });
+
+        return (iter != data_.end()) ? &(*iter) : nullptr;
+    }
+
+    static bool Load(Ptr<MySQLPool> db)
+    {
+        auto& instance = GetInstance();
+
+        try
+        {
+            instance.data_.clear();
+
+            auto result_set = db->Excute("SELECT * FROM map_gate_tb");
+            while (result_set->next())
+            {
+                db::MapGate row;
+                row.uid = result_set->getInt("uid");
+                row.map_id = result_set->getInt("map_id");
+                row.pos = Vector3((float)result_set->getDouble("pos_x"), (float)result_set->getDouble("pos_y"), (float)result_set->getDouble("pos_z"));
+                row.dest_uid = result_set->getInt("dest_uid");
+
+                instance.data_.push_back(row);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << e.what() << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
+private:
+    std::vector<db::MapGate> data_;
+};
+
 class HeroAttributeTable : public Singleton<HeroAttributeTable>
 {
 public:

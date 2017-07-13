@@ -38,10 +38,7 @@ void RemoteWorldClient::Dispose()
         return;
 
     ExitWorld();
-    // DB 업데이트
-    UpdateToDB();
 }
-
 
 void RemoteWorldClient::EnterWorld()
 {
@@ -90,34 +87,30 @@ void RemoteWorldClient::EnterWorld()
         PCS::Send(*this, reply);
         return;
     }
+    // 이미 캐릭터가 생성되있는경우
+    if (hero_ != nullptr)
+    {
+        //최초에 한번 생성되므로 잘못된 접근
+        PCS::World::Notify_EnterFailedT reply;
+        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_ENTER_ZONE;
+        PCS::Send(*this, reply);
+        return;
+    }
 
     // 케릭터 인스턴스 생성
     auto hero = std::make_shared<Hero>(random_generator()(), this);
     hero->Init(*db_hero);
-    SetHero(hero);
-
     hero->ConnectDeathSignal(std::bind(&RemoteWorldClient::OnHeroDeath, this));
+    hero_ = hero;
 
-    // 월드 입장
     SetState(RemoteWorldClient::State::WorldEntering);
 
     BOOST_LOG_TRIVIAL(info) << "World Entring . account_uid : " << GetAccount()->uid << " hero_name: " << hero->GetName();
-
-    GetWorld()->Dispatch([this, zone, hero] {
-
-        zone->Enter(hero, hero->GetPosition());
-        this->SetState(RemoteWorldClient::State::WorldEntered);
-
-        // 입장 성공 메시지를 보낸다
-        fb::FlatBufferBuilder fbb;
-        auto offset_msg = PCS::World::CreateNotify_EnterSuccess(fbb, hero->SerializeAsHero(fbb));
-        PCS::Send(*this, fbb, offset_msg);
-
-        // 관심 지역을 만든다
-        this->interest_area_ = std::make_shared<ClientInterestArea>(this, zone);
-        this->interest_area_->ViewDistance(Vector3(20.0f, 1.0f, 20.0f));
-        hero->poistion_update_signal.connect(std::bind(&RemoteWorldClient::OnUpdateHeroPosition, this, std::placeholders::_1));
-        hero->poistion_update_signal(hero->GetPosition());
+    
+    // 월드 입장
+    EnterZone(hero, zone, hero->GetPosition(), [this]()
+    {
+        SetState(RemoteWorldClient::State::WorldEntered);
     });
 }
 
@@ -130,6 +123,7 @@ void RemoteWorldClient::ActionMove(const PCS::World::Request_ActionMove * messag
     if (delta_time_duration < 50ms) { return; }
 
     if (!hero_) return;
+    if (!hero_->IsInZone()) return;
 
     last_position_update_time_ = clock_type::now();
 
@@ -150,6 +144,7 @@ void RemoteWorldClient::ActionSkill(const PCS::World::Request_ActionSkill * mess
     if (delta_time_duration < 50ms) { return; }
 
     if (!hero_) return;
+    if (!hero_->IsInZone()) return;
 
     last_position_update_time_ = clock_type::now();
 
@@ -168,61 +163,186 @@ void RemoteWorldClient::ActionSkill(const PCS::World::Request_ActionSkill * mess
     });
 }
 
-void RemoteWorldClient::Respawn()
+void RemoteWorldClient::RespawnImmediately()
 {
     // 조건 검사
-    if (!(hero_ && hero_->IsDead() && respawn_timer_))
+    if (!(hero_ && hero_->IsDead()))
         return;
 
-    respawn_timer_->cancel();
-    respawn_timer_.reset();
+    if (respawn_timer_)
+    {
+        // 리스폰 타이머 취소
+        respawn_timer_->cancel();
+        respawn_timer_.reset();
+    }
 
     GetWorld()->Dispatch([this, hero = hero_]() {
-        if (!(hero_->IsDead()))
-            return;
+        Respawn(hero);
+    });
+}
 
-        // 시작 지점을 찾는다.
-        auto spawn_table = HeroSpawnTable::GetInstance().GetAll();
-        auto iter = std::find_if(spawn_table.begin(), spawn_table.end(), [&](auto& value) {
-            return (value.second.map_id == hero->MapId());
-        });
-        if (iter == spawn_table.end())
-        {
-            return;
-        }
-        db::HeroSpawn& spawn_info = iter->second;
+void RemoteWorldClient::EnterGate(const PCS::World::Request_EnterGate * message)
+{
+    auto hero = GetHero();
+    if (!hero)
+    {
+        PCS::World::Reply_EnterGateFailedT reply;
+        reply.error_code = PCS::ErrorCode::WORLD_INVALID_HERO;
+        PCS::Send(*this, reply);
+        return;
+    }
 
-        hero->Hp(hero->MaxHp()); // HP 회복
-        hero->Spawn(spawn_info.pos);
+    auto zone = hero->GetZone();
+    if (!zone)
+    {
+        PCS::World::Reply_EnterGateFailedT reply;
+        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
+        PCS::Send(*this, reply);
+        return;
+    }
 
-        BOOST_LOG_TRIVIAL(info) << "Spawn Hero : " << hero->GetName();
+    auto gate = zone->GetGate(message->gate_uid());
+    if (!gate)
+    {
+        PCS::World::Reply_EnterGateFailedT reply;
+        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_GATE;
+        PCS::Send(*this, reply);
+        return;
+    }
 
-        // 주변에 통지
-        PCS::World::ActorT actor_data;
-        hero->SerializeAsActorT(actor_data);
-        PCS::World::Notify_UpdateT update_msg;
-        update_msg.entity_id = uuids::to_string(hero->GetEntityID());
-        update_msg.update_data.Set(std::move(actor_data));
-        hero->PublishActorUpdate(&update_msg);
+    auto dest_gate = MapGateTable::GetInstance().Get(gate->dest_uid);
+    if (!dest_gate)
+    {
+        PCS::World::Reply_EnterGateFailedT reply;
+        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_GATE;
+        PCS::Send(*this, reply);
+        return;
+    }
+
+    auto dest_zone = GetWorld()->FindFieldZone(dest_gate->map_id);
+    if (!dest_zone)
+    {
+        PCS::World::Reply_EnterGateFailedT reply;
+        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
+        PCS::Send(*this, reply);
+        return;
+
+    }
+
+    // 랜덤 이동 좌표
+    std::vector<float> b{ -3.0f, -2.0f, 2.0f, 3.0f };
+    std::vector<float> w{ 1, 0, 1 };
+    std::piecewise_constant_distribution<float> dist{ b.begin(), b.end(), w.begin() };
+    std::random_device rd;
+    std::default_random_engine rng{ rd() };
+    Vector3 position = dest_gate->pos + Vector3(dist(rng), 0.0f, dist(rng));
+
+    ExitZone(hero, [this, hero, dest_zone, position]()
+    {
+        EnterZone(hero, dest_zone, position);
     });
 }
 
 void RemoteWorldClient::ExitWorld()
 {
+    SetState(State::Disconnected);
+
     if (hero_)
     {
-        // 월드에서 나간다.
-        GetWorld()->Dispatch([this, hero = hero_] {
-            Zone* zone = hero->GetZone();
-            if (zone)
-            {
-                zone->Exit(hero);
-            }
-            // 관심지역 해제
-            this->interest_area_ = nullptr;
-            hero->poistion_update_signal.disconnect_all_slots();
-        });
+        ExitZone(hero_);
     }
+    // DB 업데이트
+    UpdateToDB();
+}
+
+void RemoteWorldClient::EnterZone(const Ptr<Hero>& hero, Zone * zone, const Vector3& position, std::function<void()> handler)
+{
+    zone->GetWorld()->Dispatch([this, hero = hero, zone, position, handler = std::move(handler)]
+    {
+        if (zone)
+        {
+            zone->Enter(hero, position);
+        }
+
+        // 입장 성공 메시지를 보낸다
+        fb::FlatBufferBuilder fbb;
+        auto offset_msg = PCS::World::CreateNotify_EnterSuccess(fbb,
+            hero->SerializeAsHero(fbb),
+            zone->Serialize(fbb));
+        PCS::Send(*this, fbb, offset_msg);
+
+        // 관심 지역을 만든다
+        this->interest_area_ = std::make_shared<ClientInterestArea>(this, zone);
+        this->interest_area_->ViewDistance(Vector3(20.0f, 1.0f, 20.0f));
+        hero->poistion_update_signal.connect(std::bind(&RemoteWorldClient::OnUpdateHeroPosition, this, std::placeholders::_1));
+        hero->poistion_update_signal(hero->GetPosition());
+
+        if (handler)
+        {
+            this->Dispatch(std::move(handler));
+        }
+    });
+}
+
+void RemoteWorldClient::ExitZone(const Ptr<Hero>& hero, std::function<void()> handler)
+{
+    Zone* zone = hero->GetZone();
+    // 월드에서 나간다.
+    GetWorld()->Dispatch([this, hero = hero, zone, handler = std::move(handler)]
+    {
+        if (zone)
+        {
+            zone->Exit(hero);
+        }
+
+        // 관심지역 해제
+        this->interest_area_ = nullptr;
+        hero->poistion_update_signal.disconnect_all_slots();
+
+        if (handler)
+        {
+            this->Dispatch(std::move(handler));
+        }
+    });
+}
+
+void RemoteWorldClient::Respawn(const Ptr<Hero> hero)
+{
+    if (!(hero->IsDead()))
+        return;
+    if (!hero->IsInZone())
+        return;
+
+    // 시작 지점을 찾는다.
+    auto spawn_table = HeroSpawnTable::GetInstance().GetAll();
+    auto iter = std::find_if(spawn_table.begin(), spawn_table.end(), [&](auto& value) {
+        return (value.second.map_id == hero->MapId());
+    });
+    if (iter == spawn_table.end())
+    {
+        return;
+    }
+    db::HeroSpawn& spawn_info = iter->second;
+
+    hero->Hp(hero->MaxHp()); // HP 회복
+    hero->Spawn(spawn_info.pos);
+
+    BOOST_LOG_TRIVIAL(info) << "Spawn Hero : " << hero->GetName();
+
+    // 주변에 통지
+    PCS::World::ActorT actor_data;
+    hero->SerializeT(actor_data);
+    PCS::World::Notify_UpdateT update_msg;
+    update_msg.entity_id = uuids::to_string(hero->GetEntityID());
+    update_msg.update_data.Set(std::move(actor_data));
+    hero->PublishActorUpdate(&update_msg);
+
+    PCS::World::StateInfoT data;
+    //data.entity_id = uuids::to_string(GetEntityID());
+    data.state = PCS::World::StateType::Alive;
+    update_msg.entity_id = uuids::to_string(hero->GetEntityID());
+    update_msg.update_data.Set(std::move(data));
+    hero->PublishActorUpdate(&update_msg);
 }
 
 void RemoteWorldClient::OnHeroDeath()
@@ -234,32 +354,7 @@ void RemoteWorldClient::OnHeroDeath()
 
     // 10초후 리스폰
     respawn_timer_ = GetWorld()->RunAfter(10s, [this, hero = hero_](auto& timer) {
-        if (!(hero_->IsDead()))
-            return;
-
-        // 시작 지점을 찾는다.
-        auto spawn_table = HeroSpawnTable::GetInstance().GetAll();
-        auto iter = std::find_if(spawn_table.begin(), spawn_table.end(), [&](auto& value) {
-            return (value.second.map_id == hero->MapId());
-        });
-        if (iter == spawn_table.end())
-        {
-            return;
-        }
-        db::HeroSpawn& spawn_info = iter->second;
-
-        hero->Hp(hero->MaxHp()); // HP 회복
-        hero->Spawn(spawn_info.pos);
-        
-        BOOST_LOG_TRIVIAL(info) << "Spawn Hero : " << hero->GetName();
-
-        // 주변에 통지
-        PCS::World::ActorT actor_t;
-        hero->SerializeAsActorT(actor_t);
-        PCS::World::Notify_UpdateT update_msg;
-        update_msg.entity_id = uuids::to_string(hero->GetEntityID());
-        update_msg.update_data.Set(std::move(actor_t));
-        hero->PublishActorUpdate(&update_msg);
+        Respawn(hero);
     });
 }
 

@@ -35,6 +35,8 @@ public enum MessageType : byte
  World_Notify_Disappear = 25,
  World_Notify_Update = 26,
  World_Request_Respawn = 27,
+ World_Request_EnterGate = 28,
+ World_Reply_EnterGateFailed = 29,
 };
 
 

@@ -76,18 +76,18 @@ private:
 
 	void ScheduleNextUpdate(const time_point& now, const duration& timestep);
 
-	// Handlers===================================================================================================
 	void RegisterHandlers();
-
+    // Handlers===================================================================================================
 	void HandleMessage(const Ptr<net::Session>& session, const uint8_t* buf, size_t bytes);
 	void HandleSessionOpened(const Ptr<net::Session>& session);
-	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);
-
+	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);   
+    // Message Handlers
 	void OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message);
     void OnLoadFinish(const Ptr<net::Session>& session, const PCS::World::Notify_LoadFinish* message);
     void OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove* message);
 	void OnActionSkill(const Ptr<net::Session>& session, const PCS::World::Request_ActionSkill* message);
     void OnRespawn(const Ptr<net::Session>& session, const PCS::World::Request_Respawn* message);
+    void OnEnterGate(const Ptr<net::Session>& session, const PCS::World::Request_EnterGate* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();

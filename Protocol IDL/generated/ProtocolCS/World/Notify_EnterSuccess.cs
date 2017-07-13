@@ -18,16 +18,20 @@ public struct Notify_EnterSuccess : IFlatbufferObject
   public Notify_EnterSuccess __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public Hero? Hero { get { int o = __p.__offset(4); return o != 0 ? (Hero?)(new Hero()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public MapData? MapData { get { int o = __p.__offset(6); return o != 0 ? (MapData?)(new MapData()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(FlatBufferBuilder builder,
-      Offset<Hero> heroOffset = default(Offset<Hero>)) {
-    builder.StartObject(1);
+      Offset<Hero> heroOffset = default(Offset<Hero>),
+      Offset<MapData> map_dataOffset = default(Offset<MapData>)) {
+    builder.StartObject(2);
+    Notify_EnterSuccess.AddMapData(builder, map_dataOffset);
     Notify_EnterSuccess.AddHero(builder, heroOffset);
     return Notify_EnterSuccess.EndNotify_EnterSuccess(builder);
   }
 
-  public static void StartNotify_EnterSuccess(FlatBufferBuilder builder) { builder.StartObject(1); }
+  public static void StartNotify_EnterSuccess(FlatBufferBuilder builder) { builder.StartObject(2); }
   public static void AddHero(FlatBufferBuilder builder, Offset<Hero> heroOffset) { builder.AddOffset(0, heroOffset.Value, 0); }
+  public static void AddMapData(FlatBufferBuilder builder, Offset<MapData> mapDataOffset) { builder.AddOffset(1, mapDataOffset.Value, 0); }
   public static Offset<Notify_EnterSuccess> EndNotify_EnterSuccess(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<Notify_EnterSuccess>(o);

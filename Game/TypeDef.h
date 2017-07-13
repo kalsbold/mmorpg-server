@@ -22,5 +22,3 @@ enum class TargetingType : int
     One,
     Around,
 };
-
-constexpr float HERO_MOVE_SPEED = 3.0f;

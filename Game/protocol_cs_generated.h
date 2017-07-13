@@ -72,6 +72,12 @@ struct HeroT;
 struct Monster;
 struct MonsterT;
 
+struct GateInfo;
+struct GateInfoT;
+
+struct MapData;
+struct MapDataT;
+
 struct Actor;
 struct ActorT;
 
@@ -126,6 +132,12 @@ struct Notify_DisappearT;
 struct Notify_Update;
 struct Notify_UpdateT;
 
+struct Request_EnterGate;
+struct Request_EnterGateT;
+
+struct Reply_EnterGateFailed;
+struct Reply_EnterGateFailedT;
+
 }  // namespace World
 
 struct MessageRoot;
@@ -155,8 +167,10 @@ enum class ErrorCode : int32_t {
   WORLD_NEXT_INVALID_STATE = 205,
   WORLD_CANNOT_LOAD_HERO = 206,
   WORLD_CANNOT_FIND_ZONE = 207,
+  WORLD_CANNOT_FIND_GATE = 208,
+  WORLD_INVALID_HERO = 209,
   MIN = OK,
-  MAX = WORLD_CANNOT_FIND_ZONE
+  MAX = WORLD_INVALID_HERO
 };
 
 enum class ClassType : int32_t {
@@ -459,8 +473,10 @@ enum class MessageType : uint8_t {
   World_Notify_Disappear = 25,
   World_Notify_Update = 26,
   World_Request_Respawn = 27,
+  World_Request_EnterGate = 28,
+  World_Reply_EnterGateFailed = 29,
   MIN = NONE,
-  MAX = World_Request_Respawn
+  MAX = World_Reply_EnterGateFailed
 };
 
 inline const char **EnumNamesMessageType() {
@@ -493,6 +509,8 @@ inline const char **EnumNamesMessageType() {
     "World_Notify_Disappear",
     "World_Notify_Update",
     "World_Request_Respawn",
+    "World_Request_EnterGate",
+    "World_Reply_EnterGateFailed",
     nullptr
   };
   return names;
@@ -613,6 +631,14 @@ template<> struct MessageTypeTraits<ProtocolCS::World::Notify_Update> {
 
 template<> struct MessageTypeTraits<ProtocolCS::World::Request_Respawn> {
   static const MessageType enum_value = MessageType::World_Request_Respawn;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Request_EnterGate> {
+  static const MessageType enum_value = MessageType::World_Request_EnterGate;
+};
+
+template<> struct MessageTypeTraits<ProtocolCS::World::Reply_EnterGateFailed> {
+  static const MessageType enum_value = MessageType::World_Reply_EnterGateFailed;
 };
 
 struct MessageTypeUnion {
@@ -751,6 +777,14 @@ struct MessageTypeUnion {
   ProtocolCS::World::Request_RespawnT *AsWorld_Request_Respawn() {
     return type == MessageType::World_Request_Respawn ?
       reinterpret_cast<ProtocolCS::World::Request_RespawnT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Request_EnterGateT *AsWorld_Request_EnterGate() {
+    return type == MessageType::World_Request_EnterGate ?
+      reinterpret_cast<ProtocolCS::World::Request_EnterGateT *>(value) : nullptr;
+  }
+  ProtocolCS::World::Reply_EnterGateFailedT *AsWorld_Reply_EnterGateFailed() {
+    return type == MessageType::World_Reply_EnterGateFailed ?
+      reinterpret_cast<ProtocolCS::World::Reply_EnterGateFailedT *>(value) : nullptr;
   }
 };
 
@@ -2381,6 +2415,194 @@ inline flatbuffers::Offset<Monster> CreateMonsterDirect(
 
 flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder &_fbb, const MonsterT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
+struct GateInfoT : public flatbuffers::NativeTable {
+  typedef GateInfo TableType;
+  int32_t uid;
+  std::unique_ptr<ProtocolCS::Vec3> pos;
+  GateInfoT()
+      : uid(0) {
+  }
+};
+
+struct GateInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef GateInfoT NativeTableType;
+  enum {
+    VT_UID = 4,
+    VT_POS = 6
+  };
+  int32_t uid() const {
+    return GetField<int32_t>(VT_UID, 0);
+  }
+  bool mutate_uid(int32_t _uid) {
+    return SetField<int32_t>(VT_UID, _uid, 0);
+  }
+  const ProtocolCS::Vec3 *pos() const {
+    return GetStruct<const ProtocolCS::Vec3 *>(VT_POS);
+  }
+  ProtocolCS::Vec3 *mutable_pos() {
+    return GetStruct<ProtocolCS::Vec3 *>(VT_POS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_UID) &&
+           VerifyField<ProtocolCS::Vec3>(verifier, VT_POS) &&
+           verifier.EndTable();
+  }
+  GateInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(GateInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<GateInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const GateInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct GateInfoBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_uid(int32_t uid) {
+    fbb_.AddElement<int32_t>(GateInfo::VT_UID, uid, 0);
+  }
+  void add_pos(const ProtocolCS::Vec3 *pos) {
+    fbb_.AddStruct(GateInfo::VT_POS, pos);
+  }
+  GateInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  GateInfoBuilder &operator=(const GateInfoBuilder &);
+  flatbuffers::Offset<GateInfo> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<GateInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<GateInfo> CreateGateInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t uid = 0,
+    const ProtocolCS::Vec3 *pos = 0) {
+  GateInfoBuilder builder_(_fbb);
+  builder_.add_pos(pos);
+  builder_.add_uid(uid);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<GateInfo> CreateGateInfo(flatbuffers::FlatBufferBuilder &_fbb, const GateInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct MapDataT : public flatbuffers::NativeTable {
+  typedef MapData TableType;
+  std::string entity_id;
+  int32_t map_id;
+  ProtocolCS::MapType map_type;
+  std::vector<std::unique_ptr<GateInfoT>> map_gates;
+  MapDataT()
+      : map_id(0),
+        map_type(ProtocolCS::MapType::NONE) {
+  }
+};
+
+struct MapData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef MapDataT NativeTableType;
+  enum {
+    VT_ENTITY_ID = 4,
+    VT_MAP_ID = 6,
+    VT_MAP_TYPE = 8,
+    VT_MAP_GATES = 10
+  };
+  const flatbuffers::String *entity_id() const {
+    return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  flatbuffers::String *mutable_entity_id() {
+    return GetPointer<flatbuffers::String *>(VT_ENTITY_ID);
+  }
+  int32_t map_id() const {
+    return GetField<int32_t>(VT_MAP_ID, 0);
+  }
+  bool mutate_map_id(int32_t _map_id) {
+    return SetField<int32_t>(VT_MAP_ID, _map_id, 0);
+  }
+  ProtocolCS::MapType map_type() const {
+    return static_cast<ProtocolCS::MapType>(GetField<int32_t>(VT_MAP_TYPE, 0));
+  }
+  bool mutate_map_type(ProtocolCS::MapType _map_type) {
+    return SetField<int32_t>(VT_MAP_TYPE, static_cast<int32_t>(_map_type), 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<GateInfo>> *map_gates() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<GateInfo>> *>(VT_MAP_GATES);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<GateInfo>> *mutable_map_gates() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<GateInfo>> *>(VT_MAP_GATES);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_ENTITY_ID) &&
+           verifier.Verify(entity_id()) &&
+           VerifyField<int32_t>(verifier, VT_MAP_ID) &&
+           VerifyField<int32_t>(verifier, VT_MAP_TYPE) &&
+           VerifyOffset(verifier, VT_MAP_GATES) &&
+           verifier.Verify(map_gates()) &&
+           verifier.VerifyVectorOfTables(map_gates()) &&
+           verifier.EndTable();
+  }
+  MapDataT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(MapDataT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<MapData> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MapDataT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct MapDataBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_entity_id(flatbuffers::Offset<flatbuffers::String> entity_id) {
+    fbb_.AddOffset(MapData::VT_ENTITY_ID, entity_id);
+  }
+  void add_map_id(int32_t map_id) {
+    fbb_.AddElement<int32_t>(MapData::VT_MAP_ID, map_id, 0);
+  }
+  void add_map_type(ProtocolCS::MapType map_type) {
+    fbb_.AddElement<int32_t>(MapData::VT_MAP_TYPE, static_cast<int32_t>(map_type), 0);
+  }
+  void add_map_gates(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<GateInfo>>> map_gates) {
+    fbb_.AddOffset(MapData::VT_MAP_GATES, map_gates);
+  }
+  MapDataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MapDataBuilder &operator=(const MapDataBuilder &);
+  flatbuffers::Offset<MapData> Finish() {
+    const auto end = fbb_.EndTable(start_, 4);
+    auto o = flatbuffers::Offset<MapData>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MapData> CreateMapData(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> entity_id = 0,
+    int32_t map_id = 0,
+    ProtocolCS::MapType map_type = ProtocolCS::MapType::NONE,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<GateInfo>>> map_gates = 0) {
+  MapDataBuilder builder_(_fbb);
+  builder_.add_map_gates(map_gates);
+  builder_.add_map_type(map_type);
+  builder_.add_map_id(map_id);
+  builder_.add_entity_id(entity_id);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<MapData> CreateMapDataDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *entity_id = nullptr,
+    int32_t map_id = 0,
+    ProtocolCS::MapType map_type = ProtocolCS::MapType::NONE,
+    const std::vector<flatbuffers::Offset<GateInfo>> *map_gates = nullptr) {
+  return ProtocolCS::World::CreateMapData(
+      _fbb,
+      entity_id ? _fbb.CreateString(entity_id) : 0,
+      map_id,
+      map_type,
+      map_gates ? _fbb.CreateVector<flatbuffers::Offset<GateInfo>>(*map_gates) : 0);
+}
+
+flatbuffers::Offset<MapData> CreateMapData(flatbuffers::FlatBufferBuilder &_fbb, const MapDataT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
 struct ActorT : public flatbuffers::NativeTable {
   typedef Actor TableType;
   ActorTypeUnion entity;
@@ -3215,6 +3437,7 @@ flatbuffers::Offset<Notify_LoadFinish> CreateNotify_LoadFinish(flatbuffers::Flat
 struct Notify_EnterSuccessT : public flatbuffers::NativeTable {
   typedef Notify_EnterSuccess TableType;
   std::unique_ptr<HeroT> hero;
+  std::unique_ptr<MapDataT> map_data;
   Notify_EnterSuccessT() {
   }
 };
@@ -3222,7 +3445,8 @@ struct Notify_EnterSuccessT : public flatbuffers::NativeTable {
 struct Notify_EnterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Notify_EnterSuccessT NativeTableType;
   enum {
-    VT_HERO = 4
+    VT_HERO = 4,
+    VT_MAP_DATA = 6
   };
   const Hero *hero() const {
     return GetPointer<const Hero *>(VT_HERO);
@@ -3230,10 +3454,18 @@ struct Notify_EnterSuccess FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table 
   Hero *mutable_hero() {
     return GetPointer<Hero *>(VT_HERO);
   }
+  const MapData *map_data() const {
+    return GetPointer<const MapData *>(VT_MAP_DATA);
+  }
+  MapData *mutable_map_data() {
+    return GetPointer<MapData *>(VT_MAP_DATA);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_HERO) &&
            verifier.VerifyTable(hero()) &&
+           VerifyOffset(verifier, VT_MAP_DATA) &&
+           verifier.VerifyTable(map_data()) &&
            verifier.EndTable();
   }
   Notify_EnterSuccessT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -3247,13 +3479,16 @@ struct Notify_EnterSuccessBuilder {
   void add_hero(flatbuffers::Offset<Hero> hero) {
     fbb_.AddOffset(Notify_EnterSuccess::VT_HERO, hero);
   }
+  void add_map_data(flatbuffers::Offset<MapData> map_data) {
+    fbb_.AddOffset(Notify_EnterSuccess::VT_MAP_DATA, map_data);
+  }
   Notify_EnterSuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   Notify_EnterSuccessBuilder &operator=(const Notify_EnterSuccessBuilder &);
   flatbuffers::Offset<Notify_EnterSuccess> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
+    const auto end = fbb_.EndTable(start_, 2);
     auto o = flatbuffers::Offset<Notify_EnterSuccess>(end);
     return o;
   }
@@ -3261,8 +3496,10 @@ struct Notify_EnterSuccessBuilder {
 
 inline flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<Hero> hero = 0) {
+    flatbuffers::Offset<Hero> hero = 0,
+    flatbuffers::Offset<MapData> map_data = 0) {
   Notify_EnterSuccessBuilder builder_(_fbb);
+  builder_.add_map_data(map_data);
   builder_.add_hero(hero);
   return builder_.Finish();
 }
@@ -3813,6 +4050,120 @@ inline flatbuffers::Offset<Notify_Update> CreateNotify_UpdateDirect(
 
 flatbuffers::Offset<Notify_Update> CreateNotify_Update(flatbuffers::FlatBufferBuilder &_fbb, const Notify_UpdateT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
+struct Request_EnterGateT : public flatbuffers::NativeTable {
+  typedef Request_EnterGate TableType;
+  int32_t gate_uid;
+  Request_EnterGateT()
+      : gate_uid(0) {
+  }
+};
+
+struct Request_EnterGate FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Request_EnterGateT NativeTableType;
+  enum {
+    VT_GATE_UID = 4
+  };
+  int32_t gate_uid() const {
+    return GetField<int32_t>(VT_GATE_UID, 0);
+  }
+  bool mutate_gate_uid(int32_t _gate_uid) {
+    return SetField<int32_t>(VT_GATE_UID, _gate_uid, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_GATE_UID) &&
+           verifier.EndTable();
+  }
+  Request_EnterGateT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Request_EnterGateT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Request_EnterGate> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterGateT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Request_EnterGateBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_gate_uid(int32_t gate_uid) {
+    fbb_.AddElement<int32_t>(Request_EnterGate::VT_GATE_UID, gate_uid, 0);
+  }
+  Request_EnterGateBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Request_EnterGateBuilder &operator=(const Request_EnterGateBuilder &);
+  flatbuffers::Offset<Request_EnterGate> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Request_EnterGate>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Request_EnterGate> CreateRequest_EnterGate(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t gate_uid = 0) {
+  Request_EnterGateBuilder builder_(_fbb);
+  builder_.add_gate_uid(gate_uid);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Request_EnterGate> CreateRequest_EnterGate(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterGateT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Reply_EnterGateFailedT : public flatbuffers::NativeTable {
+  typedef Reply_EnterGateFailed TableType;
+  ProtocolCS::ErrorCode error_code;
+  Reply_EnterGateFailedT()
+      : error_code(ProtocolCS::ErrorCode::OK) {
+  }
+};
+
+struct Reply_EnterGateFailed FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Reply_EnterGateFailedT NativeTableType;
+  enum {
+    VT_ERROR_CODE = 4
+  };
+  ProtocolCS::ErrorCode error_code() const {
+    return static_cast<ProtocolCS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  }
+  bool mutate_error_code(ProtocolCS::ErrorCode _error_code) {
+    return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           verifier.EndTable();
+  }
+  Reply_EnterGateFailedT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Reply_EnterGateFailedT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Reply_EnterGateFailed> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterGateFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Reply_EnterGateFailedBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_error_code(ProtocolCS::ErrorCode error_code) {
+    fbb_.AddElement<int32_t>(Reply_EnterGateFailed::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  Reply_EnterGateFailedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Reply_EnterGateFailedBuilder &operator=(const Reply_EnterGateFailedBuilder &);
+  flatbuffers::Offset<Reply_EnterGateFailed> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Reply_EnterGateFailed>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Reply_EnterGateFailed> CreateReply_EnterGateFailed(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    ProtocolCS::ErrorCode error_code = ProtocolCS::ErrorCode::OK) {
+  Reply_EnterGateFailedBuilder builder_(_fbb);
+  builder_.add_error_code(error_code);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<Reply_EnterGateFailed> CreateReply_EnterGateFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterGateFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
 }  // namespace World
 
 struct MessageRootT : public flatbuffers::NativeTable {
@@ -3918,6 +4269,12 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const ProtocolCS::World::Request_Respawn *message_as_World_Request_Respawn() const {
     return message_type() == MessageType::World_Request_Respawn ? static_cast<const ProtocolCS::World::Request_Respawn *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Request_EnterGate *message_as_World_Request_EnterGate() const {
+    return message_type() == MessageType::World_Request_EnterGate ? static_cast<const ProtocolCS::World::Request_EnterGate *>(message()) : nullptr;
+  }
+  const ProtocolCS::World::Reply_EnterGateFailed *message_as_World_Reply_EnterGateFailed() const {
+    return message_type() == MessageType::World_Reply_EnterGateFailed ? static_cast<const ProtocolCS::World::Reply_EnterGateFailed *>(message()) : nullptr;
   }
   void *mutable_message() {
     return GetPointer<void *>(VT_MESSAGE);
@@ -4040,6 +4397,14 @@ template<> inline const ProtocolCS::World::Notify_Update *MessageRoot::message_a
 
 template<> inline const ProtocolCS::World::Request_Respawn *MessageRoot::message_as<ProtocolCS::World::Request_Respawn>() const {
   return message_as_World_Request_Respawn();
+}
+
+template<> inline const ProtocolCS::World::Request_EnterGate *MessageRoot::message_as<ProtocolCS::World::Request_EnterGate>() const {
+  return message_as_World_Request_EnterGate();
+}
+
+template<> inline const ProtocolCS::World::Reply_EnterGateFailed *MessageRoot::message_as<ProtocolCS::World::Reply_EnterGateFailed>() const {
+  return message_as_World_Reply_EnterGateFailed();
 }
 
 struct MessageRootBuilder {
@@ -4612,6 +4977,68 @@ inline flatbuffers::Offset<Monster> CreateMonster(flatbuffers::FlatBufferBuilder
       _rotation);
 }
 
+inline GateInfoT *GateInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new GateInfoT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void GateInfo::UnPackTo(GateInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = uid(); _o->uid = _e; };
+  { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
+}
+
+inline flatbuffers::Offset<GateInfo> GateInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const GateInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateGateInfo(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<GateInfo> CreateGateInfo(flatbuffers::FlatBufferBuilder &_fbb, const GateInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _uid = _o->uid;
+  auto _pos = _o->pos ? _o->pos.get() : 0;
+  return ProtocolCS::World::CreateGateInfo(
+      _fbb,
+      _uid,
+      _pos);
+}
+
+inline MapDataT *MapData::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new MapDataT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void MapData::UnPackTo(MapDataT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
+  { auto _e = map_id(); _o->map_id = _e; };
+  { auto _e = map_type(); _o->map_type = _e; };
+  { auto _e = map_gates(); if (_e) { _o->map_gates.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->map_gates[_i] = std::unique_ptr<GateInfoT>(_e->Get(_i)->UnPack(_resolver)); } } };
+}
+
+inline flatbuffers::Offset<MapData> MapData::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MapDataT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateMapData(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<MapData> CreateMapData(flatbuffers::FlatBufferBuilder &_fbb, const MapDataT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
+  auto _map_id = _o->map_id;
+  auto _map_type = _o->map_type;
+  auto _map_gates = _o->map_gates.size() ? _fbb.CreateVector<flatbuffers::Offset<GateInfo>>(_o->map_gates.size(), [&](size_t i) { return CreateGateInfo(_fbb, _o->map_gates[i].get(), _rehasher); }) : 0;
+  return ProtocolCS::World::CreateMapData(
+      _fbb,
+      _entity_id,
+      _map_id,
+      _map_type,
+      _map_gates);
+}
+
 inline ActorT *Actor::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new ActorT();
   UnPackTo(_o, _resolver);
@@ -4908,6 +5335,7 @@ inline void Notify_EnterSuccess::UnPackTo(Notify_EnterSuccessT *_o, const flatbu
   (void)_o;
   (void)_resolver;
   { auto _e = hero(); if (_e) _o->hero = std::unique_ptr<HeroT>(_e->UnPack(_resolver)); };
+  { auto _e = map_data(); if (_e) _o->map_data = std::unique_ptr<MapDataT>(_e->UnPack(_resolver)); };
 }
 
 inline flatbuffers::Offset<Notify_EnterSuccess> Notify_EnterSuccess::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_EnterSuccessT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4918,9 +5346,11 @@ inline flatbuffers::Offset<Notify_EnterSuccess> CreateNotify_EnterSuccess(flatbu
   (void)_rehasher;
   (void)_o;
   auto _hero = _o->hero ? CreateHero(_fbb, _o->hero.get(), _rehasher) : 0;
+  auto _map_data = _o->map_data ? CreateMapData(_fbb, _o->map_data.get(), _rehasher) : 0;
   return ProtocolCS::World::CreateNotify_EnterSuccess(
       _fbb,
-      _hero);
+      _hero,
+      _map_data);
 }
 
 inline Notify_EnterFailedT *Notify_EnterFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -5111,6 +5541,56 @@ inline flatbuffers::Offset<Notify_Update> CreateNotify_Update(flatbuffers::FlatB
       _entity_id,
       _update_data_type,
       _update_data);
+}
+
+inline Request_EnterGateT *Request_EnterGate::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Request_EnterGateT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Request_EnterGate::UnPackTo(Request_EnterGateT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = gate_uid(); _o->gate_uid = _e; };
+}
+
+inline flatbuffers::Offset<Request_EnterGate> Request_EnterGate::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterGateT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRequest_EnterGate(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Request_EnterGate> CreateRequest_EnterGate(flatbuffers::FlatBufferBuilder &_fbb, const Request_EnterGateT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _gate_uid = _o->gate_uid;
+  return ProtocolCS::World::CreateRequest_EnterGate(
+      _fbb,
+      _gate_uid);
+}
+
+inline Reply_EnterGateFailedT *Reply_EnterGateFailed::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Reply_EnterGateFailedT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Reply_EnterGateFailed::UnPackTo(Reply_EnterGateFailedT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = error_code(); _o->error_code = _e; };
+}
+
+inline flatbuffers::Offset<Reply_EnterGateFailed> Reply_EnterGateFailed::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterGateFailedT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateReply_EnterGateFailed(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Reply_EnterGateFailed> CreateReply_EnterGateFailed(flatbuffers::FlatBufferBuilder &_fbb, const Reply_EnterGateFailedT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _error_code = _o->error_code;
+  return ProtocolCS::World::CreateReply_EnterGateFailed(
+      _fbb,
+      _error_code);
 }
 
 }  // namespace World
@@ -5522,6 +6002,14 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Respawn *>(obj);
       return verifier.VerifyTable(ptr);
     }
+    case MessageType::World_Request_EnterGate: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterGate *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::World_Reply_EnterGateFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterGateFailed *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
     default: return false;
   }
 }
@@ -5647,6 +6135,14 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_Respawn *>(obj);
       return ptr->UnPack(resolver);
     }
+    case MessageType::World_Request_EnterGate: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterGate *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::World_Reply_EnterGateFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterGateFailed *>(obj);
+      return ptr->UnPack(resolver);
+    }
     default: return nullptr;
   }
 }
@@ -5761,6 +6257,14 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolCS::World::Request_RespawnT *>(value);
       return CreateRequest_Respawn(_fbb, ptr, _rehasher).Union();
     }
+    case MessageType::World_Request_EnterGate: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Request_EnterGateT *>(value);
+      return CreateRequest_EnterGate(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::World_Reply_EnterGateFailed: {
+      auto ptr = reinterpret_cast<const ProtocolCS::World::Reply_EnterGateFailedT *>(value);
+      return CreateReply_EnterGateFailed(_fbb, ptr, _rehasher).Union();
+    }
     default: return 0;
   }
 }
@@ -5873,6 +6377,14 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
     }
     case MessageType::World_Request_Respawn: {
       value = new ProtocolCS::World::Request_RespawnT(*reinterpret_cast<ProtocolCS::World::Request_RespawnT *>(u.value));
+      break;
+    }
+    case MessageType::World_Request_EnterGate: {
+      value = new ProtocolCS::World::Request_EnterGateT(*reinterpret_cast<ProtocolCS::World::Request_EnterGateT *>(u.value));
+      break;
+    }
+    case MessageType::World_Reply_EnterGateFailed: {
+      value = new ProtocolCS::World::Reply_EnterGateFailedT(*reinterpret_cast<ProtocolCS::World::Reply_EnterGateFailedT *>(u.value));
       break;
     }
     default:
@@ -6014,6 +6526,16 @@ inline void MessageTypeUnion::Reset() {
     }
     case MessageType::World_Request_Respawn: {
       auto ptr = reinterpret_cast<ProtocolCS::World::Request_RespawnT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Request_EnterGate: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Request_EnterGateT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::World_Reply_EnterGateFailed: {
+      auto ptr = reinterpret_cast<ProtocolCS::World::Reply_EnterGateFailedT *>(value);
       delete ptr;
       break;
     }

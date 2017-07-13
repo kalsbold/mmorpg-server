@@ -60,3 +60,6 @@ namespace std
 using uuid_hasher = std::hash<boost::uuids::uuid>;
 
 using namespace AO::Vector3;
+
+constexpr double rad2deg = 180 / std::_Pi;
+constexpr double deg2rad = std::_Pi / 180;

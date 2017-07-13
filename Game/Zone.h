@@ -6,6 +6,7 @@
 #include "protocol_cs_generated.h"
 
 using db_schema::Map;
+using db_schema::MapGate;
 
 class World;
 class Actor;
@@ -37,11 +38,22 @@ public:
 	World* GetWorld() { return owner_; }
 	void Update(float delta_time);
 
+    const MapGate* GetGate(int uid)
+    {
+        auto iter = map_gates_.find(uid);
+        return iter != map_gates_.end() ? iter->second : nullptr;
+    }
+
+    Vector3 CheckBoader(const Vector3& position);
+
+    fb::Offset<PCS::World::MapData> Serialize(fb::FlatBufferBuilder& fbb) const;
+
 private:
 	World* owner_;
 	
 	uuid entity_id_;
 	Map map_data_;
+    std::unordered_map<int, const MapGate*> map_gates_;
 	
 public:
 	// 지역에 속한 Actor

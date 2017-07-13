@@ -65,11 +65,6 @@ public:
 		return hero_;
 	}
 
-	void SetHero(Ptr<Hero> hero)
-	{
-		hero_ = hero;
-	}
-
     World* GetWorld();
 
     const Ptr<MySQLPool>& GetDB();
@@ -80,24 +75,30 @@ public:
 	virtual void OnDisconnected() override
 	{
         RemoteClient::OnDisconnected();
-
-		SetState(State::Disconnected);
+        // 종료 처리
 		Dispose();
 	}
 	
     // 월드 입장
     void EnterWorld();
+    // 월드 퇴장
+    void ExitWorld();
     // 이동
     void ActionMove(const PCS::World::Request_ActionMove * message);
     // 스킬 사용
     void ActionSkill(const PCS::World::Request_ActionSkill * message);
-    // 부활
-    void Respawn();
+    // 즉시 부활
+    void RespawnImmediately();
+    // 맵 이동
+    void EnterGate(const PCS::World::Request_EnterGate * message);
 
     int selected_hero_uid_;
 
 private:
-    void ExitWorld();
+    void EnterZone(const Ptr<Hero>& hero, Zone* zone, const Vector3& position, std::function<void()> handler = nullptr);
+    void ExitZone(const Ptr<Hero>& hero, std::function<void()> handler = nullptr);
+
+    void Respawn(const Ptr<Hero> hero);
 
     // callback handler
     void OnUpdateHeroPosition(const Vector3& position)

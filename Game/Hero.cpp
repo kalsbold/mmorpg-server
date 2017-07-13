@@ -42,13 +42,8 @@ void Hero::ActionMove(const Vector3 & position, float rotation, const Vector3 & 
     //if (distance(GetPosition(), position) > HERO_MOVE_SPEED * delta_time)
     //    return;
     if (GetZone() == nullptr) return;
-
-    auto& mapData = GetZone()->MapData();
     // ¸Ê °æ°è Ã¼Å©
-    if (!(mapData.height > position.Z && 0 < position.Z && mapData.width > position.X && 0 < position.X))
-    {
-        pos = GetPosition();
-    }
+    pos = GetZone()->CheckBoader(position);
    
     SetRotation(rotation);
     SetPosition(pos);
@@ -105,12 +100,12 @@ void Hero::ActionSkill(int skill_id, float rotation, const std::vector<uuid>& ta
         ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor.get());
         if (entity)
         {
-            entity->TakeDamage(skill->damage + Att());
+            entity->TakeDamage(GetEntityID(), skill->damage + Att());
         }
     }
 }
 
-void Hero::TakeDamage(int damage)
+void Hero::TakeDamage(const uuid& attacker, int damage)
 {
     if (IsDead())
         return;
@@ -136,14 +131,14 @@ void Hero::TakeDamage(int damage)
     }
 }
 
-inline fb::Offset<PCS::World::Actor> Hero::SerializeAsActor(fb::FlatBufferBuilder & fbb) const
+inline fb::Offset<PCS::World::Actor> Hero::Serialize(fb::FlatBufferBuilder & fbb) const
 {
     //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto hero_offset = SerializeAsHero(fbb);
     return PCS::World::CreateActor(fbb, PCS::World::ActorType::Hero, hero_offset.Union());
 }
 
-void Hero::SerializeAsActorT(PCS::World::ActorT& out) const
+void Hero::SerializeT(PCS::World::ActorT& out) const
 {
     PCS::World::HeroT hero_t;
     SerializeAsHeroT(hero_t);

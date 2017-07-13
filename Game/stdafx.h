@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <random>
+#include <cmath>
 #include <boost/signals2.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>

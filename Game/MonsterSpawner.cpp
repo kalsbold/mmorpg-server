@@ -23,6 +23,9 @@ void MonsterSpawner::Start()
         {
             //spawn_talbe_.emplace(e.first, &e.second);
             Spawn(e.second.uid);
+            
+            // TEST CODE
+            // break;
         }
     }
 }
@@ -56,6 +59,7 @@ void MonsterSpawner::Spawn(int spawn_uid)
 
     // Zone ÀÔÀå
     zone_->Enter(new_monster, position);
+    new_monster->InitAI();
     BOOST_LOG_TRIVIAL(info) << "Spawn Monster. spawn_uid: " << spawn_uid << " entity_id:" << new_monster->GetEntityID();
 
     spawn_monsters_[spawn_uid] = new_monster;

@@ -30,6 +30,8 @@ enum ErrorCode : int {
     WORLD_NEXT_INVALID_STATE,
     WORLD_CANNOT_LOAD_HERO,
     WORLD_CANNOT_FIND_ZONE,
+    WORLD_CANNOT_FIND_GATE,
+    WORLD_INVALID_HERO,
 }
 
 // 공용 스키마 정의=======================
@@ -182,6 +184,18 @@ table Monster {
     rotation:float;
 }
 
+table GateInfo {
+    uid:int;
+    pos:Vec3;
+}
+
+table MapData {
+    entity_id:string;
+    map_id:int;
+    map_type:MapType;
+    map_gates:[GateInfo];
+}
+
 union ActorType { Hero, Monster }
 table Actor {
     entity:ActorType;
@@ -247,6 +261,7 @@ table Notify_LoadFinish {
 // 진입 성공 
 table Notify_EnterSuccess {
     hero:Hero;
+    map_data:MapData;
 }
 // 진입 실패
 table Notify_EnterFailed {
@@ -294,19 +309,13 @@ table Notify_Update {
 }
 
 // 다른 지역으로 이동 요청.
-//table Request_ActionMoveZone {
-//    map_id:int;
-//}
+table Request_EnterGate {
+    gate_uid:int;
+}
 // 실패
-//table Reply_MoveZoneFailed {
-//    error_code:ErrorCode;
-//}
-// 케릭터를 다른 지역으로 이동 통보.
-//table Notify_EnterZone {
-//    map_id:int;
-//    position:Vec3;
-//    rotation:float;
-//}
+table Reply_EnterGateFailed {
+    error_code:ErrorCode;
+}
 
 namespace ProtocolCS;
 
@@ -341,8 +350,8 @@ union MessageType {
     World.Notify_Disappear,
     World.Notify_Update,
     World.Request_Respawn,
-    //World.Request_ActionMoveZone,
-    //World.Reply_MoveZoneSuccess,
+    World.Request_EnterGate,
+    World.Reply_EnterGateFailed,
     //World.Reply_MoveZoneFailed,
 }
 
