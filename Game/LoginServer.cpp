@@ -192,7 +192,7 @@ void LoginServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t*
 	}
 
 	auto message_type = message_root->message_type();
-    BOOST_LOG_TRIVIAL(info) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
+    //BOOST_LOG_TRIVIAL(info) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
 
 	auto iter = message_handlers_.find(message_type);
 	if (iter == message_handlers_.end())
@@ -488,19 +488,19 @@ void LoginServer::RegisterManagerClientHandlers()
 	manager_client_->OnLoginManagerServer = [this](PSS::ErrorCode ec) {
 		if (PSS::ErrorCode::OK == ec)
 		{
-			BOOST_LOG_TRIVIAL(info) << "Manager 서버 연결 성공!";
+            BOOST_LOG_TRIVIAL(info) << "Connection the Manager Server is successful.";
 		}
 		else
 		{
 			// Manager 서버와 연결이 실패하면 종료한다.
-			BOOST_LOG_TRIVIAL(info) << "Manager 서버 연결 실패!";
+			BOOST_LOG_TRIVIAL(info) << "Connection the Manager Server is failed!";
 			Stop();
 		}
 	};
 
 	manager_client_->OnDisconnectManagerServer = [this]() {
 		//  Manager 서버와 연결이 끊어 지면 종료 한다.
-		BOOST_LOG_TRIVIAL(info) << "Manager 서버와 연결이 종료 됨.";
+		BOOST_LOG_TRIVIAL(info) << "Manager Server is disconnected.";
 		Stop();
 	};
 

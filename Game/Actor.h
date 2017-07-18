@@ -2,8 +2,6 @@
 #include "Common.h"
 #include "GameObject.h"
 #include "DBSchema.h"
-#include "protocol_cs_generated.h"
-#include <boost/signals2.hpp>
 
 namespace db = db_schema;
 namespace fb = flatbuffers;
@@ -12,6 +10,7 @@ namespace PCS = ProtocolCS;
 class Zone;
 class ZoneCell;
 
+// 개임상에서 서로 상호 작용하는 최상위 클래스
 class Actor : public GameObject
 {
 public:
@@ -22,10 +21,16 @@ public:
 
     virtual void SetZone(Zone* zone)
     {
-        if (zone_ == zone)
-            return;
-
+        assert(zone != nullptr);
         zone_ = zone;
+        enter_zone_signal(zone);
+    }
+
+    virtual void ResetZone()
+    {
+        ResetInterest();
+        exit_zone_signal();
+        zone_ = nullptr;
     }
 
     bool IsInZone() { return zone_ != nullptr; }
@@ -52,6 +57,8 @@ public:
     virtual void SerializeT(PCS::World::ActorT& out) const = 0;
 
     signals2::signal<void(const Vector3&)> poistion_update_signal;
+    signals2::signal<void(Zone* zone)> enter_zone_signal;
+    signals2::signal<void()> exit_zone_signal;
 
 protected:
 	void SetName(const std::string& name) { name_ = name; }

@@ -7,9 +7,6 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{99ab8221-5f2a-49b9-b0ac-d745b48e1669}</UniqueIdentifier>
     </Filter>
-    <Filter Include="test">
-      <UniqueIdentifier>{5e56521b-c6e5-46c5-b3f3-7c170e20bdce}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Protocol">
       <UniqueIdentifier>{30e869ee-8f3f-41dc-9e81-5c2020e0c0be}</UniqueIdentifier>
     </Filter>
@@ -56,26 +53,14 @@
     <ClInclude Include="Singleton.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="TestMySQL.h">
-      <Filter>test</Filter>
-    </ClInclude>
     <ClInclude Include="Vector3.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="AccountManager.h">
-      <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="MySQL.h">
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="DBSchema.h">
       <Filter>DB</Filter>
-    </ClInclude>
-    <ClInclude Include="protocol_cs_generated.h">
-      <Filter>Protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="protocol_ss_generated.h">
-      <Filter>Protocol</Filter>
     </ClInclude>
     <ClInclude Include="protocol_ss_helper.h">
       <Filter>Protocol</Filter>
@@ -112,9 +97,6 @@
     </ClInclude>
     <ClInclude Include="BoundingBox.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="TestGrid.h">
-      <Filter>test</Filter>
     </ClInclude>
     <ClInclude Include="CachedResources.h">
       <Filter>Server</Filter>
@@ -163,6 +145,9 @@
     </ClInclude>
     <ClInclude Include="MonsterAI.h">
       <Filter>GameWorld\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="InstanceZone.h">
+      <Filter>GameWorld\Zone</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -213,6 +198,11 @@
     <ClCompile Include="MonsterSpawner.cpp">
       <Filter>GameWorld\Monster</Filter>
     </ClCompile>
-    <ClCompile Include="MonsterAI.cpp" />
+    <ClCompile Include="InstanceZone.cpp">
+      <Filter>GameWorld\Zone</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterAI.cpp">
+      <Filter>GameWorld\Monster</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

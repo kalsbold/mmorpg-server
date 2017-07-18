@@ -7,6 +7,7 @@ namespace fb = flatbuffers;
 namespace db = db_schema;
 
 
+// 로그인 서버에 접속한 리모트 클라이언트.
 class RemoteLoginClient : public RemoteClient
 {
 public:
@@ -28,41 +29,41 @@ public:
 		Dispose();
 	}
 
+    // 종료 처리. 상태 DB Update 등 을 한다.
+    void Dispose()
+    {
+        bool exp = false;
+        if (!disposed_.compare_exchange_strong(exp, true))
+            return;
+    }
 	bool IsDisposed() const
 	{
 		return disposed_;
 	}
 
+    // 계정 정보
 	const Ptr<db::Account>& GetAccount() const
 	{
 		return db_account_;
 	}
 
+    // 인증서 저장
+    void Authenticate(uuid credential)
+    {
+        credential_ = credential;
+    }
+    // 인증 확인
 	bool IsAuthenticated() const
 	{
 		return !credential_.is_nil();
 	}
-
-	void Authenticate(uuid credential)
-	{
-		credential_ = credential;
-	}
-
+    // 인증서
 	const uuid& GetCredential() const
 	{
 		return credential_;
 	}
 
-	// 종료 처리. 상태 DB Update 등 을 한다.
-	void Dispose()
-	{
-		bool exp = false;
-		if (!disposed_.compare_exchange_strong(exp, true))
-			return;
-
-
-	}
-
+    // 클라이언트에서 연결을 끊었을때 callback
 	virtual void OnDisconnected() override
 	{
 		Dispose();

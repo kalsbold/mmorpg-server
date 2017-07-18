@@ -10,7 +10,7 @@
 
 
 Zone::Zone(const uuid & entity_id, const Map & map_data, World * owner)
-    : GridType(BoundingBox(Vector3(0.0f, 0.0f, 0.0f), Vector3(map_data.width, 1.0f, map_data.height)), Vector3(CELL_SIZE, CELL_SIZE, CELL_SIZE))
+    : GridType(BoundingBox(Vector3(0.0f, 0.0f, 0.0f), Vector3(map_data.width, 10.0f, map_data.height)), Vector3(CELL_SIZE, CELL_SIZE, CELL_SIZE))
     , entity_id_(entity_id)
     , map_data_(map_data)
     , owner_(owner)
@@ -18,7 +18,7 @@ Zone::Zone(const uuid & entity_id, const Map & map_data, World * owner)
     auto& map_gate_table = MapGateTable::GetInstance().GetAll();
     std::for_each(map_gate_table.begin(), map_gate_table.end(), [this](const MapGate& value)
     {
-        if (value.map_id == MapID())
+        if (value.map_id == MapId())
         {
             map_gates_.emplace(value.uid, &value);
         }
@@ -29,11 +29,19 @@ Zone::Zone(const uuid & entity_id, const Map & map_data, World * owner)
 }
 
 Zone::~Zone()
-{}
+{
+    ExitAllActors();
+}
 
 void Zone::Enter(const Ptr<Actor>& actor, const Vector3& position)
 {
-    auto r = actors_.emplace(actor->GetEntityID(), actor);
+    actors_.emplace(actor->GetEntityID(), actor);
+
+    Hero* hero = dynamic_cast<Hero*>(actor.get());
+    if (hero != nullptr)
+    {
+        heroes_.emplace(hero->GetEntityID(), hero);
+    }
 
     actor->SetZone(this);
     actor->Spawn(CheckBoader(position));
@@ -41,10 +49,10 @@ void Zone::Enter(const Ptr<Actor>& actor, const Vector3& position)
 
 void Zone::Exit(const Ptr<Actor>& actor)
 {
-    actor->ResetInterest();
-    actor->SetZone(nullptr);
+    actor->ResetZone();
 
     actors_.erase(actor->GetEntityID());
+    heroes_.erase(actor->GetEntityID());
 }
 
 void Zone::Exit(const uuid & entity_id)
@@ -54,11 +62,17 @@ void Zone::Exit(const uuid & entity_id)
         return;
 
     auto actor = iter->second;
-    actor->ResetInterest();
-    actor->SetZone(nullptr);
+    Exit(actor);
+}
 
-
-    actors_.erase(entity_id);
+void Zone::ExitAllActors()
+{
+    for (auto& e : actors_)
+    {
+        e.second->ResetZone();
+    }
+    actors_.clear();
+    heroes_.clear();
 }
 
 void Zone::Update(float delta_time)
@@ -69,6 +83,12 @@ void Zone::Update(float delta_time)
     }
 
     mon_spawner_->Update(delta_time);
+}
+
+const MapGate * Zone::GetGate(int uid)
+{
+    auto iter = map_gates_.find(uid);
+    return iter != map_gates_.end() ? iter->second : nullptr;
 }
 
 Vector3 Zone::CheckBoader(const Vector3 & position)
@@ -110,16 +130,17 @@ fb::Offset<PCS::World::MapData> Zone::Serialize(fb::FlatBufferBuilder & fbb) con
     for (auto& e : map_gates_)
     {
         auto gate = e.second;
+        auto dest_map_type = MapTable::GetInstance().Get(MapGateTable::GetInstance().Get(gate->dest_uid)->map_id)->type;
         auto offset = PCS::World::CreateGateInfo(fbb,
             gate->uid,
-            &PCS::Vec3(gate->pos.X, gate->pos.Y, gate->pos.Z));
+            &PCS::Vec3(gate->pos.X, gate->pos.Y, gate->pos.Z), (PCS::MapType)dest_map_type);
 
         map_gates.emplace_back(offset);
     }
 
     return PCS::World::CreateMapDataDirect(fbb,
-        boost::uuids::to_string(EntityID()).c_str(),
-        MapID(),
+        boost::uuids::to_string(EntityId()).c_str(),
+        MapId(),
         (PCS::MapType)map_data_.type,
         &map_gates);
 }

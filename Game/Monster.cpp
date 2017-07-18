@@ -9,6 +9,8 @@ Monster::Monster(const uuid & entity_id)
 
 Monster::~Monster()
 {
+    ai_->terminate();
+
     Zone* zone = GetZone();
     if (zone != nullptr)
     {
@@ -18,14 +20,12 @@ Monster::~Monster()
 
 fb::Offset<PCS::World::Actor> Monster::Serialize(fb::FlatBufferBuilder & fbb) const
 {
-    //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto mon_offset = SerializeAsMonster(fbb);
     return PCS::World::CreateActor(fbb, PCS::World::ActorType::Monster, mon_offset.Union());
 }
 
 fb::Offset<PCS::World::Monster> Monster::SerializeAsMonster(fb::FlatBufferBuilder & fbb) const
 {
-    //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto mon_offset = PCS::World::CreateMonsterDirect(
         fbb,
         boost::uuids::to_string(GetEntityID()).c_str(),
@@ -91,7 +91,7 @@ void Monster::Die()
         Hp(0);
 
     ai_->process_event(EvDie());
-    BOOST_LOG_TRIVIAL(info) << "Monster Die : " << GetName();
+    BOOST_LOG_TRIVIAL(info) << "Monster " << this->Uid() << " Die.";
 
     // 죽음을 통지
     PCS::World::StateInfoT data;
@@ -137,7 +137,7 @@ void Monster::TakeDamage(const uuid& attacker, int damage)
     damage = std::max(1, damage - Def());
     Hp(Hp() - damage);
 
-    BOOST_LOG_TRIVIAL(info) << "Take damage " << GetName() << ". Amount : " << damage;
+    BOOST_LOG_TRIVIAL(info) << "Monster " << this->Uid() << " Take damage. Amount : " << damage;
 
     // 데미지를 통지
     PCS::World::DamageInfoT data;
@@ -211,17 +211,16 @@ void Monster::ActionAttack(const uuid & target)
     if (zone == nullptr) return;
 
     // target을 찾는다.
-    auto iter = zone->actors_.find(target);
-    if (iter == zone->actors_.end())
+    auto actor = zone->FindActor(target);
+    if (actor == nullptr)
         return;
     
-    auto actor = iter->second;
-
     // 통지 메시지
     PCS::World::SkillActionInfoT skill_info;
-    //skill_info.entity_id = uuids::to_string(GetEntityID());
     skill_info.skill_id = 0;
+    skill_info.targets.emplace_back(uuids::to_string(target));
     skill_info.rotation = GetRotation();
+
     PCS::World::Notify_UpdateT update_msg;
     update_msg.entity_id = uuids::to_string(GetEntityID());
     update_msg.update_data.Set(std::move(skill_info));
@@ -229,7 +228,7 @@ void Monster::ActionAttack(const uuid & target)
     PublishActorUpdate(&update_msg);
  
     // 데미지를 준다.
-    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor.get());
+    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor);
     if (entity)
     {
         entity->TakeDamage(GetEntityID(), Att());

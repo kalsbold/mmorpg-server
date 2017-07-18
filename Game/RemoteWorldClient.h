@@ -4,7 +4,6 @@
 #include "RemoteClient.h"
 #include "TypeDef.h"
 #include "DBSchema.h"
-#include "protocol_cs_generated.h"
 #include "ClientInterestArea.h"
 
 namespace PCS = ProtocolCS;
@@ -14,6 +13,7 @@ class WorldServer;
 class World;
 class Hero;
 
+// 월드 서버에 접속한 리모트 클라이언트.
 class RemoteWorldClient : public RemoteClient
 {
 public:
@@ -44,32 +44,34 @@ public:
     void Authenticate(uuid credential) { credential_ = credential; }
     // 인증 확인
 	bool IsAuthenticated() const { return !credential_.is_nil(); }
-
+    // 인증서
 	const uuid& GetCredential() const
 	{
 		return credential_;
 	}
 
+    // 캐릭터 DB 정보
 	const Ptr<db::Hero> GetDBHero()
 	{
 		return db_hero_;
 	}
-
 	void SetDBHero(const Ptr<db::Hero>& db_hero)
 	{
 		db_hero_ = db_hero;
 	}
 
+    // 캐릭터 객체
 	const Ptr<Hero>& GetHero()
 	{
 		return hero_;
 	}
 
+    // 게임 월드
     World* GetWorld();
-
-    const Ptr<MySQLPool>& GetDB();
-	
+    
+	// 상태를 DB에 업데이트
     void UpdateToDB();
+    const Ptr<MySQLPool>& GetDB();
 
 	// 클라이언트에서 연결을 끊었을때 callback
 	virtual void OnDisconnected() override
@@ -95,7 +97,7 @@ public:
     int selected_hero_uid_;
 
 private:
-    void EnterZone(const Ptr<Hero>& hero, Zone* zone, const Vector3& position, std::function<void()> handler = nullptr);
+    void EnterZone(const Ptr<Hero>& hero, int map_id, const Vector3& position, std::function<void(bool)> handler = nullptr);
     void ExitZone(const Ptr<Hero>& hero, std::function<void()> handler = nullptr);
 
     void Respawn(const Ptr<Hero> hero);

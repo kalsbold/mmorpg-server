@@ -2419,8 +2419,10 @@ struct GateInfoT : public flatbuffers::NativeTable {
   typedef GateInfo TableType;
   int32_t uid;
   std::unique_ptr<ProtocolCS::Vec3> pos;
+  ProtocolCS::MapType map_type;
   GateInfoT()
-      : uid(0) {
+      : uid(0),
+        map_type(ProtocolCS::MapType::NONE) {
   }
 };
 
@@ -2428,7 +2430,8 @@ struct GateInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef GateInfoT NativeTableType;
   enum {
     VT_UID = 4,
-    VT_POS = 6
+    VT_POS = 6,
+    VT_MAP_TYPE = 8
   };
   int32_t uid() const {
     return GetField<int32_t>(VT_UID, 0);
@@ -2442,10 +2445,17 @@ struct GateInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   ProtocolCS::Vec3 *mutable_pos() {
     return GetStruct<ProtocolCS::Vec3 *>(VT_POS);
   }
+  ProtocolCS::MapType map_type() const {
+    return static_cast<ProtocolCS::MapType>(GetField<int32_t>(VT_MAP_TYPE, 0));
+  }
+  bool mutate_map_type(ProtocolCS::MapType _map_type) {
+    return SetField<int32_t>(VT_MAP_TYPE, static_cast<int32_t>(_map_type), 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_UID) &&
            VerifyField<ProtocolCS::Vec3>(verifier, VT_POS) &&
+           VerifyField<int32_t>(verifier, VT_MAP_TYPE) &&
            verifier.EndTable();
   }
   GateInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -2462,13 +2472,16 @@ struct GateInfoBuilder {
   void add_pos(const ProtocolCS::Vec3 *pos) {
     fbb_.AddStruct(GateInfo::VT_POS, pos);
   }
+  void add_map_type(ProtocolCS::MapType map_type) {
+    fbb_.AddElement<int32_t>(GateInfo::VT_MAP_TYPE, static_cast<int32_t>(map_type), 0);
+  }
   GateInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   GateInfoBuilder &operator=(const GateInfoBuilder &);
   flatbuffers::Offset<GateInfo> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
+    const auto end = fbb_.EndTable(start_, 3);
     auto o = flatbuffers::Offset<GateInfo>(end);
     return o;
   }
@@ -2477,8 +2490,10 @@ struct GateInfoBuilder {
 inline flatbuffers::Offset<GateInfo> CreateGateInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t uid = 0,
-    const ProtocolCS::Vec3 *pos = 0) {
+    const ProtocolCS::Vec3 *pos = 0,
+    ProtocolCS::MapType map_type = ProtocolCS::MapType::NONE) {
   GateInfoBuilder builder_(_fbb);
+  builder_.add_map_type(map_type);
   builder_.add_pos(pos);
   builder_.add_uid(uid);
   return builder_.Finish();
@@ -2806,6 +2821,7 @@ struct SkillActionInfoT : public flatbuffers::NativeTable {
   typedef SkillActionInfo TableType;
   std::string entity_id;
   int32_t skill_id;
+  std::vector<std::string> targets;
   float rotation;
   SkillActionInfoT()
       : skill_id(0),
@@ -2818,7 +2834,8 @@ struct SkillActionInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ENTITY_ID = 4,
     VT_SKILL_ID = 6,
-    VT_ROTATION = 8
+    VT_TARGETS = 8,
+    VT_ROTATION = 10
   };
   const flatbuffers::String *entity_id() const {
     return GetPointer<const flatbuffers::String *>(VT_ENTITY_ID);
@@ -2832,6 +2849,12 @@ struct SkillActionInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool mutate_skill_id(int32_t _skill_id) {
     return SetField<int32_t>(VT_SKILL_ID, _skill_id, 0);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *targets() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_TARGETS);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_targets() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_TARGETS);
+  }
   float rotation() const {
     return GetField<float>(VT_ROTATION, 0.0f);
   }
@@ -2843,6 +2866,9 @@ struct SkillActionInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_ENTITY_ID) &&
            verifier.Verify(entity_id()) &&
            VerifyField<int32_t>(verifier, VT_SKILL_ID) &&
+           VerifyOffset(verifier, VT_TARGETS) &&
+           verifier.Verify(targets()) &&
+           verifier.VerifyVectorOfStrings(targets()) &&
            VerifyField<float>(verifier, VT_ROTATION) &&
            verifier.EndTable();
   }
@@ -2860,6 +2886,9 @@ struct SkillActionInfoBuilder {
   void add_skill_id(int32_t skill_id) {
     fbb_.AddElement<int32_t>(SkillActionInfo::VT_SKILL_ID, skill_id, 0);
   }
+  void add_targets(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> targets) {
+    fbb_.AddOffset(SkillActionInfo::VT_TARGETS, targets);
+  }
   void add_rotation(float rotation) {
     fbb_.AddElement<float>(SkillActionInfo::VT_ROTATION, rotation, 0.0f);
   }
@@ -2869,7 +2898,7 @@ struct SkillActionInfoBuilder {
   }
   SkillActionInfoBuilder &operator=(const SkillActionInfoBuilder &);
   flatbuffers::Offset<SkillActionInfo> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<SkillActionInfo>(end);
     return o;
   }
@@ -2879,9 +2908,11 @@ inline flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> entity_id = 0,
     int32_t skill_id = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> targets = 0,
     float rotation = 0.0f) {
   SkillActionInfoBuilder builder_(_fbb);
   builder_.add_rotation(rotation);
+  builder_.add_targets(targets);
   builder_.add_skill_id(skill_id);
   builder_.add_entity_id(entity_id);
   return builder_.Finish();
@@ -2891,11 +2922,13 @@ inline flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *entity_id = nullptr,
     int32_t skill_id = 0,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *targets = nullptr,
     float rotation = 0.0f) {
   return ProtocolCS::World::CreateSkillActionInfo(
       _fbb,
       entity_id ? _fbb.CreateString(entity_id) : 0,
       skill_id,
+      targets ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*targets) : 0,
       rotation);
 }
 
@@ -4988,6 +5021,7 @@ inline void GateInfo::UnPackTo(GateInfoT *_o, const flatbuffers::resolver_functi
   (void)_resolver;
   { auto _e = uid(); _o->uid = _e; };
   { auto _e = pos(); if (_e) _o->pos = std::unique_ptr<ProtocolCS::Vec3>(new ProtocolCS::Vec3(*_e)); };
+  { auto _e = map_type(); _o->map_type = _e; };
 }
 
 inline flatbuffers::Offset<GateInfo> GateInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const GateInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -4999,10 +5033,12 @@ inline flatbuffers::Offset<GateInfo> CreateGateInfo(flatbuffers::FlatBufferBuild
   (void)_o;
   auto _uid = _o->uid;
   auto _pos = _o->pos ? _o->pos.get() : 0;
+  auto _map_type = _o->map_type;
   return ProtocolCS::World::CreateGateInfo(
       _fbb,
       _uid,
-      _pos);
+      _pos,
+      _map_type);
 }
 
 inline MapDataT *MapData::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -5112,6 +5148,7 @@ inline void SkillActionInfo::UnPackTo(SkillActionInfoT *_o, const flatbuffers::r
   (void)_resolver;
   { auto _e = entity_id(); if (_e) _o->entity_id = _e->str(); };
   { auto _e = skill_id(); _o->skill_id = _e; };
+  { auto _e = targets(); if (_e) { _o->targets.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->targets[_i] = _e->Get(_i)->str(); } } };
   { auto _e = rotation(); _o->rotation = _e; };
 }
 
@@ -5124,11 +5161,13 @@ inline flatbuffers::Offset<SkillActionInfo> CreateSkillActionInfo(flatbuffers::F
   (void)_o;
   auto _entity_id = _o->entity_id.size() ? _fbb.CreateString(_o->entity_id) : 0;
   auto _skill_id = _o->skill_id;
+  auto _targets = _o->targets.size() ? _fbb.CreateVectorOfStrings(_o->targets) : 0;
   auto _rotation = _o->rotation;
   return ProtocolCS::World::CreateSkillActionInfo(
       _fbb,
       _entity_id,
       _skill_id,
+      _targets,
       _rotation);
 }
 

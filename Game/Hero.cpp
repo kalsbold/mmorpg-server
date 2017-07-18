@@ -25,9 +25,9 @@ void Hero::Send(const uint8_t * data, size_t size)
 void Hero::SetZone(Zone * zone)
 {
 	Actor::SetZone(zone);
-	if (zone == nullptr) return;
 
-	map_id_ = zone->MapID();
+	map_id_ = zone->MapId();
+    //zone_entity_id_ = zone->EntityId();
 }
 
 void Hero::ActionMove(const Vector3 & position, float rotation, const Vector3 & velocity)
@@ -78,9 +78,13 @@ void Hero::ActionSkill(int skill_id, float rotation, const std::vector<uuid>& ta
 
     // 통지 메시지
     PCS::World::SkillActionInfoT skill_info;
-    //skill_info.entity_id = uuids::to_string(GetEntityID());
     skill_info.skill_id = skill_id;
+    for (auto& e : targets)
+    {
+        skill_info.targets.emplace_back(uuids::to_string(e));
+    }
     skill_info.rotation = rotation;
+
     PCS::World::Notify_UpdateT update_msg;
     update_msg.entity_id = uuids::to_string(GetEntityID());
     update_msg.update_data.Set(std::move(skill_info));
@@ -92,12 +96,11 @@ void Hero::ActionSkill(int skill_id, float rotation, const std::vector<uuid>& ta
     // target을 찾아서 데미지를 준다.
     for (auto& entity_id : targets)
     {
-        auto iter = zone->actors_.find(entity_id);
-        if (iter == zone->actors_.end())
+        auto actor = zone->FindActor(entity_id);
+        if (actor == nullptr)
             continue;
 
-        auto actor = iter->second;
-        ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor.get());
+        ILivingEntity* entity = dynamic_cast<ILivingEntity*>(actor);
         if (entity)
         {
             entity->TakeDamage(GetEntityID(), skill->damage + Att());
@@ -114,7 +117,7 @@ void Hero::TakeDamage(const uuid& attacker, int damage)
     damage = std::max(1, damage - Def());
     Hp(Hp() - damage);
 
-    BOOST_LOG_TRIVIAL(info) << "Take damage " << GetName() << ". Amount : " << damage;
+    BOOST_LOG_TRIVIAL(info) << "Hero uid:" << Uid() << " Take damage. Amount:" << damage;
 
     // 데미지를 통지
     PCS::World::DamageInfoT data;
@@ -133,7 +136,6 @@ void Hero::TakeDamage(const uuid& attacker, int damage)
 
 inline fb::Offset<PCS::World::Actor> Hero::Serialize(fb::FlatBufferBuilder & fbb) const
 {
-    //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto hero_offset = SerializeAsHero(fbb);
     return PCS::World::CreateActor(fbb, PCS::World::ActorType::Hero, hero_offset.Union());
 }
@@ -147,7 +149,6 @@ void Hero::SerializeT(PCS::World::ActorT& out) const
 
 inline fb::Offset<PCS::World::Hero> Hero::SerializeAsHero(fb::FlatBufferBuilder & fbb) const
 {
-    //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
     auto hero_offset = PCS::World::CreateHeroDirect(fbb,
         boost::uuids::to_string(GetEntityID()).c_str(),
         uid_,
@@ -234,6 +235,7 @@ void Hero::Init(const db::Hero & db_data)
     att_ = db_data.att;
     def_ = db_data.def;
     map_id_ = db_data.map_id;
+    //zone_entity_id_ = db_data.zone_entity_id;
     SetPosition(db_data.pos);
     SetRotation(db_data.rotation);
 }
@@ -248,7 +250,7 @@ void Hero::Die()
     if (Hp() != 0)
         Hp(0);
         
-    BOOST_LOG_TRIVIAL(info) << "Hero Die : " << GetName();
+    BOOST_LOG_TRIVIAL(info) << "Hero uid:" << Uid() <<" Die";
 
     // 죽음을 통지
     PCS::World::StateInfoT data;
@@ -300,6 +302,7 @@ void Hero::SetToDB(db::Hero & db_data)
     db_data.att = att_;
     db_data.def = def_;
     db_data.map_id = map_id_;
+    //db_data.zone_entity_id = zone_entity_id_;
     db_data.pos = GetPosition();
     db_data.rotation = GetRotation();
 }

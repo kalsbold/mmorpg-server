@@ -1,6 +1,6 @@
 #pragma once
-#include "Common.h"
-#include "protocol_ss_generated.h"
+#include <GisunNet.h>
+#include <protocol_ss_generated.h>
 
 using namespace gisun;
 

@@ -187,6 +187,7 @@ table Monster {
 table GateInfo {
     uid:int;
     pos:Vec3;
+    map_type:MapType;
 }
 
 table MapData {
@@ -212,6 +213,7 @@ table MoveActionInfo {
 table SkillActionInfo {
     entity_id:string;
     skill_id:int;
+    targets:[string];
     rotation:float;
 }
 // 피격 정보

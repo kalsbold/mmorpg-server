@@ -11,13 +11,10 @@ class MonsterSpawner
 public:
     MonsterSpawner(Zone* zone);
     ~MonsterSpawner();
-
+    // 몬스터 생성을 시작
     void Start();
-
-    void Update(double delta_time)
-    {
-
-    }
+    // 프레임 업데이트
+    void Update(double delta_time);
 
 private:
     void Spawn(int spawn_uid);

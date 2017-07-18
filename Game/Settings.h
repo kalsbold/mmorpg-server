@@ -12,21 +12,21 @@ namespace po = boost::program_options;
 class Settings : public Singleton<Settings>
 {
 public:
-	std::string   name;
+	std::string   name; // 서버 이름
 	std::string   bind_address;
 	uint16_t      bind_port;
 	size_t        thread_count;
 	size_t        max_session_count;
 	size_t	      min_receive_size;
 	size_t	      max_receive_buffer_size;
-	bool	      no_delay;
-	std::string   db_host;
+	bool	      no_delay; // tcp nodelay option
+	std::string   db_host; // DB 접속 주소
 	std::string   db_user;
 	std::string   db_password;
 	std::string   db_schema;
 	size_t        db_connection_pool;
-	std::string	  manager_address;
-	uint16_t      manager_port;
+	std::string	  manager_address; // 매니저 서버 접속 주소
+	uint16_t      manager_port; // 매니저 서버 접속 포트
 
 	template <typename CharT>
 	bool Load(CharT* filepath)

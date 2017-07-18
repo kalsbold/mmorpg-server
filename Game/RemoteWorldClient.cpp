@@ -79,14 +79,6 @@ void RemoteWorldClient::EnterWorld()
         db_hero->pos = iter->second.pos;
     }
 
-    Zone* zone = GetWorld()->FindFieldZone(db_hero->map_id);
-    if (zone == nullptr)
-    {
-        PCS::World::Notify_EnterFailedT reply;
-        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
-        PCS::Send(*this, reply);
-        return;
-    }
     // 이미 캐릭터가 생성되있는경우
     if (hero_ != nullptr)
     {
@@ -97,20 +89,53 @@ void RemoteWorldClient::EnterWorld()
         return;
     }
 
-    // 케릭터 인스턴스 생성
+    // 캐릭터 인스턴스 생성
     auto hero = std::make_shared<Hero>(random_generator()(), this);
     hero->Init(*db_hero);
-    hero->ConnectDeathSignal(std::bind(&RemoteWorldClient::OnHeroDeath, this));
     hero_ = hero;
+    // 핸들러 등록
+    hero->enter_zone_signal.connect([this](Zone* zone)
+    {
+        BOOST_LOG_TRIVIAL(info) << "On Hero " << hero_->GetName() << "Enter Zone.";
+
+        // 관심 지역을 만든다
+        interest_area_ = std::make_shared<ClientInterestArea>(this, zone);
+        interest_area_->ViewDistance(Vector3(20.0f, 1.0f, 20.0f));
+
+    });
+    hero->poistion_update_signal.connect([this](const Vector3& position)
+    {
+        // 관심 지역을 업데이트
+        if (interest_area_)
+        {
+            interest_area_->Position(position);
+            interest_area_->UpdateInterest();
+        }
+    });
+    hero->exit_zone_signal.connect([this]()
+    {
+        BOOST_LOG_TRIVIAL(info) << "On Hero " << hero_->GetName() << "Exit Zone .";
+
+        // 관심지역 해제
+        interest_area_ = nullptr;
+    });
+    hero->ConnectDeathSignal(std::bind(&RemoteWorldClient::OnHeroDeath, this));
 
     SetState(RemoteWorldClient::State::WorldEntering);
 
     BOOST_LOG_TRIVIAL(info) << "World Entring . account_uid : " << GetAccount()->uid << " hero_name: " << hero->GetName();
     
     // 월드 입장
-    EnterZone(hero, zone, hero->GetPosition(), [this]()
+    EnterZone(hero, hero->MapId(), hero->GetPosition(), [this](bool success)
     {
-        SetState(RemoteWorldClient::State::WorldEntered);
+        if (success)
+        {
+            SetState(RemoteWorldClient::State::WorldEntered);
+        }
+        else
+        {
+            this->Disconnect();
+        }
     });
 }
 
@@ -219,27 +244,19 @@ void RemoteWorldClient::EnterGate(const PCS::World::Request_EnterGate * message)
         return;
     }
 
-    auto dest_zone = GetWorld()->FindFieldZone(dest_gate->map_id);
-    if (!dest_zone)
-    {
-        PCS::World::Reply_EnterGateFailedT reply;
-        reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
-        PCS::Send(*this, reply);
-        return;
-
-    }
+    int dest_map_id = dest_gate->map_id;
 
     // 랜덤 이동 좌표
     std::vector<float> b{ -3.0f, -2.0f, 2.0f, 3.0f };
-    std::vector<float> w{ 1, 0, 1 };
+    std::vector<float> w{ 10, 0, 10 };
     std::piecewise_constant_distribution<float> dist{ b.begin(), b.end(), w.begin() };
     std::random_device rd;
     std::default_random_engine rng{ rd() };
     Vector3 position = dest_gate->pos + Vector3(dist(rng), 0.0f, dist(rng));
 
-    ExitZone(hero, [this, hero, dest_zone, position]()
+    ExitZone(hero, [this, hero, dest_map_id, position]()
     {
-        EnterZone(hero, dest_zone, position);
+        EnterZone(hero, dest_map_id, position);
     });
 }
 
@@ -255,49 +272,106 @@ void RemoteWorldClient::ExitWorld()
     UpdateToDB();
 }
 
-void RemoteWorldClient::EnterZone(const Ptr<Hero>& hero, Zone * zone, const Vector3& position, std::function<void()> handler)
+void RemoteWorldClient::EnterZone(const Ptr<Hero>& hero, int map_id, const Vector3& position, std::function<void(bool)> handler)
 {
-    zone->GetWorld()->Dispatch([this, hero = hero, zone, position, handler = std::move(handler)]
+    GetWorld()->Dispatch([this, hero = hero, map_id, position, handler = std::move(handler)]
     {
-        if (zone)
+        auto map_data = MapTable::GetInstance().Get(map_id);
+        if (!map_data)
         {
-            zone->Enter(hero, position);
+            // 실패 메시지
+            PCS::World::Notify_EnterFailedT reply;
+            reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
+            PCS::Send(*this, reply);
+
+            if (handler)
+            {
+                //this->Dispatch([handler = std::move(handler), result = false](){ handler(result); });
+                this->Dispatch(std::bind(handler, false));
+            }
+            return;
         }
 
-        // 입장 성공 메시지를 보낸다
-        fb::FlatBufferBuilder fbb;
-        auto offset_msg = PCS::World::CreateNotify_EnterSuccess(fbb,
-            hero->SerializeAsHero(fbb),
-            zone->Serialize(fbb));
-        PCS::Send(*this, fbb, offset_msg);
+        bool result = false;
+        Zone* zone = nullptr;
+        Vector3 pos = position;
+        // 인스턴스 던전
+        if (map_data->type == MapType::Dungeon)
+        {
+            InstanceZone* ins_zone = nullptr;
+            // 캐릭터가 있었던 인던을 찾는다.
+            if (!std::get<0>(hero->instance_zone_).is_nil() && std::get<1>(hero->instance_zone_) == map_id)
+            {
+                ins_zone = GetWorld()->FindInstanceZone(std::get<0>(hero->instance_zone_));
+            }
+            // 없으면 새로 만든다.
+            if (ins_zone == nullptr)
+            {
+                ins_zone = GetWorld()->CreateInstanceZone(map_id);
 
-        // 관심 지역을 만든다
-        this->interest_area_ = std::make_shared<ClientInterestArea>(this, zone);
-        this->interest_area_->ViewDistance(Vector3(20.0f, 1.0f, 20.0f));
-        hero->poistion_update_signal.connect(std::bind(&RemoteWorldClient::OnUpdateHeroPosition, this, std::placeholders::_1));
-        hero->poistion_update_signal(hero->GetPosition());
+                // 출구를 찾는다.
+                auto iter = ins_zone->GetGates().begin();
+                if (iter != ins_zone->GetGates().end())
+                {
+                    // 랜덤 시작 좌표
+                    std::vector<float> b{ -3.0f, -2.0f, 2.0f, 3.0f };
+                    std::vector<float> w{ 10, 0, 10 };
+                    std::piecewise_constant_distribution<float> dist{ b.begin(), b.end(), w.begin() };
+                    std::random_device rd;
+                    std::default_random_engine rng{ rd() };
+                    pos = iter->second->pos + Vector3(dist(rng), 0.0f, dist(rng));
+                }
+            }
+
+            zone = ins_zone;
+        }
+        // 필드 존
+        else if (map_data->type == MapType::Field)
+        {
+            // 필드존을 찾는다.
+            zone = GetWorld()->FindFieldZone(map_id);
+        }
+
+        if (zone)
+        {
+            // 입장 성공 메시지를 보낸다
+            fb::FlatBufferBuilder fbb;
+            auto offset_msg = PCS::World::CreateNotify_EnterSuccess(fbb,
+                hero->SerializeAsHero(fbb),
+                zone->Serialize(fbb));
+            PCS::Send(*this, fbb, offset_msg);
+            result = true;
+            
+            // 입장
+            zone->Enter(hero, pos);
+        }
+        else
+        {
+            // 실패 메시지
+            PCS::World::Notify_EnterFailedT reply;
+            reply.error_code = PCS::ErrorCode::WORLD_CANNOT_FIND_ZONE;
+            PCS::Send(*this, reply);
+            result = false;
+        }
 
         if (handler)
         {
-            this->Dispatch(std::move(handler));
+            //this->Dispatch([handler = std::move(handler), result](){ handler(result); });
+            this->Dispatch(std::bind(handler, result));
         }
     });
 }
 
 void RemoteWorldClient::ExitZone(const Ptr<Hero>& hero, std::function<void()> handler)
 {
-    Zone* zone = hero->GetZone();
-    // 월드에서 나간다.
-    GetWorld()->Dispatch([this, hero = hero, zone, handler = std::move(handler)]
+    // 나간다.
+    GetWorld()->Dispatch([this, hero = hero, handler = std::move(handler)]
     {
+        Zone* zone = hero->GetZone();
         if (zone)
         {
             zone->Exit(hero);
         }
-
-        // 관심지역 해제
-        this->interest_area_ = nullptr;
-        hero->poistion_update_signal.disconnect_all_slots();
 
         if (handler)
         {
@@ -308,24 +382,42 @@ void RemoteWorldClient::ExitZone(const Ptr<Hero>& hero, std::function<void()> ha
 
 void RemoteWorldClient::Respawn(const Ptr<Hero> hero)
 {
-    if (!(hero->IsDead()))
-        return;
-    if (!hero->IsInZone())
-        return;
+    if (!hero->IsDead()) return;
+    if (!hero->IsInZone()) return;
 
-    // 시작 지점을 찾는다.
-    auto spawn_table = HeroSpawnTable::GetInstance().GetAll();
-    auto iter = std::find_if(spawn_table.begin(), spawn_table.end(), [&](auto& value) {
-        return (value.second.map_id == hero->MapId());
-    });
-    if (iter == spawn_table.end())
+    Vector3 pos;
+    Zone* zone = hero->GetZone();
+    if (zone->MapType() == MapType::Field)
     {
-        return;
+        // 시작 지점을 찾는다.
+        auto spawn_table = HeroSpawnTable::GetInstance().GetAll();
+        auto iter = std::find_if(spawn_table.begin(), spawn_table.end(), [&](auto& value) {
+            return (value.second.map_id == hero->MapId());
+        });
+        if (iter == spawn_table.end())
+            return;
+
+        db::HeroSpawn& spawn_info = iter->second;
+        pos = spawn_info.pos;
     }
-    db::HeroSpawn& spawn_info = iter->second;
+    else if (zone->MapType() == MapType::Dungeon)
+    {
+        // 출구를 찾는다.
+        auto iter = zone->GetGates().begin();
+        if (iter == zone->GetGates().end())
+            return;
+
+        // 랜덤 시작 좌표
+        std::vector<float> b{ -3.0f, -2.0f, 2.0f, 3.0f };
+        std::vector<float> w{ 10, 0, 10 };
+        std::piecewise_constant_distribution<float> dist{ b.begin(), b.end(), w.begin() };
+        std::random_device rd;
+        std::default_random_engine rng{ rd() };
+        pos = iter->second->pos + Vector3(dist(rng), 0.0f, dist(rng));
+    }
 
     hero->Hp(hero->MaxHp()); // HP 회복
-    hero->Spawn(spawn_info.pos);
+    hero->Spawn(pos);
 
     BOOST_LOG_TRIVIAL(info) << "Spawn Hero : " << hero->GetName();
 

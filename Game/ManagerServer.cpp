@@ -111,7 +111,7 @@ void ManagerServer::DoUpdate(double delta_time)
 	auto iter = user_session_set_.begin();
 	for (; iter != user_session_set_.end(); )
 	{
-		if (!(iter->Login()) && iter->logout_time_ + wait_time < clock_type::now())
+		if (!(iter->IsLogin()) && iter->logout_time_ + wait_time < clock_type::now())
 		{
 			BOOST_LOG_TRIVIAL(info) << "Delete user session. account_uid : " << iter->account_uid_ << " credential: " << iter->credential_;
 			iter = user_session_set_.erase(iter);
@@ -144,7 +144,7 @@ void ManagerServer::ProcessRemoteClientDisconnected(const Ptr<RemoteManagerClien
 	RemoveRemoteClient(rc);
 	rc->OnDisconnected();
 
-	BOOST_LOG_TRIVIAL(info) << "Manager server logout : " << rc->GetServerName();
+	BOOST_LOG_TRIVIAL(info) << "Logout. Server name: " << rc->GetServerName();
 }
 
 void ManagerServer::ScheduleNextUpdate(const time_point& now, const duration& timestep)
@@ -183,7 +183,7 @@ void ManagerServer::HandleMessage(const Ptr<net::Session>& session, const uint8_
 	}
 
 	auto message_type = message_root->message_type();
-    BOOST_LOG_TRIVIAL(info) << "On Recv message_type : " << PSS::EnumNameMessageType(message_type);
+    //BOOST_LOG_TRIVIAL(debug) << "On Recv message_type : " << PSS::EnumNameMessageType(message_type);
 
 	auto iter = message_handlers_.find(message_type);
 	if (iter == message_handlers_.end())
@@ -246,7 +246,7 @@ void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Manager
 	auto new_rc = std::make_shared<RemoteManagerClient>(session, name, type);
 	AddRemoteClient(new_rc->GetSessionID(), new_rc);
 
-	BOOST_LOG_TRIVIAL(info) << "Manager server login : " << new_rc->GetServerName();
+	BOOST_LOG_TRIVIAL(info) << "Login. Server name: " << new_rc->GetServerName();
 
 	Reply_LoginT reply;
 	reply.error_code = PSS::ErrorCode::OK;

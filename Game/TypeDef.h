@@ -1,5 +1,6 @@
 #pragma once
 
+// 영웅 클래스 타입
 enum class ClassType : int
 {
 	NONE = 0,
@@ -8,6 +9,7 @@ enum class ClassType : int
 	Mage = 3,
 };
 
+// 맵 타입
 enum class MapType : int
 {
 	NONE = 0,
@@ -15,6 +17,7 @@ enum class MapType : int
 	Dungeon = 2,
 };
 
+// 타겟팅 타입
 enum class TargetingType : int
 {
     NONE = 0,

@@ -11,7 +11,7 @@ Actor::Actor(const uuid & entity_id)
 
 Actor::~Actor()
 {
-    ResetInterest();
+    ResetZone();
 }
 
 void Actor::UpdateInterest()
@@ -58,6 +58,8 @@ void Actor::ResetInterest()
     {
         conn.disconnect();
     }
+    cell_connections_.clear();
+
     if (current_cell_ != nullptr)
     {
         // 나감을 알린다.

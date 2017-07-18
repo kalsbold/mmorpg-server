@@ -8,9 +8,12 @@ using namespace boost;
 namespace PCS = ProtocolCS;
 
 constexpr float MON_MOVE_SPEED = 2.0f;
+constexpr float MON_ATTACK_RANGE = 1.5f;
+constexpr duration MON_ATTACK_COOL = 3s;
 
 struct MonsterAI;
 
+// 몬스터 게임 캐릭터.
 class Monster : public Actor, public ILivingEntity
 {
 public:

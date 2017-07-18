@@ -106,7 +106,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet\include;..\3rd Party\flatbuffers\include;..\3rd Party\MySQL Connector C++ 1.1.8\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet\include;..\3rd Party\MySQL Connector C++ 1.1.8\include;..\3rd Party\flatbuffers\include;..\Protocol IDL\generated</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>-D_SCL_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -143,7 +143,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GisunNet\include;..\3rd Party\flatbuffers\include;..\3rd Party\MySQL Connector C++ 1.1.8\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\GisunNet\include;..\3rd Party\MySQL Connector C++ 1.1.8\include;..\3rd Party\flatbuffers\include;..\Protocol IDL\generated</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -159,11 +159,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AccountManager.h" />
     <ClInclude Include="Actor.h" />
     <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="ClientInterestArea.h" />
     <ClInclude Include="ILivingEntity.h" />
+    <ClInclude Include="InstanceZone.h" />
     <ClInclude Include="InterestArea.h" />
     <ClInclude Include="ManagerClient.h" />
     <ClInclude Include="Common.h" />
@@ -176,20 +176,16 @@
     <ClInclude Include="Hero.h" />
     <ClInclude Include="MonsterAI.h" />
     <ClInclude Include="MonsterSpawner.h" />
-    <ClInclude Include="protocol_cs_generated.h" />
     <ClInclude Include="protocol_cs_helper.h" />
-    <ClInclude Include="protocol_ss_generated.h" />
     <ClInclude Include="protocol_ss_helper.h" />
     <ClInclude Include="RemoteClient.h" />
     <ClInclude Include="RemoteLoginClient.h" />
     <ClInclude Include="RemoteWorldClient.h" />
     <ClInclude Include="IServer.h" />
     <ClInclude Include="CachedResources.h" />
-    <ClInclude Include="TestGrid.h" />
     <ClInclude Include="TypeDef.h" />
     <ClInclude Include="MySQL.h" />
     <ClInclude Include="Settings.h" />
-    <ClInclude Include="TestMySQL.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -202,6 +198,7 @@
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="ClientInterestArea.cpp" />
+    <ClCompile Include="InstanceZone.cpp" />
     <ClCompile Include="InterestArea.cpp" />
     <ClCompile Include="ManagerClient.cpp" />
     <ClCompile Include="GameObject.cpp" />

@@ -20,10 +20,13 @@ public struct GateInfo : IFlatbufferObject
   public int Uid { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public bool MutateUid(int uid) { int o = __p.__offset(4); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, uid); return true; } else { return false; } }
   public ProtocolCS.Vec3? Pos { get { int o = __p.__offset(6); return o != 0 ? (ProtocolCS.Vec3?)(new ProtocolCS.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
+  public ProtocolCS.MapType MapType { get { int o = __p.__offset(8); return o != 0 ? (ProtocolCS.MapType)__p.bb.GetInt(o + __p.bb_pos) : ProtocolCS.MapType.NONE; } }
+  public bool MutateMapType(ProtocolCS.MapType map_type) { int o = __p.__offset(8); if (o != 0) { __p.bb.PutInt(o + __p.bb_pos, (int)map_type); return true; } else { return false; } }
 
-  public static void StartGateInfo(FlatBufferBuilder builder) { builder.StartObject(2); }
+  public static void StartGateInfo(FlatBufferBuilder builder) { builder.StartObject(3); }
   public static void AddUid(FlatBufferBuilder builder, int uid) { builder.AddInt(0, uid, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<ProtocolCS.Vec3> posOffset) { builder.AddStruct(1, posOffset.Value, 0); }
+  public static void AddMapType(FlatBufferBuilder builder, ProtocolCS.MapType mapType) { builder.AddInt(2, (int)mapType, 0); }
   public static Offset<GateInfo> EndGateInfo(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<GateInfo>(o);

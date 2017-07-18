@@ -9,6 +9,9 @@
 
 namespace db = db_schema;
 
+// DB나 파일에서 미리 읽어놓은 게임에 필요한 데이터 테이블들
+
+// 맵 테이블
 class MapTable : public Singleton<MapTable>
 {
 public:
@@ -62,6 +65,7 @@ private:
 	std::vector<db::Map> data_;
 };
 
+// 맵 출입구 테이블
 class MapGateTable : public Singleton<MapGateTable>
 {
 public:
@@ -113,6 +117,7 @@ private:
     std::vector<db::MapGate> data_;
 };
 
+// 영웅 능력치 테이블
 class HeroAttributeTable : public Singleton<HeroAttributeTable>
 {
 public:
@@ -168,7 +173,7 @@ private:
 	std::vector<db::HeroAttribute> data_;
 };
 
-
+// 몬스터 테이블
 class MonsterTable : public Singleton<MonsterTable>
 {
 public:
@@ -222,6 +227,7 @@ private:
 
 };
 
+// 몬스터 스폰 테이블
 class MonsterSpawnTable : public Singleton<MonsterSpawnTable>
 {
 public:
@@ -271,7 +277,7 @@ private:
     std::unordered_map<int, db::MonsterSpawn> data_;
 };
 
-
+// 스킬 테이블
 class SkillTable : public Singleton<SkillTable>
 {
 public:
@@ -326,6 +332,7 @@ private:
     std::unordered_map<int, db::Skill> data_;
 };
 
+// 플레이어 영웅 캐릭터 부활지점 테이블
 class HeroSpawnTable : public Singleton<HeroSpawnTable>
 {
 public:

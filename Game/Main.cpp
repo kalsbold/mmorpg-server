@@ -7,8 +7,6 @@
 #include "LoginServer.h"
 #include "WorldServer.h"
 
-#include "TestGrid.h"
-
 int run_servers()
 {
     puts("Enterable commands:\n");
@@ -57,6 +55,60 @@ int run_servers()
         }
     }
 
+    for (auto& e : server_list)
+    {
+        e->Stop();
+    }
+
+    return 0;
+}
+
+template <typename CharT>
+int run_server(CharT server_mode)
+{
+    puts("q: Quit.\n");
+
+    Ptr<IServer> server;
+    if (server_mode == 'm')
+    {
+        if (!Settings::GetInstance().Load("manager.cfg"))
+            return 0;
+
+        server = std::make_shared<ManagerServer>();
+        server->Run();
+    }
+    else if (server_mode == 'l')
+    {
+        if (!Settings::GetInstance().Load("login.cfg"))
+            return 0;
+
+        server = std::make_shared<LoginServer>();
+        server->Run();
+    }
+    else if (server_mode == 'w')
+    {
+        if (!Settings::GetInstance().Load("world.cfg"))
+            return 0;
+
+        server = std::make_shared<WorldServer>();
+        server->Run(); 
+    }
+    else
+    {
+        return 0;
+    }
+
+    while (true)
+    {
+        std::string input;
+        std::cin >> input;
+
+        if (input == "q")
+        {
+            break;
+        }
+    }
+
     return 0;
 }
 
@@ -64,18 +116,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	try
 	{
-		/*if (argc < 2)
-		{
-			std::cerr << "Usage: cfg file path \n";
-			return 1;
-		}
-
-		if (!Settings::GetInstance().Load(argv[1]))
-			return 0;*/
-
-        return run_servers();
-
-        //TestGrid();
+        return run_server(*argv[1]);
 	}
 	catch (const std::exception& e)
 	{

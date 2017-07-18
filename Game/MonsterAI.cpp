@@ -38,7 +38,7 @@ Patrol::~Patrol()
 sc::result Patrol::react(const EvUpdate & update)
 {
     Monster* monster = context<MonsterAI>().GetMonster();
-    auto& mapData = monster->GetZone()->MapData();
+    Zone* zone = monster->GetZone();
     // ÀÌµ¿ ÁÂÇ¥ °è»ê
     Vector3 orgin_position = monster->GetPosition();
     Vector3 direction = target_position_ - orgin_position;
@@ -46,7 +46,7 @@ sc::result Patrol::react(const EvUpdate & update)
     Vector3 dest_position = monster->GetPosition() + (direction * MON_MOVE_SPEED * update.DeltaTime());
 
     // ¸Ê °æ°è Ã¼Å©
-    if (!((mapData.height > dest_position.Z && 0 < dest_position.Z) && (mapData.width > dest_position.X && 0 < dest_position.X)))
+    if (!zone->Contained(dest_position))
     {
         return transit<Idle>();
     }
@@ -135,15 +135,15 @@ sc::result Chase::react(const EvUpdate & update)
     auto monster = context<MonsterAI>().GetMonster();
     auto zone = monster->GetZone();
 
+    // Å¸°Ù °´Ã¼ ¾ò¾î¿È
     auto target_id = context<MonsterAI>().TargetId();
-    auto iter = zone->actors_.find(target_id);
-    if (iter == zone->actors_.end())
+    auto target_actor = zone->FindActor(target_id);
+    if (target_actor == nullptr)
     {
         return transit<NonCombat>();
     }
-    // Å¸°Ù °´Ã¼ ¾ò¾î¿È
-    auto target_actor = iter->second;
-    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(target_actor.get());
+    
+    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(target_actor);
     if (entity != nullptr && entity->IsDead())
     {
         return transit<NonCombat>();
@@ -151,7 +151,7 @@ sc::result Chase::react(const EvUpdate & update)
 
     auto target_position = target_actor->GetPosition();
     // °ø°Ý °¡´É °Å¸®
-    float attack_range = 1.5f;
+    float attack_range = MON_ATTACK_RANGE;
     if (distance(monster->GetPosition(), target_position) <= attack_range)
     {
         return transit<Attack>();
@@ -162,9 +162,8 @@ sc::result Chase::react(const EvUpdate & update)
     toNormalized(direction);
     Vector3 dest_position = monster->GetPosition() + (direction * MON_MOVE_SPEED * update.DeltaTime());
 
-    auto& mapData = monster->GetZone()->MapData();
     // ¸Ê °æ°è Ã¼Å©
-    if (!((mapData.height > dest_position.Z && 0 < dest_position.Z) && (mapData.width > dest_position.X && 0 < dest_position.X)))
+    if (!zone->Contained(dest_position))
     {
         return transit<NonCombat>();
     }
@@ -193,15 +192,15 @@ sc::result Attack::react(const EvUpdate & update)
     auto monster = context<MonsterAI>().GetMonster();
     auto zone = monster->GetZone();
 
+    // Å¸°Ù °´Ã¼ ¾ò¾î¿È
     auto target_id = context<MonsterAI>().TargetId();
-    auto iter = zone->actors_.find(target_id);
-    if (iter == zone->actors_.end())
+    auto target_actor = zone->FindActor(target_id);
+    if (target_actor == nullptr)
     {
         return transit<NonCombat>();
     }
-    // Å¸°Ù °´Ã¼ ¾ò¾î¿È
-    auto target_actor = iter->second;
-    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(target_actor.get());
+    
+    ILivingEntity* entity = dynamic_cast<ILivingEntity*>(target_actor);
     if (entity != nullptr && entity->IsDead())
     {
         return transit<NonCombat>();
@@ -209,7 +208,7 @@ sc::result Attack::react(const EvUpdate & update)
 
     auto target_position = target_actor->GetPosition();
     // °ø°Ý °¡´É °Å¸®
-    float attack_range = 1.5f;
+    float attack_range = MON_ATTACK_RANGE;
     if (distance(monster->GetPosition(), target_position) > attack_range)
     {
         return transit<Chase>();
@@ -218,16 +217,22 @@ sc::result Attack::react(const EvUpdate & update)
     Vector3 orgin_position = monster->GetPosition();
     // °ø°Ý ¹æÇâÀ¸·Î È¸Àü
     float rotation = atan2f(target_position.X - orgin_position.X, target_position.Z - orgin_position.Z) * (float)(rad2deg);
+    float prev_rot = monster->GetRotation();
     monster->SetRotation(rotation);
 
-    // °ø°Ý ÄðÅ¸ÀÓ
+    // °ø°Ý ÄðÅ¸ÀÓ Ã¼Å©
     if (clock_type::now() < next_attack_time_)
     {
+        if (prev_rot != rotation)
+        {
+            monster->ActionMove(monster->GetPosition(), update.DeltaTime());
+        }
         return discard_event();
     }
+
     // °ø°Ý
     monster->ActionAttack(target_id);
-    next_attack_time_ = clock_type::now() + 3s;
+    next_attack_time_ = clock_type::now() + MON_ATTACK_COOL;
 
     return discard_event();
 }

@@ -44,7 +44,7 @@ struct UserSession
 	UserSession(int account_uid, const uuid& credential)
 		: account_uid_(account_uid), credential_(credential) {}
 
-    bool Login() const
+    bool IsLogin() const
     {
         // 한군대 라도 로그인 상태면 로그인.
         for (auto pair : login_servers_)
@@ -79,29 +79,29 @@ using indices = indexed_by<
 // 컨테이너 타입 선언
 using UserSessionSet = boost::multi_index_container<UserSession, indices>;
 
-/*
-다른 서버들의 중앙 관리 서버.
-유저들의 인증키 발급, 검증 및 관리.
-*/
+
+// 매니저 서버.
+// 다른 서버들의 목록 관리.
+// 유저들의 인증키 발급, 검증 및 관리.
 class ManagerServer : public IServer
 {
 public:
 	ManagerServer();
 	virtual ~ManagerServer();
-
+    // 서버 이름
 	std::string GetName() override { return name_; }
 	void SetName(const std::string& name) override { name_ = name; }
-
 	// 서버 시작
 	void Run() override;
 	// 서버 종료
 	void Stop() override;
 	// 서버가 종료될 때가지 대기
 	void Wait();
-
+    // 이 서버가 실행되고 있는 IoServiceLoop 객체.
 	const Ptr<net::IoServiceLoop>& GetIoServiceLoop() { return ios_loop_; }
+    // DB 커넥션 풀.
 	const Ptr<MySQLPool>& GetDB() { return db_conn_; }
-	
+	// 리모트 클라이언트 객체를 얻는다.
 	const Ptr<RemoteManagerClient> GetRemoteClient(int session_id);
 	const Ptr<RemoteManagerClient> GetRemoteClientByName(const std::string& name);
 

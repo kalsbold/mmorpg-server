@@ -8,6 +8,8 @@
 
 namespace sc = boost::statechart;
 
+class Monster;
+
 // States
 struct NonCombat;
 struct Idle;
@@ -43,13 +45,6 @@ private:
 };
 struct EvNonCombat : sc::event<EvNonCombat> {};
 
-//struct IUpdatable
-//{
-//public:
-//    virtual void Update(float delta_time) = 0;
-//};
-
-class Monster;
 // State Machine
 struct MonsterAI : sc::state_machine<MonsterAI, NonCombat>
 {
@@ -65,7 +60,7 @@ private:
     uuid target_id_;
 };
 
-// States
+// 비전투 상태
 struct NonCombat : sc::simple_state<NonCombat, MonsterAI, Idle>
 {
 public:
@@ -85,6 +80,7 @@ public:
     sc::result react(const EvCombat & evt);
 };
 
+// 쉼
 struct Idle : sc::simple_state<Idle, NonCombat>
 {
 public:
@@ -112,6 +108,7 @@ private:
     time_point patrol_time_;
 };
 
+// 순찰
 struct Patrol : sc::simple_state<Patrol, NonCombat>
 {
 public:
@@ -131,6 +128,7 @@ private:
     Vector3 target_position_;
 };
 
+// 전투 상태
 struct Combat : sc::simple_state<Combat, MonsterAI, Chase>
 {
 public:
@@ -146,6 +144,7 @@ public:
     }
 };
 
+// 추적
 struct Chase : sc::simple_state<Chase, Combat>
 {
 public:
@@ -156,6 +155,7 @@ public:
     sc::result react(const EvUpdate & update);
 };
 
+// 공격
 struct Attack : sc::simple_state<Attack, Combat>
 {
 public:
@@ -169,6 +169,7 @@ private:
     time_point next_attack_time_;
 };
 
+// 죽음
 struct Dead : sc::simple_state<Dead, MonsterAI>
 {
 public:

@@ -13,13 +13,13 @@ IoServiceLoop::IoServiceLoop(size_t count, bool ios_pool)
 	{
 		for (int i = 0; i < count; i++)
 		{
-			io_services_.emplace_back(std::make_unique<boost::asio::io_service>());
-			works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*io_services_[i]));
-			threads_.emplace_back(std::thread([this, i]()
+            auto ios = std::make_unique<boost::asio::io_service>();
+			works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*ios));
+			threads_.emplace_back(std::thread([this, ios = ios.get()]()
 			{
 				try
 				{
-					io_services_[i]->run();
+                    ios->run();
 				}
 				catch (const std::exception& e)
 				{
@@ -27,20 +27,21 @@ IoServiceLoop::IoServiceLoop(size_t count, bool ios_pool)
 					BOOST_LOG_TRIVIAL(error) << "io_service run exception! : " << e.what();
 				}
 			}));
+            io_services_.emplace_back(std::move(ios));
 		}
 	}
 	else
 	{
-		io_services_.emplace_back(std::make_unique<boost::asio::io_service>());
-		works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*io_services_[0]));
+        auto ios = std::make_unique<boost::asio::io_service>();
+		works_.emplace_back(std::make_unique<boost::asio::io_service::work>(*ios));
 
 		for (int i = 0; i < count; i++)
 		{
-			threads_.emplace_back(std::thread([this]()
+			threads_.emplace_back(std::thread([this, ios = ios.get()]()
 			{
 				try
 				{
-					io_services_[0]->run();
+					ios->run();
 				}
 				catch (const std::exception& e)
 				{
@@ -49,6 +50,7 @@ IoServiceLoop::IoServiceLoop(size_t count, bool ios_pool)
 				}
 			}));
 		}
+        io_services_.emplace_back(std::move(ios));
 	}
 
 	BOOST_LOG_TRIVIAL(info) << "Run IoServiceLoop. count:" << count;
@@ -62,12 +64,13 @@ IoServiceLoop::~IoServiceLoop()
 
 void IoServiceLoop::Stop()
 {
-	for (auto& work : works_)
+    works_.clear();
+
+	for (auto& ios : io_services_)
 	{
-		auto& ios = work->get_io_service();
-		work.reset();
-		ios.stop();
+        ios->stop();
 	}
+
 	BOOST_LOG_TRIVIAL(info) << "Stop IoServiceLoop";
 }
 

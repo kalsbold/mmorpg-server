@@ -8,8 +8,8 @@ class BasicCell
 {
 public:
     BasicCell(int x, int y, int z)
-        : x_(x), y_(y), z_(z)
-    {}
+        : x_(x), y_(y), z_(z) {}
+    virtual ~BasicCell() {}
 
     int X() { return x_; }
     int Y() { return y_; }
@@ -47,9 +47,7 @@ public:
             }
         }
 	}
-	~Grid()
-	{
-	}
+	virtual ~Grid() {}
 
     const BoundingBox& Area() const { return area_; }
     const Vector3& TileDimensions() const { return tileDimensions_; }

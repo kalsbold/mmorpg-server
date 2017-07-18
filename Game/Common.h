@@ -18,6 +18,8 @@
 #include <boost/algorithm/clamp.hpp>
 #include <GisunNet.h>
 #include <flatbuffers\flatbuffers.h>
+#include <protocol_cs_generated.h>
+#include <protocol_ss_generated.h>
 #include "Vector3.h"
 
 using namespace gisun;

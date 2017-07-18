@@ -10,7 +10,7 @@ namespace PCS = ProtocolCS;
 
 constexpr float HERO_MOVE_SPEED = 3.0f;
 
-// 플레이어 캐릭터
+// 플레이어 게임 캐릭터
 class Hero : public Actor, public ILivingEntity
 {
 public:
@@ -54,6 +54,7 @@ public:
     int Att() { return att_; }
     int Def() { return def_; }
     int MapId() { return map_id_; }
+    //uuid ZoneEntityId() { return zone_entity_id_; }
 
     int MaxHp() const;
     void MaxHp(int max_hp);
@@ -69,6 +70,7 @@ public:
     virtual void TakeDamage(const uuid& attacker, int damage) override;
     virtual signals2::connection ConnectDeathSignal(std::function<void(ILivingEntity*)> handler) override;
 
+    std::tuple<uuid, int> instance_zone_;
 private:
     RemoteWorldClient* rc_;
     signals2::signal<void(ILivingEntity*)> death_signal_;
@@ -85,4 +87,5 @@ private:
     int            att_;
     int            def_;
     int            map_id_;
+    //uuid           zone_entity_id_;
 };

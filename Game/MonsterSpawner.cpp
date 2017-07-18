@@ -19,55 +19,54 @@ void MonsterSpawner::Start()
     // 몬스터 인스턴스 생성하고 스폰.
     for (auto& e : spawn_table)
     {
-        if (e.second.map_id == zone_->MapID())
+        if (e.second.map_id == zone_->MapId())
         {
-            //spawn_talbe_.emplace(e.first, &e.second);
             Spawn(e.second.uid);
-            
-            // TEST CODE
-            // break;
         }
     }
+}
+
+void MonsterSpawner::Update(double delta_time)
+{
+
 }
 
 void MonsterSpawner::Spawn(int spawn_uid)
 {
     if (spawn_monsters_[spawn_uid])
         return;
-
+    // 스폰 정보
     const db::MonsterSpawn* db_spawn = MonsterSpawnTable::GetInstance().Get(spawn_uid);
     if (!db_spawn)
     {
-        BOOST_LOG_TRIVIAL(info) << "Can not find MonsterSpawnTable : " << spawn_uid;
+        BOOST_LOG_TRIVIAL(info) << "Can not find MonsterSpawn. spawn_uid:" << spawn_uid;
         return;
     }
+    // 몬스터 정보
     const db::Monster* db_monster = MonsterTable::GetInstance().Get(db_spawn->monster_uid);
     if (!db_monster)
     {
-        BOOST_LOG_TRIVIAL(info) << "Can not find MonsterTable : " << db_spawn->monster_uid;
+        BOOST_LOG_TRIVIAL(info) << "Can not find Monster. monster_uid:" << db_spawn->monster_uid;
         return;
     }
     // 몬스터 인스턴스 생성
     auto new_monster = std::make_shared<Monster>(boost::uuids::random_generator()());
     new_monster->Init(*db_monster);
-
+    // 생성 목록에 추가
+    spawn_monsters_[spawn_uid] = new_monster;
     // 랜덤 위치
-    std::uniform_real_distribution<float> dist {-3.0f, 3.0f};
+    std::uniform_real_distribution<float> dist {-1.0f, 1.0f};
     std::random_device rd;
     std::default_random_engine rng {rd()};
     Vector3 position((db_spawn->pos).X + dist(rng), 0.0f, (db_spawn->pos).Z + dist(rng));
-
-    // Zone 입장
+    // 몬스터 Zone 입장
     zone_->Enter(new_monster, position);
     new_monster->InitAI();
-    BOOST_LOG_TRIVIAL(info) << "Spawn Monster. spawn_uid: " << spawn_uid << " entity_id:" << new_monster->GetEntityID();
-
-    spawn_monsters_[spawn_uid] = new_monster;
+    BOOST_LOG_TRIVIAL(info) << "Spawn Monster. spawn_uid:" << spawn_uid << " monster_uid:" << db_monster->uid;
+   
     new_monster->ConnectDeathSignal([this, db_spawn, spawn_uid](ILivingEntity* entity)
     {
         auto monster = spawn_monsters_[spawn_uid];
-        BOOST_LOG_TRIVIAL(info) << "On DeathSignal. spawn_uid: " << spawn_uid << " entity_id:" << monster->GetEntityID();
-            
         if (monster)
         {
             spawn_monsters_[spawn_uid] = nullptr;
@@ -76,9 +75,12 @@ void MonsterSpawner::Spawn(int spawn_uid)
                 zone_->Exit(monster->GetEntityID());
             });
             // 리스폰
-            world_->RunAfter(db_spawn->interval_s, [this, spawn_uid](auto timer) {
-                Spawn(spawn_uid);
-            });
+            if (db_spawn->interval_s != 0s)
+            {
+                world_->RunAfter(db_spawn->interval_s, [this, spawn_uid](auto timer) {
+                    Spawn(spawn_uid);
+                });
+            }
         }
     });
 }

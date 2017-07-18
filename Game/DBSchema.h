@@ -2,13 +2,14 @@
 #include "Common.h"
 #include "TypeDef.h"
 #include "MySQL.h"
-#include "protocol_cs_generated.h"
 
 namespace fb = flatbuffers;
 namespace PCS = ProtocolCS;
 
+// DB 테이블을 정의
 namespace db_schema {
 
+// 계정 정보
 class Account
 {
 public:
@@ -65,6 +66,7 @@ public:
 	}
 };
 
+// 맵정보
 class Map
 {
 public:
@@ -75,6 +77,7 @@ public:
 	MapType	    type;
 };
 
+// 맵 출입구
 class MapGate
 {
 public:
@@ -84,6 +87,7 @@ public:
     int dest_uid;
 };
 
+// 영웅 능력치
 class HeroAttribute
 {
 public:
@@ -95,6 +99,7 @@ public:
 	int       def;
 };
 
+// 영웅 정보
 class Hero
 {
 public:
@@ -111,6 +116,7 @@ public:
 	int            att;
 	int            def;
 	int            map_id;
+    //uuid           zone_entity_id;
 	Vector3        pos;
 	float          rotation;
 
@@ -206,16 +212,17 @@ public:
 		StmtPtr stmt(conn->createStatement());
 		
 		std::stringstream ss;
-		ss << "UPDATE hero_tb SET"
-			<< " exp=" << exp
-			<< ",level=" << level
-			<< ",max_hp=" << max_hp
-			<< ",hp=" << hp
-			<< ",max_mp=" << max_mp
-			<< ",mp=" << mp
-			<< ",att=" << att
-			<< ",def=" << def
-			<< ",map_id=" << map_id
+        ss << "UPDATE hero_tb SET"
+            << " exp=" << exp
+            << ",level=" << level
+            << ",max_hp=" << max_hp
+            << ",hp=" << hp
+            << ",max_mp=" << max_mp
+            << ",mp=" << mp
+            << ",att=" << att
+            << ",def=" << def
+            << ",map_id=" << map_id
+            //<< ",zone_entity_id=" << boost::uuids::to_string(zone_entity_id)
 			<< ",pos_x=" << pos.X
 			<< ",pos_y=" << pos.Y
 			<< ",pos_z=" << pos.Z
@@ -251,7 +258,6 @@ public:
 
     fb::Offset<PCS::World::Hero> Serialize(fb::FlatBufferBuilder & fbb) const
     {
-        //ProtocolCS::Vec3 pos(GetPosition().X, GetPosition().Y, GetPosition().Z);
         return PCS::World::CreateHeroDirect(fbb,
             nullptr,
             uid,
@@ -288,6 +294,7 @@ private:
 		c->att = result_set->getInt("att");
 		c->def = result_set->getInt("def");
 		c->map_id = result_set->getInt("map_id");
+        //c->zone_entity_id = boost::uuids::string_generator()(result_set->getString("zone_entity_id").c_str());
 		c->pos.X = (float)result_set->getDouble("pos_x");
 		c->pos.Y = (float)result_set->getDouble("pos_y");
 		c->pos.Z = (float)result_set->getDouble("pos_z");
@@ -295,6 +302,7 @@ private:
 	}
 };
 
+// 몬스터 정보
 class Monster
 {
 public:
@@ -308,6 +316,7 @@ public:
     int            def;
 };
 
+// 몬스터 스폰 정보
 class MonsterSpawn
 {
 public:
@@ -318,7 +327,7 @@ public:
     duration interval_s;
 };
 
-
+// 스킬 정보
 class Skill
 {
 public:
@@ -334,6 +343,7 @@ public:
     int           damage;
 };
 
+// 영웅 부활 지점 정보
 class HeroSpawn
 {
 public:

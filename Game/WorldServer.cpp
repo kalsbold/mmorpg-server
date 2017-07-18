@@ -201,7 +201,7 @@ void WorldServer::LoadResources()
 // 프레임 업데이트
 void WorldServer::DoUpdate(double delta_time)
 {
-    world_->DoUpdate(delta_time);
+    GetWorld()->Dispatch([this, delta_time]() { GetWorld()->DoUpdate(delta_time); });
 }
 
 void WorldServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t* buf, size_t bytes)
@@ -210,17 +210,17 @@ void WorldServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t*
     const auto* message_root = PCS::GetMessageRoot(buf);
     if (message_root == nullptr)
     {
-        BOOST_LOG_TRIVIAL(debug) << "Invalid MessageRoot";
+        BOOST_LOG_TRIVIAL(info) << "Invalid MessageRoot";
         return;
     }
 
     auto message_type = message_root->message_type();
-    BOOST_LOG_TRIVIAL(debug) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
+    //BOOST_LOG_TRIVIAL(debug) << "On Recv message_type : " << PCS::EnumNameMessageType(message_type);
 
     auto iter = message_handlers_.find(message_type);
     if (iter == message_handlers_.end())
     {
-        BOOST_LOG_TRIVIAL(debug) << "Can not find the message handler. message_type : " << PCS::EnumNameMessageType(message_type);
+        BOOST_LOG_TRIVIAL(info) << "Can not find the message handler. message_type : " << PCS::EnumNameMessageType(message_type);
         return;
     }
 
@@ -384,19 +384,19 @@ void WorldServer::RegisterManagerClientHandlers()
     manager_client_->OnLoginManagerServer = [this](PSS::ErrorCode ec) {
         if (PSS::ErrorCode::OK == ec)
         {
-            BOOST_LOG_TRIVIAL(info) << "Manager 서버 연결 성공!";
+            BOOST_LOG_TRIVIAL(info) << "Connection the Manager Server is successful.";
         }
         else
         {
             // Manager 서버와 연결이 실패하면 종료한다.
-            BOOST_LOG_TRIVIAL(info) << "Manager 서버 연결 실패!";
+            BOOST_LOG_TRIVIAL(info) << "Connection the Manager Server is failed!";
             Stop();
         }
     };
 
     manager_client_->OnDisconnectManagerServer = [this]() {
         //  Manager 서버와 연결이 끊어 지면 종료 한다.
-        BOOST_LOG_TRIVIAL(info) << "Manager 서버와 연결이 종료 됨.";
+        BOOST_LOG_TRIVIAL(info) << "Manager Server is disconnected.";
         Stop();
     };
 
