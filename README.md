@@ -4,5 +4,5 @@
 ## GisunNet
 boost.asio를 사용한 서버 라이브러리
 
-## GameServer
-GisunNet을 사용해 만든 MMO게임 서버
+## Game
+GisunNet을 사용한 MMO게임 서버
