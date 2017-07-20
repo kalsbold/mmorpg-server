@@ -427,7 +427,7 @@ void WorldServer::RegisterManagerClientHandlers()
             }
 
             // 계정 정보를 불러온다.
-            auto db_account = db::Account::Fetch(db_conn_, account_uid);
+            auto db_account = db::Account::Get(db_conn_, account_uid);
             // 계정이 없다.
             if (!db_account)
             {
@@ -439,7 +439,7 @@ void WorldServer::RegisterManagerClientHandlers()
             rc->SetAccount(db_account);
 
             // 캐릭터 정보를 불러온다.
-            auto db_hero = db::Hero::Fetch(GetDB(), rc->selected_hero_uid_, rc->GetAccount()->uid);
+            auto db_hero = db::Hero::Get(GetDB(), rc->selected_hero_uid_, rc->GetAccount()->uid);
             // 캐릭터 로드 실패
             if (!db_hero)
             {

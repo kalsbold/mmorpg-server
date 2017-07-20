@@ -21,7 +21,7 @@ using indices = indexed_by<
 	hashed_unique<
 		tag<zone_tags::entity_id>, const_mem_fun<Zone, const uuid&, &Zone::EntityId>, boost::hash<boost::uuids::uuid>
 	>,
-	hashed_unique<
+	hashed_non_unique<
 		tag<zone_tags::map_id>, const_mem_fun<Zone, int, &Zone::MapId>
 	>
 >;
@@ -109,6 +109,7 @@ public:
             return false;
 
         zone_set_.erase(iter);
+        return true;
     }
 
     // 프레임 업데이트.

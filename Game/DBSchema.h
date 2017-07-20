@@ -28,10 +28,10 @@ public:
 		if (pstmt->executeUpdate() == 0)
 			return nullptr;
 
-		return Fetch(db, user_name);
+		return Get(db, user_name);
 	}
 
-	static Ptr<Account> Fetch(Ptr<MySQLPool> db, const std::string& user_name)
+	static Ptr<Account> Get(Ptr<MySQLPool> db, const std::string& user_name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement("SELECT uid, user_name, password FROM account_tb WHERE user_name=?"));
@@ -48,7 +48,7 @@ public:
 		return account;
 	}
 
-	static Ptr<Account> Fetch(Ptr<MySQLPool> db, int uid)
+	static Ptr<Account> Get(Ptr<MySQLPool> db, int uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement("SELECT uid, user_name, password FROM account_tb WHERE uid=?"));
@@ -120,22 +120,30 @@ public:
 	Vector3        pos;
 	float          rotation;
 
-	static Ptr<Hero> Create(Ptr<MySQLPool> db, int account_uid, const std::string& name, ClassType class_type)
+    static Ptr<Hero> Create(Ptr<MySQLPool> db, int account_uid, const std::string& name, ClassType class_type, int level)
 	{
-		ConnectionPtr conn = db->GetConnection();
-		PstmtPtr pstmt(conn->prepareStatement(
-			"INSERT INTO  hero_tb (account_uid, name, class_type) VALUES(?,?,?)"));
-		pstmt->setInt(1, account_uid);
-		pstmt->setString(2, name.c_str());
-		pstmt->setInt(3, (int)class_type);
+        ConnectionPtr conn = db->GetConnection();
+        // 저장 프로시져
+        PstmtPtr pstmt(conn->prepareStatement("CALL create_hero(?,?,?,?,@pop)"));
+        pstmt->setInt(1, account_uid);
+        pstmt->setString(2, name.c_str());
+        pstmt->setInt(3, (int)class_type);
+        pstmt->setInt(4, level);
+        pstmt->execute();
 
-		if (pstmt->executeUpdate() == 0)
-			return nullptr;
+        StmtPtr stmt(conn->createStatement());
+        ResultSetPtr result_set(stmt->executeQuery("SELECT @pop AS hero_uid"));
+        if (!result_set->next())
+            return nullptr;
 
-		return Fetch(db, account_uid, name);
+        int hero_uid = result_set->getInt("hero_uid");
+        if (hero_uid == 0)
+            return nullptr;
+
+        return Get(db, hero_uid, account_uid);
 	}
 
-	static std::vector<Ptr<Hero>> Fetch(Ptr<MySQLPool> db, int account_uid)
+	static std::vector<Ptr<Hero>> GetList(Ptr<MySQLPool> db, int account_uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -147,14 +155,14 @@ public:
 		while (result_set->next())
 		{
 			auto c = std::make_shared<Hero>();
-			Set(c, result_set);
+			Init(c, result_set);
 			hero_vec.push_back(std::move(c));
 		}
 
 		return hero_vec;
 	}
 
-	static Ptr<Hero> Fetch(Ptr<MySQLPool> db, int account_uid, const std::string& name)
+	static Ptr<Hero> Get(Ptr<MySQLPool> db, int account_uid, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -167,11 +175,11 @@ public:
 			return nullptr;
 
 		auto c = std::make_shared<Hero>();
-		Set(c, result_set);
+		Init(c, result_set);
 		return c;
 	}
 
-	static Ptr<Hero> Fetch(Ptr<MySQLPool> db, int uid, int account_uid)
+	static Ptr<Hero> Get(Ptr<MySQLPool> db, int uid, int account_uid)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -184,11 +192,11 @@ public:
 			return nullptr;
 
 		auto c = std::make_shared<Hero>();
-		Set(c, result_set);
+		Init(c, result_set);
 		return c;
 	}
 
-	static Ptr<Hero> Fetch(Ptr<MySQLPool> db, const std::string& name)
+	static Ptr<Hero> Get(Ptr<MySQLPool> db, const std::string& name)
 	{
 		ConnectionPtr conn = db->GetConnection();
 		PstmtPtr pstmt(conn->prepareStatement(
@@ -200,7 +208,7 @@ public:
 			return nullptr;
 
 		auto c = std::make_shared<Hero>();
-		Set(c, result_set);
+		Init(c, result_set);
 		return c;
 	}
 
@@ -245,17 +253,6 @@ public:
 		return stmt->execute(ss.str().c_str());
 	}
 
-	void SetAttribute(const HeroAttribute& attribute)
-	{
-		level = attribute.level;
-		max_hp = attribute.hp;
-		hp = attribute.hp;
-		max_mp = attribute.mp;
-		mp = attribute.mp;
-		att = attribute.att;
-		def = attribute.def;
-	}
-
     fb::Offset<PCS::World::Hero> Serialize(fb::FlatBufferBuilder & fbb) const
     {
         return PCS::World::CreateHeroDirect(fbb,
@@ -279,7 +276,7 @@ public:
     }
 
 private:
-	static void Set(Ptr<Hero>& c, ResultSetPtr& result_set)
+	static void Init(Ptr<Hero>& c, ResultSetPtr& result_set)
 	{
 		c->uid = result_set->getInt("uid");
 		c->account_uid = result_set->getInt("account_uid");

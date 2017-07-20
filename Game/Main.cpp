@@ -116,7 +116,8 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	try
 	{
-        return run_server(*argv[1]);
+        return run_servers();
+        //return run_server(*argv[1]);
 	}
 	catch (const std::exception& e)
 	{

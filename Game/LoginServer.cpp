@@ -252,7 +252,7 @@ void LoginServer::OnJoin(const Ptr<net::Session>& session, const PCS::Login::Req
 		return;
 	}
 
-	if (db::Account::Fetch(db_conn_, user_name))
+	if (db::Account::Get(db_conn_, user_name))
 	{
 		PCS::Login::Reply_JoinFailedT reply;
 		reply.error_code = PCS::ErrorCode::JOIN_ACC_NAME_ALREADY;
@@ -282,7 +282,7 @@ void LoginServer::OnLogin(const Ptr<net::Session>& session, const PCS::Login::Re
 	const std::string user_name = message->user_name()->str();
 	const std::string password = message->password()->str();
 
-	auto db_account = db::Account::Fetch(db_conn_, user_name);
+	auto db_account = db::Account::Get(db_conn_, user_name);
 	// 계정이 없다.
 	if (!db_account)
 	{
@@ -363,7 +363,7 @@ void LoginServer::OnCreateHero(const Ptr<net::Session>& session, const PCS::Logi
 		return;
 	}
 
-	if (db::Hero::Fetch(db_conn_, name))
+	if (db::Hero::Get(db_conn_, name))
 	{
 		// 이미 있는 이름.
 		PCS::Login::Reply_CreateHeroFailedT reply;
@@ -372,19 +372,9 @@ void LoginServer::OnCreateHero(const Ptr<net::Session>& session, const PCS::Logi
 		return;
 	}
 
-	// 초기 능력치를 가져온다.
+    // 렙1짜리 생성
 	const int level = 1;
-	auto attribute = HeroAttributeTable::GetInstance().Get(class_type, level);
-	if (!attribute)
-	{
-		PCS::Login::Reply_CreateHeroFailedT reply;
-		reply.error_code = PCS::ErrorCode::CREATE_HERO_ATTRIBUTE_NOT_EXIST;
-		PCS::Send(*session, reply);
-		return;
-	}
-
-	//생성
-	auto db_hero = db::Hero::Create(db_conn_, rc->GetAccount()->uid, name, class_type);
+	auto db_hero = db::Hero::Create(db_conn_, rc->GetAccount()->uid, name, class_type, level);
 	if (!db_hero)
 	{
 		// 생성 된게 없다.
@@ -393,10 +383,6 @@ void LoginServer::OnCreateHero(const Ptr<net::Session>& session, const PCS::Logi
 		PCS::Send(*session, reply);
 		return;
 	}
-
-	// 초기 능력치로 셋.
-	db_hero->SetAttribute(*attribute);
-	db_hero->Update(GetDB());
 
 	BOOST_LOG_TRIVIAL(info) << "Create Hero : " << db_hero->name;
 
@@ -424,7 +410,7 @@ void LoginServer::OnHeroList(const Ptr<net::Session>& session, const PCS::Login:
 		return;
 	}
 
-	auto db_char_list = db::Hero::Fetch(db_conn_, rc->GetAccount()->uid);
+	auto db_char_list = db::Hero::GetList(db_conn_, rc->GetAccount()->uid);
 
 	PCS::Login::Reply_HeroListT reply;
 	for (auto& var : db_char_list)
@@ -455,7 +441,7 @@ void LoginServer::OnDeleteHero(const Ptr<net::Session>& session, const PCS::Logi
 
 	const int hero_uid = message->hero_uid();
 
-	auto db_hero = db::Hero::Fetch(db_conn_, hero_uid, rc->GetAccount()->uid);
+	auto db_hero = db::Hero::Get(db_conn_, hero_uid, rc->GetAccount()->uid);
 	if (!db_hero)
 	{
 		PCS::Login::Reply_DeleteHeroFailedT reply;
