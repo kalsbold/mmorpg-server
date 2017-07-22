@@ -70,7 +70,7 @@ void TcpSession::Start()
 		}
 		catch (const std::exception& e)
 		{
-			BOOST_LOG_TRIVIAL(info) << "TcpSession socket set option exception : " << e.what();
+			BOOST_LOG_TRIVIAL(info) << "Socket set option exception: " << e.what();
 			_Close(CloseReason::ActiveClose);
 			return;
 		}
@@ -146,7 +146,7 @@ inline bool TcpSession::PrepareRead(size_t min_prepare_bytes)
 	}
 	catch (const std::exception& e)
 	{
-		BOOST_LOG_TRIVIAL(warning) << "TcpSession prepare read exception : " << e.what() << "\n";
+        BOOST_LOG_TRIVIAL(warning) << "Prepare read exception: " << e.what() << "\n";
 		read_buf_->Clear();
 		return false;
 	}
@@ -225,7 +225,7 @@ void TcpSession::HandleError(const error_code & error)
 		return;
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "TcpSession socket error : " << error.message();
+	BOOST_LOG_TRIVIAL(info) << "Socket error: " << error.message();
 }
 
 void TcpSession::_Close(CloseReason reason)

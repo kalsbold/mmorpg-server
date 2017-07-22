@@ -31,7 +31,7 @@ void TcpClient::Connect(const std::string & host, const std::string & service)
 	{
 		if (state_ != State::Ready)
 		{
-			BOOST_LOG_TRIVIAL(info) << "Can not connect. state is not ready";
+			BOOST_LOG_TRIVIAL(info) << "Can not connect: state is not ready";
 			return;
 		}
 
@@ -156,7 +156,7 @@ inline bool TcpClient::PrepareRead(size_t min_prepare_bytes)
 	}
 	catch (const std::exception& e)
 	{
-		BOOST_LOG_TRIVIAL(warning) << "Client prepare read exception : " << e.what();
+		BOOST_LOG_TRIVIAL(warning) << "Prepare read exception: " << e.what();
 		read_buf_->Clear();
 		return false;
 	}
@@ -236,7 +236,7 @@ inline void TcpClient::HandleError(const error_code & error)
 		return;
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "TcpClient socket error : " << error.message();
+	BOOST_LOG_TRIVIAL(info) << "Socket error: " << error.message();
 }
 
 void TcpClient::_Close()

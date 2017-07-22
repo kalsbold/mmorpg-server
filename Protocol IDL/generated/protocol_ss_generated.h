@@ -11,8 +11,6 @@ namespace ProtocolSS {
 struct Notify_UnauthedAccess;
 struct Notify_UnauthedAccessT;
 
-namespace Manager {
-
 struct Request_Login;
 struct Request_LoginT;
 
@@ -34,7 +32,17 @@ struct Reply_VerifyCredentialT;
 struct Notify_UserLogout;
 struct Notify_UserLogoutT;
 
-}  // namespace Manager
+struct ServerInfo;
+struct ServerInfoT;
+
+struct Notify_ServerList;
+struct Notify_ServerListT;
+
+struct TestRelay;
+struct TestRelayT;
+
+struct RelayMessage;
+struct RelayMessageT;
 
 struct MessageRoot;
 struct MessageRootT;
@@ -53,31 +61,102 @@ enum class ErrorCode : int32_t {
   MAX = VERIFY_CREDENTIAL_FAILED
 };
 
+enum class RelayMessageType : uint8_t {
+  NONE = 0,
+  TestRelay = 1,
+  MIN = NONE,
+  MAX = TestRelay
+};
+
+inline const char **EnumNamesRelayMessageType() {
+  static const char *names[] = {
+    "NONE",
+    "TestRelay",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameRelayMessageType(RelayMessageType e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesRelayMessageType()[index];
+}
+
+template<typename T> struct RelayMessageTypeTraits {
+  static const RelayMessageType enum_value = RelayMessageType::NONE;
+};
+
+template<> struct RelayMessageTypeTraits<TestRelay> {
+  static const RelayMessageType enum_value = RelayMessageType::TestRelay;
+};
+
+struct RelayMessageTypeUnion {
+  RelayMessageType type;
+  void *value;
+
+  RelayMessageTypeUnion() : type(RelayMessageType::NONE), value(nullptr) {}
+  RelayMessageTypeUnion(RelayMessageTypeUnion&& u) FLATBUFFERS_NOEXCEPT :
+    type(RelayMessageType::NONE), value(nullptr)
+    { std::swap(type, u.type); std::swap(value, u.value); }
+  RelayMessageTypeUnion(const RelayMessageTypeUnion &) FLATBUFFERS_NOEXCEPT;
+  RelayMessageTypeUnion &operator=(const RelayMessageTypeUnion &u) FLATBUFFERS_NOEXCEPT
+    { RelayMessageTypeUnion t(u); std::swap(type, t.type); std::swap(value, t.value); return *this; }
+  RelayMessageTypeUnion &operator=(RelayMessageTypeUnion &&u) FLATBUFFERS_NOEXCEPT
+    { std::swap(type, u.type); std::swap(value, u.value); return *this; }
+  ~RelayMessageTypeUnion() { Reset(); }
+
+  void Reset();
+
+  template <typename T>
+  void Set(T&& val) {
+    Reset();
+    type = RelayMessageTypeTraits<typename T::TableType>::enum_value;
+    if (type != RelayMessageType::NONE) {
+      value = new T(std::forward<T>(val));
+    }
+  }
+
+  static void *UnPack(const void *obj, RelayMessageType type, const flatbuffers::resolver_function_t *resolver);
+  flatbuffers::Offset<void> Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher = nullptr) const;
+
+  TestRelayT *AsTestRelay() {
+    return type == RelayMessageType::TestRelay ?
+      reinterpret_cast<TestRelayT *>(value) : nullptr;
+  }
+};
+
+bool VerifyRelayMessageType(flatbuffers::Verifier &verifier, const void *obj, RelayMessageType type);
+bool VerifyRelayMessageTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
+
 enum class MessageType : uint8_t {
   NONE = 0,
   Notify_UnauthedAccess = 1,
-  Manager_Request_Login = 2,
-  Manager_Reply_Login = 3,
-  Manager_Request_GenerateCredential = 4,
-  Manager_Reply_GenerateCredential = 5,
-  Manager_Request_VerifyCredential = 6,
-  Manager_Reply_VerifyCredential = 7,
-  Manager_Notify_UserLogout = 8,
+  Request_Login = 2,
+  Reply_Login = 3,
+  Request_GenerateCredential = 4,
+  Reply_GenerateCredential = 5,
+  Request_VerifyCredential = 6,
+  Reply_VerifyCredential = 7,
+  Notify_UserLogout = 8,
+  Notify_ServerList = 9,
+  RelayMessage = 10,
   MIN = NONE,
-  MAX = Manager_Notify_UserLogout
+  MAX = RelayMessage
 };
 
 inline const char **EnumNamesMessageType() {
   static const char *names[] = {
     "NONE",
     "Notify_UnauthedAccess",
-    "Manager_Request_Login",
-    "Manager_Reply_Login",
-    "Manager_Request_GenerateCredential",
-    "Manager_Reply_GenerateCredential",
-    "Manager_Request_VerifyCredential",
-    "Manager_Reply_VerifyCredential",
-    "Manager_Notify_UserLogout",
+    "Request_Login",
+    "Reply_Login",
+    "Request_GenerateCredential",
+    "Reply_GenerateCredential",
+    "Request_VerifyCredential",
+    "Reply_VerifyCredential",
+    "Notify_UserLogout",
+    "Notify_ServerList",
+    "RelayMessage",
     nullptr
   };
   return names;
@@ -96,32 +175,40 @@ template<> struct MessageTypeTraits<ProtocolSS::Notify_UnauthedAccess> {
   static const MessageType enum_value = MessageType::Notify_UnauthedAccess;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Request_Login> {
-  static const MessageType enum_value = MessageType::Manager_Request_Login;
+template<> struct MessageTypeTraits<ProtocolSS::Request_Login> {
+  static const MessageType enum_value = MessageType::Request_Login;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Reply_Login> {
-  static const MessageType enum_value = MessageType::Manager_Reply_Login;
+template<> struct MessageTypeTraits<ProtocolSS::Reply_Login> {
+  static const MessageType enum_value = MessageType::Reply_Login;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Request_GenerateCredential> {
-  static const MessageType enum_value = MessageType::Manager_Request_GenerateCredential;
+template<> struct MessageTypeTraits<ProtocolSS::Request_GenerateCredential> {
+  static const MessageType enum_value = MessageType::Request_GenerateCredential;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Reply_GenerateCredential> {
-  static const MessageType enum_value = MessageType::Manager_Reply_GenerateCredential;
+template<> struct MessageTypeTraits<ProtocolSS::Reply_GenerateCredential> {
+  static const MessageType enum_value = MessageType::Reply_GenerateCredential;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Request_VerifyCredential> {
-  static const MessageType enum_value = MessageType::Manager_Request_VerifyCredential;
+template<> struct MessageTypeTraits<ProtocolSS::Request_VerifyCredential> {
+  static const MessageType enum_value = MessageType::Request_VerifyCredential;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Reply_VerifyCredential> {
-  static const MessageType enum_value = MessageType::Manager_Reply_VerifyCredential;
+template<> struct MessageTypeTraits<ProtocolSS::Reply_VerifyCredential> {
+  static const MessageType enum_value = MessageType::Reply_VerifyCredential;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::Manager::Notify_UserLogout> {
-  static const MessageType enum_value = MessageType::Manager_Notify_UserLogout;
+template<> struct MessageTypeTraits<ProtocolSS::Notify_UserLogout> {
+  static const MessageType enum_value = MessageType::Notify_UserLogout;
+};
+
+template<> struct MessageTypeTraits<ProtocolSS::Notify_ServerList> {
+  static const MessageType enum_value = MessageType::Notify_ServerList;
+};
+
+template<> struct MessageTypeTraits<ProtocolSS::RelayMessage> {
+  static const MessageType enum_value = MessageType::RelayMessage;
 };
 
 struct MessageTypeUnion {
@@ -157,33 +244,41 @@ struct MessageTypeUnion {
     return type == MessageType::Notify_UnauthedAccess ?
       reinterpret_cast<ProtocolSS::Notify_UnauthedAccessT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Request_LoginT *AsManager_Request_Login() {
-    return type == MessageType::Manager_Request_Login ?
-      reinterpret_cast<ProtocolSS::Manager::Request_LoginT *>(value) : nullptr;
+  ProtocolSS::Request_LoginT *AsRequest_Login() {
+    return type == MessageType::Request_Login ?
+      reinterpret_cast<ProtocolSS::Request_LoginT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Reply_LoginT *AsManager_Reply_Login() {
-    return type == MessageType::Manager_Reply_Login ?
-      reinterpret_cast<ProtocolSS::Manager::Reply_LoginT *>(value) : nullptr;
+  ProtocolSS::Reply_LoginT *AsReply_Login() {
+    return type == MessageType::Reply_Login ?
+      reinterpret_cast<ProtocolSS::Reply_LoginT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Request_GenerateCredentialT *AsManager_Request_GenerateCredential() {
-    return type == MessageType::Manager_Request_GenerateCredential ?
-      reinterpret_cast<ProtocolSS::Manager::Request_GenerateCredentialT *>(value) : nullptr;
+  ProtocolSS::Request_GenerateCredentialT *AsRequest_GenerateCredential() {
+    return type == MessageType::Request_GenerateCredential ?
+      reinterpret_cast<ProtocolSS::Request_GenerateCredentialT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Reply_GenerateCredentialT *AsManager_Reply_GenerateCredential() {
-    return type == MessageType::Manager_Reply_GenerateCredential ?
-      reinterpret_cast<ProtocolSS::Manager::Reply_GenerateCredentialT *>(value) : nullptr;
+  ProtocolSS::Reply_GenerateCredentialT *AsReply_GenerateCredential() {
+    return type == MessageType::Reply_GenerateCredential ?
+      reinterpret_cast<ProtocolSS::Reply_GenerateCredentialT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Request_VerifyCredentialT *AsManager_Request_VerifyCredential() {
-    return type == MessageType::Manager_Request_VerifyCredential ?
-      reinterpret_cast<ProtocolSS::Manager::Request_VerifyCredentialT *>(value) : nullptr;
+  ProtocolSS::Request_VerifyCredentialT *AsRequest_VerifyCredential() {
+    return type == MessageType::Request_VerifyCredential ?
+      reinterpret_cast<ProtocolSS::Request_VerifyCredentialT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Reply_VerifyCredentialT *AsManager_Reply_VerifyCredential() {
-    return type == MessageType::Manager_Reply_VerifyCredential ?
-      reinterpret_cast<ProtocolSS::Manager::Reply_VerifyCredentialT *>(value) : nullptr;
+  ProtocolSS::Reply_VerifyCredentialT *AsReply_VerifyCredential() {
+    return type == MessageType::Reply_VerifyCredential ?
+      reinterpret_cast<ProtocolSS::Reply_VerifyCredentialT *>(value) : nullptr;
   }
-  ProtocolSS::Manager::Notify_UserLogoutT *AsManager_Notify_UserLogout() {
-    return type == MessageType::Manager_Notify_UserLogout ?
-      reinterpret_cast<ProtocolSS::Manager::Notify_UserLogoutT *>(value) : nullptr;
+  ProtocolSS::Notify_UserLogoutT *AsNotify_UserLogout() {
+    return type == MessageType::Notify_UserLogout ?
+      reinterpret_cast<ProtocolSS::Notify_UserLogoutT *>(value) : nullptr;
+  }
+  ProtocolSS::Notify_ServerListT *AsNotify_ServerList() {
+    return type == MessageType::Notify_ServerList ?
+      reinterpret_cast<ProtocolSS::Notify_ServerListT *>(value) : nullptr;
+  }
+  ProtocolSS::RelayMessageT *AsRelayMessage() {
+    return type == MessageType::RelayMessage ?
+      reinterpret_cast<ProtocolSS::RelayMessageT *>(value) : nullptr;
   }
 };
 
@@ -229,8 +324,6 @@ inline flatbuffers::Offset<Notify_UnauthedAccess> CreateNotify_UnauthedAccess(
 }
 
 flatbuffers::Offset<Notify_UnauthedAccess> CreateNotify_UnauthedAccess(flatbuffers::FlatBufferBuilder &_fbb, const Notify_UnauthedAccessT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-namespace Manager {
 
 struct Request_LoginT : public flatbuffers::NativeTable {
   typedef Request_Login TableType;
@@ -306,7 +399,7 @@ inline flatbuffers::Offset<Request_Login> CreateRequest_LoginDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *client_name = nullptr,
     int32_t client_type = 0) {
-  return ProtocolSS::Manager::CreateRequest_Login(
+  return ProtocolSS::CreateRequest_Login(
       _fbb,
       client_name ? _fbb.CreateString(client_name) : 0,
       client_type);
@@ -316,26 +409,36 @@ flatbuffers::Offset<Request_Login> CreateRequest_Login(flatbuffers::FlatBufferBu
 
 struct Reply_LoginT : public flatbuffers::NativeTable {
   typedef Reply_Login TableType;
-  ProtocolSS::ErrorCode error_code;
+  ErrorCode error_code;
+  int32_t session_id;
   Reply_LoginT()
-      : error_code(ProtocolSS::ErrorCode::OK) {
+      : error_code(ErrorCode::OK),
+        session_id(0) {
   }
 };
 
 struct Reply_Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef Reply_LoginT NativeTableType;
   enum {
-    VT_ERROR_CODE = 4
+    VT_ERROR_CODE = 4,
+    VT_SESSION_ID = 6
   };
-  ProtocolSS::ErrorCode error_code() const {
-    return static_cast<ProtocolSS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  ErrorCode error_code() const {
+    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
   }
-  bool mutate_error_code(ProtocolSS::ErrorCode _error_code) {
+  bool mutate_error_code(ErrorCode _error_code) {
     return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
+  }
+  int32_t session_id() const {
+    return GetField<int32_t>(VT_SESSION_ID, 0);
+  }
+  bool mutate_session_id(int32_t _session_id) {
+    return SetField<int32_t>(VT_SESSION_ID, _session_id, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ERROR_CODE) &&
+           VerifyField<int32_t>(verifier, VT_SESSION_ID) &&
            verifier.EndTable();
   }
   Reply_LoginT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -346,8 +449,11 @@ struct Reply_Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct Reply_LoginBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_error_code(ProtocolSS::ErrorCode error_code) {
+  void add_error_code(ErrorCode error_code) {
     fbb_.AddElement<int32_t>(Reply_Login::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
+  }
+  void add_session_id(int32_t session_id) {
+    fbb_.AddElement<int32_t>(Reply_Login::VT_SESSION_ID, session_id, 0);
   }
   Reply_LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -355,7 +461,7 @@ struct Reply_LoginBuilder {
   }
   Reply_LoginBuilder &operator=(const Reply_LoginBuilder &);
   flatbuffers::Offset<Reply_Login> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
+    const auto end = fbb_.EndTable(start_, 2);
     auto o = flatbuffers::Offset<Reply_Login>(end);
     return o;
   }
@@ -363,8 +469,10 @@ struct Reply_LoginBuilder {
 
 inline flatbuffers::Offset<Reply_Login> CreateReply_Login(
     flatbuffers::FlatBufferBuilder &_fbb,
-    ProtocolSS::ErrorCode error_code = ProtocolSS::ErrorCode::OK) {
+    ErrorCode error_code = ErrorCode::OK,
+    int32_t session_id = 0) {
   Reply_LoginBuilder builder_(_fbb);
+  builder_.add_session_id(session_id);
   builder_.add_error_code(error_code);
   return builder_.Finish();
 }
@@ -517,7 +625,7 @@ inline flatbuffers::Offset<Reply_GenerateCredential> CreateReply_GenerateCredent
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t session_id = 0,
     const char *credential = nullptr) {
-  return ProtocolSS::Manager::CreateReply_GenerateCredential(
+  return ProtocolSS::CreateReply_GenerateCredential(
       _fbb,
       session_id,
       credential ? _fbb.CreateString(credential) : 0);
@@ -599,7 +707,7 @@ inline flatbuffers::Offset<Request_VerifyCredential> CreateRequest_VerifyCredent
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t session_id = 0,
     const char *credential = nullptr) {
-  return ProtocolSS::Manager::CreateRequest_VerifyCredential(
+  return ProtocolSS::CreateRequest_VerifyCredential(
       _fbb,
       session_id,
       credential ? _fbb.CreateString(credential) : 0);
@@ -609,12 +717,12 @@ flatbuffers::Offset<Request_VerifyCredential> CreateRequest_VerifyCredential(fla
 
 struct Reply_VerifyCredentialT : public flatbuffers::NativeTable {
   typedef Reply_VerifyCredential TableType;
-  ProtocolSS::ErrorCode error_code;
+  ErrorCode error_code;
   int32_t session_id;
   std::string credential;
   int32_t account_uid;
   Reply_VerifyCredentialT()
-      : error_code(ProtocolSS::ErrorCode::OK),
+      : error_code(ErrorCode::OK),
         session_id(0),
         account_uid(0) {
   }
@@ -628,10 +736,10 @@ struct Reply_VerifyCredential FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
     VT_CREDENTIAL = 8,
     VT_ACCOUNT_UID = 10
   };
-  ProtocolSS::ErrorCode error_code() const {
-    return static_cast<ProtocolSS::ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
+  ErrorCode error_code() const {
+    return static_cast<ErrorCode>(GetField<int32_t>(VT_ERROR_CODE, 0));
   }
-  bool mutate_error_code(ProtocolSS::ErrorCode _error_code) {
+  bool mutate_error_code(ErrorCode _error_code) {
     return SetField<int32_t>(VT_ERROR_CODE, static_cast<int32_t>(_error_code), 0);
   }
   int32_t session_id() const {
@@ -669,7 +777,7 @@ struct Reply_VerifyCredential FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tab
 struct Reply_VerifyCredentialBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_error_code(ProtocolSS::ErrorCode error_code) {
+  void add_error_code(ErrorCode error_code) {
     fbb_.AddElement<int32_t>(Reply_VerifyCredential::VT_ERROR_CODE, static_cast<int32_t>(error_code), 0);
   }
   void add_session_id(int32_t session_id) {
@@ -695,7 +803,7 @@ struct Reply_VerifyCredentialBuilder {
 
 inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(
     flatbuffers::FlatBufferBuilder &_fbb,
-    ProtocolSS::ErrorCode error_code = ProtocolSS::ErrorCode::OK,
+    ErrorCode error_code = ErrorCode::OK,
     int32_t session_id = 0,
     flatbuffers::Offset<flatbuffers::String> credential = 0,
     int32_t account_uid = 0) {
@@ -709,11 +817,11 @@ inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(
 
 inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredentialDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    ProtocolSS::ErrorCode error_code = ProtocolSS::ErrorCode::OK,
+    ErrorCode error_code = ErrorCode::OK,
     int32_t session_id = 0,
     const char *credential = nullptr,
     int32_t account_uid = 0) {
-  return ProtocolSS::Manager::CreateReply_VerifyCredential(
+  return ProtocolSS::CreateReply_VerifyCredential(
       _fbb,
       error_code,
       session_id,
@@ -780,7 +888,332 @@ inline flatbuffers::Offset<Notify_UserLogout> CreateNotify_UserLogout(
 
 flatbuffers::Offset<Notify_UserLogout> CreateNotify_UserLogout(flatbuffers::FlatBufferBuilder &_fbb, const Notify_UserLogoutT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-}  // namespace Manager
+struct ServerInfoT : public flatbuffers::NativeTable {
+  typedef ServerInfo TableType;
+  int32_t session_id;
+  std::string name;
+  int32_t type;
+  ServerInfoT()
+      : session_id(0),
+        type(0) {
+  }
+};
+
+struct ServerInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ServerInfoT NativeTableType;
+  enum {
+    VT_SESSION_ID = 4,
+    VT_NAME = 6,
+    VT_TYPE = 8
+  };
+  int32_t session_id() const {
+    return GetField<int32_t>(VT_SESSION_ID, 0);
+  }
+  bool mutate_session_id(int32_t _session_id) {
+    return SetField<int32_t>(VT_SESSION_ID, _session_id, 0);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  int32_t type() const {
+    return GetField<int32_t>(VT_TYPE, 0);
+  }
+  bool mutate_type(int32_t _type) {
+    return SetField<int32_t>(VT_TYPE, _type, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_SESSION_ID) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.Verify(name()) &&
+           VerifyField<int32_t>(verifier, VT_TYPE) &&
+           verifier.EndTable();
+  }
+  ServerInfoT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(ServerInfoT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<ServerInfo> Pack(flatbuffers::FlatBufferBuilder &_fbb, const ServerInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct ServerInfoBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_session_id(int32_t session_id) {
+    fbb_.AddElement<int32_t>(ServerInfo::VT_SESSION_ID, session_id, 0);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(ServerInfo::VT_NAME, name);
+  }
+  void add_type(int32_t type) {
+    fbb_.AddElement<int32_t>(ServerInfo::VT_TYPE, type, 0);
+  }
+  ServerInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ServerInfoBuilder &operator=(const ServerInfoBuilder &);
+  flatbuffers::Offset<ServerInfo> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<ServerInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<ServerInfo> CreateServerInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t session_id = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    int32_t type = 0) {
+  ServerInfoBuilder builder_(_fbb);
+  builder_.add_type(type);
+  builder_.add_name(name);
+  builder_.add_session_id(session_id);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<ServerInfo> CreateServerInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t session_id = 0,
+    const char *name = nullptr,
+    int32_t type = 0) {
+  return ProtocolSS::CreateServerInfo(
+      _fbb,
+      session_id,
+      name ? _fbb.CreateString(name) : 0,
+      type);
+}
+
+flatbuffers::Offset<ServerInfo> CreateServerInfo(flatbuffers::FlatBufferBuilder &_fbb, const ServerInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct Notify_ServerListT : public flatbuffers::NativeTable {
+  typedef Notify_ServerList TableType;
+  std::vector<std::unique_ptr<ServerInfoT>> server_list;
+  Notify_ServerListT() {
+  }
+};
+
+struct Notify_ServerList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef Notify_ServerListT NativeTableType;
+  enum {
+    VT_SERVER_LIST = 4
+  };
+  const flatbuffers::Vector<flatbuffers::Offset<ServerInfo>> *server_list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<ServerInfo>> *>(VT_SERVER_LIST);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<ServerInfo>> *mutable_server_list() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<ServerInfo>> *>(VT_SERVER_LIST);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_SERVER_LIST) &&
+           verifier.Verify(server_list()) &&
+           verifier.VerifyVectorOfTables(server_list()) &&
+           verifier.EndTable();
+  }
+  Notify_ServerListT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Notify_ServerListT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<Notify_ServerList> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ServerListT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct Notify_ServerListBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_server_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ServerInfo>>> server_list) {
+    fbb_.AddOffset(Notify_ServerList::VT_SERVER_LIST, server_list);
+  }
+  Notify_ServerListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  Notify_ServerListBuilder &operator=(const Notify_ServerListBuilder &);
+  flatbuffers::Offset<Notify_ServerList> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<Notify_ServerList>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerList(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ServerInfo>>> server_list = 0) {
+  Notify_ServerListBuilder builder_(_fbb);
+  builder_.add_server_list(server_list);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerListDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<flatbuffers::Offset<ServerInfo>> *server_list = nullptr) {
+  return ProtocolSS::CreateNotify_ServerList(
+      _fbb,
+      server_list ? _fbb.CreateVector<flatbuffers::Offset<ServerInfo>>(*server_list) : 0);
+}
+
+flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerList(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ServerListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct TestRelayT : public flatbuffers::NativeTable {
+  typedef TestRelay TableType;
+  TestRelayT() {
+  }
+};
+
+struct TestRelay FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TestRelayT NativeTableType;
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+  TestRelayT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TestRelayT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<TestRelay> Pack(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TestRelayBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  TestRelayBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TestRelayBuilder &operator=(const TestRelayBuilder &);
+  flatbuffers::Offset<TestRelay> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<TestRelay>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TestRelay> CreateTestRelay(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  TestRelayBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+flatbuffers::Offset<TestRelay> CreateTestRelay(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct RelayMessageT : public flatbuffers::NativeTable {
+  typedef RelayMessage TableType;
+  int32_t from_id;
+  std::vector<int32_t> to_id;
+  RelayMessageTypeUnion relay_message;
+  RelayMessageT()
+      : from_id(0) {
+  }
+};
+
+struct RelayMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef RelayMessageT NativeTableType;
+  enum {
+    VT_FROM_ID = 4,
+    VT_TO_ID = 6,
+    VT_RELAY_MESSAGE_TYPE = 8,
+    VT_RELAY_MESSAGE = 10
+  };
+  int32_t from_id() const {
+    return GetField<int32_t>(VT_FROM_ID, 0);
+  }
+  bool mutate_from_id(int32_t _from_id) {
+    return SetField<int32_t>(VT_FROM_ID, _from_id, 0);
+  }
+  const flatbuffers::Vector<int32_t> *to_id() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_TO_ID);
+  }
+  flatbuffers::Vector<int32_t> *mutable_to_id() {
+    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_TO_ID);
+  }
+  RelayMessageType relay_message_type() const {
+    return static_cast<RelayMessageType>(GetField<uint8_t>(VT_RELAY_MESSAGE_TYPE, 0));
+  }
+  bool mutate_relay_message_type(RelayMessageType _relay_message_type) {
+    return SetField<uint8_t>(VT_RELAY_MESSAGE_TYPE, static_cast<uint8_t>(_relay_message_type), 0);
+  }
+  const void *relay_message() const {
+    return GetPointer<const void *>(VT_RELAY_MESSAGE);
+  }
+  template<typename T> const T *relay_message_as() const;
+  const TestRelay *relay_message_as_TestRelay() const {
+    return relay_message_type() == RelayMessageType::TestRelay ? static_cast<const TestRelay *>(relay_message()) : nullptr;
+  }
+  void *mutable_relay_message() {
+    return GetPointer<void *>(VT_RELAY_MESSAGE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_FROM_ID) &&
+           VerifyOffset(verifier, VT_TO_ID) &&
+           verifier.Verify(to_id()) &&
+           VerifyField<uint8_t>(verifier, VT_RELAY_MESSAGE_TYPE) &&
+           VerifyOffset(verifier, VT_RELAY_MESSAGE) &&
+           VerifyRelayMessageType(verifier, relay_message(), relay_message_type()) &&
+           verifier.EndTable();
+  }
+  RelayMessageT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(RelayMessageT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<RelayMessage> Pack(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+template<> inline const TestRelay *RelayMessage::relay_message_as<TestRelay>() const {
+  return relay_message_as_TestRelay();
+}
+
+struct RelayMessageBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_from_id(int32_t from_id) {
+    fbb_.AddElement<int32_t>(RelayMessage::VT_FROM_ID, from_id, 0);
+  }
+  void add_to_id(flatbuffers::Offset<flatbuffers::Vector<int32_t>> to_id) {
+    fbb_.AddOffset(RelayMessage::VT_TO_ID, to_id);
+  }
+  void add_relay_message_type(RelayMessageType relay_message_type) {
+    fbb_.AddElement<uint8_t>(RelayMessage::VT_RELAY_MESSAGE_TYPE, static_cast<uint8_t>(relay_message_type), 0);
+  }
+  void add_relay_message(flatbuffers::Offset<void> relay_message) {
+    fbb_.AddOffset(RelayMessage::VT_RELAY_MESSAGE, relay_message);
+  }
+  RelayMessageBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  RelayMessageBuilder &operator=(const RelayMessageBuilder &);
+  flatbuffers::Offset<RelayMessage> Finish() {
+    const auto end = fbb_.EndTable(start_, 4);
+    auto o = flatbuffers::Offset<RelayMessage>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<RelayMessage> CreateRelayMessage(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t from_id = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> to_id = 0,
+    RelayMessageType relay_message_type = RelayMessageType::NONE,
+    flatbuffers::Offset<void> relay_message = 0) {
+  RelayMessageBuilder builder_(_fbb);
+  builder_.add_relay_message(relay_message);
+  builder_.add_to_id(to_id);
+  builder_.add_from_id(from_id);
+  builder_.add_relay_message_type(relay_message_type);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<RelayMessage> CreateRelayMessageDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t from_id = 0,
+    const std::vector<int32_t> *to_id = nullptr,
+    RelayMessageType relay_message_type = RelayMessageType::NONE,
+    flatbuffers::Offset<void> relay_message = 0) {
+  return ProtocolSS::CreateRelayMessage(
+      _fbb,
+      from_id,
+      to_id ? _fbb.CreateVector<int32_t>(*to_id) : 0,
+      relay_message_type,
+      relay_message);
+}
+
+flatbuffers::Offset<RelayMessage> CreateRelayMessage(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct MessageRootT : public flatbuffers::NativeTable {
   typedef MessageRoot TableType;
@@ -808,26 +1241,32 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const ProtocolSS::Notify_UnauthedAccess *message_as_Notify_UnauthedAccess() const {
     return message_type() == MessageType::Notify_UnauthedAccess ? static_cast<const ProtocolSS::Notify_UnauthedAccess *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Request_Login *message_as_Manager_Request_Login() const {
-    return message_type() == MessageType::Manager_Request_Login ? static_cast<const ProtocolSS::Manager::Request_Login *>(message()) : nullptr;
+  const ProtocolSS::Request_Login *message_as_Request_Login() const {
+    return message_type() == MessageType::Request_Login ? static_cast<const ProtocolSS::Request_Login *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Reply_Login *message_as_Manager_Reply_Login() const {
-    return message_type() == MessageType::Manager_Reply_Login ? static_cast<const ProtocolSS::Manager::Reply_Login *>(message()) : nullptr;
+  const ProtocolSS::Reply_Login *message_as_Reply_Login() const {
+    return message_type() == MessageType::Reply_Login ? static_cast<const ProtocolSS::Reply_Login *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Request_GenerateCredential *message_as_Manager_Request_GenerateCredential() const {
-    return message_type() == MessageType::Manager_Request_GenerateCredential ? static_cast<const ProtocolSS::Manager::Request_GenerateCredential *>(message()) : nullptr;
+  const ProtocolSS::Request_GenerateCredential *message_as_Request_GenerateCredential() const {
+    return message_type() == MessageType::Request_GenerateCredential ? static_cast<const ProtocolSS::Request_GenerateCredential *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Reply_GenerateCredential *message_as_Manager_Reply_GenerateCredential() const {
-    return message_type() == MessageType::Manager_Reply_GenerateCredential ? static_cast<const ProtocolSS::Manager::Reply_GenerateCredential *>(message()) : nullptr;
+  const ProtocolSS::Reply_GenerateCredential *message_as_Reply_GenerateCredential() const {
+    return message_type() == MessageType::Reply_GenerateCredential ? static_cast<const ProtocolSS::Reply_GenerateCredential *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Request_VerifyCredential *message_as_Manager_Request_VerifyCredential() const {
-    return message_type() == MessageType::Manager_Request_VerifyCredential ? static_cast<const ProtocolSS::Manager::Request_VerifyCredential *>(message()) : nullptr;
+  const ProtocolSS::Request_VerifyCredential *message_as_Request_VerifyCredential() const {
+    return message_type() == MessageType::Request_VerifyCredential ? static_cast<const ProtocolSS::Request_VerifyCredential *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Reply_VerifyCredential *message_as_Manager_Reply_VerifyCredential() const {
-    return message_type() == MessageType::Manager_Reply_VerifyCredential ? static_cast<const ProtocolSS::Manager::Reply_VerifyCredential *>(message()) : nullptr;
+  const ProtocolSS::Reply_VerifyCredential *message_as_Reply_VerifyCredential() const {
+    return message_type() == MessageType::Reply_VerifyCredential ? static_cast<const ProtocolSS::Reply_VerifyCredential *>(message()) : nullptr;
   }
-  const ProtocolSS::Manager::Notify_UserLogout *message_as_Manager_Notify_UserLogout() const {
-    return message_type() == MessageType::Manager_Notify_UserLogout ? static_cast<const ProtocolSS::Manager::Notify_UserLogout *>(message()) : nullptr;
+  const ProtocolSS::Notify_UserLogout *message_as_Notify_UserLogout() const {
+    return message_type() == MessageType::Notify_UserLogout ? static_cast<const ProtocolSS::Notify_UserLogout *>(message()) : nullptr;
+  }
+  const ProtocolSS::Notify_ServerList *message_as_Notify_ServerList() const {
+    return message_type() == MessageType::Notify_ServerList ? static_cast<const ProtocolSS::Notify_ServerList *>(message()) : nullptr;
+  }
+  const ProtocolSS::RelayMessage *message_as_RelayMessage() const {
+    return message_type() == MessageType::RelayMessage ? static_cast<const ProtocolSS::RelayMessage *>(message()) : nullptr;
   }
   void *mutable_message() {
     return GetPointer<void *>(VT_MESSAGE);
@@ -848,32 +1287,40 @@ template<> inline const ProtocolSS::Notify_UnauthedAccess *MessageRoot::message_
   return message_as_Notify_UnauthedAccess();
 }
 
-template<> inline const ProtocolSS::Manager::Request_Login *MessageRoot::message_as<ProtocolSS::Manager::Request_Login>() const {
-  return message_as_Manager_Request_Login();
+template<> inline const ProtocolSS::Request_Login *MessageRoot::message_as<ProtocolSS::Request_Login>() const {
+  return message_as_Request_Login();
 }
 
-template<> inline const ProtocolSS::Manager::Reply_Login *MessageRoot::message_as<ProtocolSS::Manager::Reply_Login>() const {
-  return message_as_Manager_Reply_Login();
+template<> inline const ProtocolSS::Reply_Login *MessageRoot::message_as<ProtocolSS::Reply_Login>() const {
+  return message_as_Reply_Login();
 }
 
-template<> inline const ProtocolSS::Manager::Request_GenerateCredential *MessageRoot::message_as<ProtocolSS::Manager::Request_GenerateCredential>() const {
-  return message_as_Manager_Request_GenerateCredential();
+template<> inline const ProtocolSS::Request_GenerateCredential *MessageRoot::message_as<ProtocolSS::Request_GenerateCredential>() const {
+  return message_as_Request_GenerateCredential();
 }
 
-template<> inline const ProtocolSS::Manager::Reply_GenerateCredential *MessageRoot::message_as<ProtocolSS::Manager::Reply_GenerateCredential>() const {
-  return message_as_Manager_Reply_GenerateCredential();
+template<> inline const ProtocolSS::Reply_GenerateCredential *MessageRoot::message_as<ProtocolSS::Reply_GenerateCredential>() const {
+  return message_as_Reply_GenerateCredential();
 }
 
-template<> inline const ProtocolSS::Manager::Request_VerifyCredential *MessageRoot::message_as<ProtocolSS::Manager::Request_VerifyCredential>() const {
-  return message_as_Manager_Request_VerifyCredential();
+template<> inline const ProtocolSS::Request_VerifyCredential *MessageRoot::message_as<ProtocolSS::Request_VerifyCredential>() const {
+  return message_as_Request_VerifyCredential();
 }
 
-template<> inline const ProtocolSS::Manager::Reply_VerifyCredential *MessageRoot::message_as<ProtocolSS::Manager::Reply_VerifyCredential>() const {
-  return message_as_Manager_Reply_VerifyCredential();
+template<> inline const ProtocolSS::Reply_VerifyCredential *MessageRoot::message_as<ProtocolSS::Reply_VerifyCredential>() const {
+  return message_as_Reply_VerifyCredential();
 }
 
-template<> inline const ProtocolSS::Manager::Notify_UserLogout *MessageRoot::message_as<ProtocolSS::Manager::Notify_UserLogout>() const {
-  return message_as_Manager_Notify_UserLogout();
+template<> inline const ProtocolSS::Notify_UserLogout *MessageRoot::message_as<ProtocolSS::Notify_UserLogout>() const {
+  return message_as_Notify_UserLogout();
+}
+
+template<> inline const ProtocolSS::Notify_ServerList *MessageRoot::message_as<ProtocolSS::Notify_ServerList>() const {
+  return message_as_Notify_ServerList();
+}
+
+template<> inline const ProtocolSS::RelayMessage *MessageRoot::message_as<ProtocolSS::RelayMessage>() const {
+  return message_as_RelayMessage();
 }
 
 struct MessageRootBuilder {
@@ -931,8 +1378,6 @@ inline flatbuffers::Offset<Notify_UnauthedAccess> CreateNotify_UnauthedAccess(fl
       _fbb);
 }
 
-namespace Manager {
-
 inline Request_LoginT *Request_Login::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new Request_LoginT();
   UnPackTo(_o, _resolver);
@@ -955,7 +1400,7 @@ inline flatbuffers::Offset<Request_Login> CreateRequest_Login(flatbuffers::FlatB
   (void)_o;
   auto _client_name = _o->client_name.size() ? _fbb.CreateString(_o->client_name) : 0;
   auto _client_type = _o->client_type;
-  return ProtocolSS::Manager::CreateRequest_Login(
+  return ProtocolSS::CreateRequest_Login(
       _fbb,
       _client_name,
       _client_type);
@@ -971,6 +1416,7 @@ inline void Reply_Login::UnPackTo(Reply_LoginT *_o, const flatbuffers::resolver_
   (void)_o;
   (void)_resolver;
   { auto _e = error_code(); _o->error_code = _e; };
+  { auto _e = session_id(); _o->session_id = _e; };
 }
 
 inline flatbuffers::Offset<Reply_Login> Reply_Login::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Reply_LoginT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -981,9 +1427,11 @@ inline flatbuffers::Offset<Reply_Login> CreateReply_Login(flatbuffers::FlatBuffe
   (void)_rehasher;
   (void)_o;
   auto _error_code = _o->error_code;
-  return ProtocolSS::Manager::CreateReply_Login(
+  auto _session_id = _o->session_id;
+  return ProtocolSS::CreateReply_Login(
       _fbb,
-      _error_code);
+      _error_code,
+      _session_id);
 }
 
 inline Request_GenerateCredentialT *Request_GenerateCredential::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -1008,7 +1456,7 @@ inline flatbuffers::Offset<Request_GenerateCredential> CreateRequest_GenerateCre
   (void)_o;
   auto _session_id = _o->session_id;
   auto _account_uid = _o->account_uid;
-  return ProtocolSS::Manager::CreateRequest_GenerateCredential(
+  return ProtocolSS::CreateRequest_GenerateCredential(
       _fbb,
       _session_id,
       _account_uid);
@@ -1036,7 +1484,7 @@ inline flatbuffers::Offset<Reply_GenerateCredential> CreateReply_GenerateCredent
   (void)_o;
   auto _session_id = _o->session_id;
   auto _credential = _o->credential.size() ? _fbb.CreateString(_o->credential) : 0;
-  return ProtocolSS::Manager::CreateReply_GenerateCredential(
+  return ProtocolSS::CreateReply_GenerateCredential(
       _fbb,
       _session_id,
       _credential);
@@ -1064,7 +1512,7 @@ inline flatbuffers::Offset<Request_VerifyCredential> CreateRequest_VerifyCredent
   (void)_o;
   auto _session_id = _o->session_id;
   auto _credential = _o->credential.size() ? _fbb.CreateString(_o->credential) : 0;
-  return ProtocolSS::Manager::CreateRequest_VerifyCredential(
+  return ProtocolSS::CreateRequest_VerifyCredential(
       _fbb,
       _session_id,
       _credential);
@@ -1096,7 +1544,7 @@ inline flatbuffers::Offset<Reply_VerifyCredential> CreateReply_VerifyCredential(
   auto _session_id = _o->session_id;
   auto _credential = _o->credential.size() ? _fbb.CreateString(_o->credential) : 0;
   auto _account_uid = _o->account_uid;
-  return ProtocolSS::Manager::CreateReply_VerifyCredential(
+  return ProtocolSS::CreateReply_VerifyCredential(
       _fbb,
       _error_code,
       _session_id,
@@ -1124,12 +1572,122 @@ inline flatbuffers::Offset<Notify_UserLogout> CreateNotify_UserLogout(flatbuffer
   (void)_rehasher;
   (void)_o;
   auto _account_uid = _o->account_uid;
-  return ProtocolSS::Manager::CreateNotify_UserLogout(
+  return ProtocolSS::CreateNotify_UserLogout(
       _fbb,
       _account_uid);
 }
 
-}  // namespace Manager
+inline ServerInfoT *ServerInfo::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new ServerInfoT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void ServerInfo::UnPackTo(ServerInfoT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = session_id(); _o->session_id = _e; };
+  { auto _e = name(); if (_e) _o->name = _e->str(); };
+  { auto _e = type(); _o->type = _e; };
+}
+
+inline flatbuffers::Offset<ServerInfo> ServerInfo::Pack(flatbuffers::FlatBufferBuilder &_fbb, const ServerInfoT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateServerInfo(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<ServerInfo> CreateServerInfo(flatbuffers::FlatBufferBuilder &_fbb, const ServerInfoT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _session_id = _o->session_id;
+  auto _name = _o->name.size() ? _fbb.CreateString(_o->name) : 0;
+  auto _type = _o->type;
+  return ProtocolSS::CreateServerInfo(
+      _fbb,
+      _session_id,
+      _name,
+      _type);
+}
+
+inline Notify_ServerListT *Notify_ServerList::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new Notify_ServerListT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void Notify_ServerList::UnPackTo(Notify_ServerListT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = server_list(); if (_e) { _o->server_list.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->server_list[_i] = std::unique_ptr<ServerInfoT>(_e->Get(_i)->UnPack(_resolver)); } } };
+}
+
+inline flatbuffers::Offset<Notify_ServerList> Notify_ServerList::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ServerListT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateNotify_ServerList(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerList(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ServerListT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _server_list = _o->server_list.size() ? _fbb.CreateVector<flatbuffers::Offset<ServerInfo>>(_o->server_list.size(), [&](size_t i) { return CreateServerInfo(_fbb, _o->server_list[i].get(), _rehasher); }) : 0;
+  return ProtocolSS::CreateNotify_ServerList(
+      _fbb,
+      _server_list);
+}
+
+inline TestRelayT *TestRelay::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new TestRelayT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void TestRelay::UnPackTo(TestRelayT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+}
+
+inline flatbuffers::Offset<TestRelay> TestRelay::Pack(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTestRelay(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<TestRelay> CreateTestRelay(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  return ProtocolSS::CreateTestRelay(
+      _fbb);
+}
+
+inline RelayMessageT *RelayMessage::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new RelayMessageT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void RelayMessage::UnPackTo(RelayMessageT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = from_id(); _o->from_id = _e; };
+  { auto _e = to_id(); if (_e) { _o->to_id.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->to_id[_i] = _e->Get(_i); } } };
+  { auto _e = relay_message_type(); _o->relay_message.type = _e; };
+  { auto _e = relay_message(); if (_e) _o->relay_message.value = RelayMessageTypeUnion::UnPack(_e, relay_message_type(), _resolver); };
+}
+
+inline flatbuffers::Offset<RelayMessage> RelayMessage::Pack(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateRelayMessage(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<RelayMessage> CreateRelayMessage(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _from_id = _o->from_id;
+  auto _to_id = _o->to_id.size() ? _fbb.CreateVector(_o->to_id) : 0;
+  auto _relay_message_type = _o->relay_message.type;
+  auto _relay_message = _o->relay_message.Pack(_fbb);
+  return ProtocolSS::CreateRelayMessage(
+      _fbb,
+      _from_id,
+      _to_id,
+      _relay_message_type,
+      _relay_message);
+}
 
 inline MessageRootT *MessageRoot::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new MessageRootT();
@@ -1159,6 +1717,74 @@ inline flatbuffers::Offset<MessageRoot> CreateMessageRoot(flatbuffers::FlatBuffe
       _message);
 }
 
+inline bool VerifyRelayMessageType(flatbuffers::Verifier &verifier, const void *obj, RelayMessageType type) {
+  switch (type) {
+    case RelayMessageType::NONE: {
+      return true;
+    }
+    case RelayMessageType::TestRelay: {
+      auto ptr = reinterpret_cast<const TestRelay *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    default: return false;
+  }
+}
+
+inline bool VerifyRelayMessageTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+  if (values->size() != types->size()) return false;
+  for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+    if (!VerifyRelayMessageType(
+        verifier,  values->Get(i), types->GetEnum<RelayMessageType>(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline void *RelayMessageTypeUnion::UnPack(const void *obj, RelayMessageType type, const flatbuffers::resolver_function_t *resolver) {
+  switch (type) {
+    case RelayMessageType::TestRelay: {
+      auto ptr = reinterpret_cast<const TestRelay *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    default: return nullptr;
+  }
+}
+
+inline flatbuffers::Offset<void> RelayMessageTypeUnion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher) const {
+  switch (type) {
+    case RelayMessageType::TestRelay: {
+      auto ptr = reinterpret_cast<const TestRelayT *>(value);
+      return CreateTestRelay(_fbb, ptr, _rehasher).Union();
+    }
+    default: return 0;
+  }
+}
+
+inline RelayMessageTypeUnion::RelayMessageTypeUnion(const RelayMessageTypeUnion &u) FLATBUFFERS_NOEXCEPT : type(u.type), value(nullptr) {
+  switch (type) {
+    case RelayMessageType::TestRelay: {
+      value = new TestRelayT(*reinterpret_cast<TestRelayT *>(u.value));
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+inline void RelayMessageTypeUnion::Reset() {
+  switch (type) {
+    case RelayMessageType::TestRelay: {
+      auto ptr = reinterpret_cast<TestRelayT *>(value);
+      delete ptr;
+      break;
+    }
+    default: break;
+  }
+  value = nullptr;
+  type = RelayMessageType::NONE;
+}
+
 inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, MessageType type) {
   switch (type) {
     case MessageType::NONE: {
@@ -1168,32 +1794,40 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_UnauthedAccess *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Request_Login: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_Login *>(obj);
+    case MessageType::Request_Login: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_Login *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Reply_Login: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_Login *>(obj);
+    case MessageType::Reply_Login: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_Login *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Request_GenerateCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_GenerateCredential *>(obj);
+    case MessageType::Request_GenerateCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_GenerateCredential *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Reply_GenerateCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_GenerateCredential *>(obj);
+    case MessageType::Reply_GenerateCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_GenerateCredential *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Request_VerifyCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_VerifyCredential *>(obj);
+    case MessageType::Request_VerifyCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_VerifyCredential *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Reply_VerifyCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_VerifyCredential *>(obj);
+    case MessageType::Reply_VerifyCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_VerifyCredential *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case MessageType::Manager_Notify_UserLogout: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Notify_UserLogout *>(obj);
+    case MessageType::Notify_UserLogout: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Notify_UserLogout *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::Notify_ServerList: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Notify_ServerList *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<const ProtocolSS::RelayMessage *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -1217,32 +1851,40 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_UnauthedAccess *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Request_Login: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_Login *>(obj);
+    case MessageType::Request_Login: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_Login *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Reply_Login: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_Login *>(obj);
+    case MessageType::Reply_Login: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_Login *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Request_GenerateCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_GenerateCredential *>(obj);
+    case MessageType::Request_GenerateCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_GenerateCredential *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Reply_GenerateCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_GenerateCredential *>(obj);
+    case MessageType::Reply_GenerateCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_GenerateCredential *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Request_VerifyCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_VerifyCredential *>(obj);
+    case MessageType::Request_VerifyCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_VerifyCredential *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Reply_VerifyCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_VerifyCredential *>(obj);
+    case MessageType::Reply_VerifyCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_VerifyCredential *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::Manager_Notify_UserLogout: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Notify_UserLogout *>(obj);
+    case MessageType::Notify_UserLogout: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Notify_UserLogout *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::Notify_ServerList: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Notify_ServerList *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<const ProtocolSS::RelayMessage *>(obj);
       return ptr->UnPack(resolver);
     }
     default: return nullptr;
@@ -1255,33 +1897,41 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_UnauthedAccessT *>(value);
       return CreateNotify_UnauthedAccess(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Request_Login: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_LoginT *>(value);
+    case MessageType::Request_Login: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_LoginT *>(value);
       return CreateRequest_Login(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Reply_Login: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_LoginT *>(value);
+    case MessageType::Reply_Login: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_LoginT *>(value);
       return CreateReply_Login(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Request_GenerateCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_GenerateCredentialT *>(value);
+    case MessageType::Request_GenerateCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_GenerateCredentialT *>(value);
       return CreateRequest_GenerateCredential(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Reply_GenerateCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_GenerateCredentialT *>(value);
+    case MessageType::Reply_GenerateCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_GenerateCredentialT *>(value);
       return CreateReply_GenerateCredential(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Request_VerifyCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Request_VerifyCredentialT *>(value);
+    case MessageType::Request_VerifyCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Request_VerifyCredentialT *>(value);
       return CreateRequest_VerifyCredential(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Reply_VerifyCredential: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Reply_VerifyCredentialT *>(value);
+    case MessageType::Reply_VerifyCredential: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Reply_VerifyCredentialT *>(value);
       return CreateReply_VerifyCredential(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::Manager_Notify_UserLogout: {
-      auto ptr = reinterpret_cast<const ProtocolSS::Manager::Notify_UserLogoutT *>(value);
+    case MessageType::Notify_UserLogout: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Notify_UserLogoutT *>(value);
       return CreateNotify_UserLogout(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::Notify_ServerList: {
+      auto ptr = reinterpret_cast<const ProtocolSS::Notify_ServerListT *>(value);
+      return CreateNotify_ServerList(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<const ProtocolSS::RelayMessageT *>(value);
+      return CreateRelayMessage(_fbb, ptr, _rehasher).Union();
     }
     default: return 0;
   }
@@ -1293,32 +1943,40 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       value = new ProtocolSS::Notify_UnauthedAccessT(*reinterpret_cast<ProtocolSS::Notify_UnauthedAccessT *>(u.value));
       break;
     }
-    case MessageType::Manager_Request_Login: {
-      value = new ProtocolSS::Manager::Request_LoginT(*reinterpret_cast<ProtocolSS::Manager::Request_LoginT *>(u.value));
+    case MessageType::Request_Login: {
+      value = new ProtocolSS::Request_LoginT(*reinterpret_cast<ProtocolSS::Request_LoginT *>(u.value));
       break;
     }
-    case MessageType::Manager_Reply_Login: {
-      value = new ProtocolSS::Manager::Reply_LoginT(*reinterpret_cast<ProtocolSS::Manager::Reply_LoginT *>(u.value));
+    case MessageType::Reply_Login: {
+      value = new ProtocolSS::Reply_LoginT(*reinterpret_cast<ProtocolSS::Reply_LoginT *>(u.value));
       break;
     }
-    case MessageType::Manager_Request_GenerateCredential: {
-      value = new ProtocolSS::Manager::Request_GenerateCredentialT(*reinterpret_cast<ProtocolSS::Manager::Request_GenerateCredentialT *>(u.value));
+    case MessageType::Request_GenerateCredential: {
+      value = new ProtocolSS::Request_GenerateCredentialT(*reinterpret_cast<ProtocolSS::Request_GenerateCredentialT *>(u.value));
       break;
     }
-    case MessageType::Manager_Reply_GenerateCredential: {
-      value = new ProtocolSS::Manager::Reply_GenerateCredentialT(*reinterpret_cast<ProtocolSS::Manager::Reply_GenerateCredentialT *>(u.value));
+    case MessageType::Reply_GenerateCredential: {
+      value = new ProtocolSS::Reply_GenerateCredentialT(*reinterpret_cast<ProtocolSS::Reply_GenerateCredentialT *>(u.value));
       break;
     }
-    case MessageType::Manager_Request_VerifyCredential: {
-      value = new ProtocolSS::Manager::Request_VerifyCredentialT(*reinterpret_cast<ProtocolSS::Manager::Request_VerifyCredentialT *>(u.value));
+    case MessageType::Request_VerifyCredential: {
+      value = new ProtocolSS::Request_VerifyCredentialT(*reinterpret_cast<ProtocolSS::Request_VerifyCredentialT *>(u.value));
       break;
     }
-    case MessageType::Manager_Reply_VerifyCredential: {
-      value = new ProtocolSS::Manager::Reply_VerifyCredentialT(*reinterpret_cast<ProtocolSS::Manager::Reply_VerifyCredentialT *>(u.value));
+    case MessageType::Reply_VerifyCredential: {
+      value = new ProtocolSS::Reply_VerifyCredentialT(*reinterpret_cast<ProtocolSS::Reply_VerifyCredentialT *>(u.value));
       break;
     }
-    case MessageType::Manager_Notify_UserLogout: {
-      value = new ProtocolSS::Manager::Notify_UserLogoutT(*reinterpret_cast<ProtocolSS::Manager::Notify_UserLogoutT *>(u.value));
+    case MessageType::Notify_UserLogout: {
+      value = new ProtocolSS::Notify_UserLogoutT(*reinterpret_cast<ProtocolSS::Notify_UserLogoutT *>(u.value));
+      break;
+    }
+    case MessageType::Notify_ServerList: {
+      assert(false);  // ProtocolSS::Notify_ServerListT not copyable.
+      break;
+    }
+    case MessageType::RelayMessage: {
+      value = new ProtocolSS::RelayMessageT(*reinterpret_cast<ProtocolSS::RelayMessageT *>(u.value));
       break;
     }
     default:
@@ -1333,38 +1991,48 @@ inline void MessageTypeUnion::Reset() {
       delete ptr;
       break;
     }
-    case MessageType::Manager_Request_Login: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Request_LoginT *>(value);
+    case MessageType::Request_Login: {
+      auto ptr = reinterpret_cast<ProtocolSS::Request_LoginT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Manager_Reply_Login: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Reply_LoginT *>(value);
+    case MessageType::Reply_Login: {
+      auto ptr = reinterpret_cast<ProtocolSS::Reply_LoginT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Manager_Request_GenerateCredential: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Request_GenerateCredentialT *>(value);
+    case MessageType::Request_GenerateCredential: {
+      auto ptr = reinterpret_cast<ProtocolSS::Request_GenerateCredentialT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Manager_Reply_GenerateCredential: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Reply_GenerateCredentialT *>(value);
+    case MessageType::Reply_GenerateCredential: {
+      auto ptr = reinterpret_cast<ProtocolSS::Reply_GenerateCredentialT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Manager_Request_VerifyCredential: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Request_VerifyCredentialT *>(value);
+    case MessageType::Request_VerifyCredential: {
+      auto ptr = reinterpret_cast<ProtocolSS::Request_VerifyCredentialT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Manager_Reply_VerifyCredential: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Reply_VerifyCredentialT *>(value);
+    case MessageType::Reply_VerifyCredential: {
+      auto ptr = reinterpret_cast<ProtocolSS::Reply_VerifyCredentialT *>(value);
       delete ptr;
       break;
     }
-    case MessageType::Manager_Notify_UserLogout: {
-      auto ptr = reinterpret_cast<ProtocolSS::Manager::Notify_UserLogoutT *>(value);
+    case MessageType::Notify_UserLogout: {
+      auto ptr = reinterpret_cast<ProtocolSS::Notify_UserLogoutT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::Notify_ServerList: {
+      auto ptr = reinterpret_cast<ProtocolSS::Notify_ServerListT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<ProtocolSS::RelayMessageT *>(value);
       delete ptr;
       break;
     }

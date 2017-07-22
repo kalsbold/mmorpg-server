@@ -6,7 +6,7 @@
 
 namespace fb = flatbuffers;
 namespace db = db_schema;
-using namespace PSS::Manager;
+namespace PSS = ProtocolSS;
 
 ManagerServer::ManagerServer()
 {
@@ -145,6 +145,12 @@ void ManagerServer::ProcessRemoteClientDisconnected(const Ptr<RemoteManagerClien
 	rc->OnDisconnected();
 
 	BOOST_LOG_TRIVIAL(info) << "Logout. Server name: " << rc->GetServerName();
+    
+    // 모든 클라이언트에게 서버 리스트를 통지
+    for (auto& e : remote_clients_)
+    {
+        NotifyServerList(e.second->GetSession());
+    }
 }
 
 void ManagerServer::ScheduleNextUpdate(const time_point& now, const duration& timestep)
@@ -170,6 +176,21 @@ void ManagerServer::NotifyUnauthedAccess(const Ptr<net::Session>& session)
 	PSS::FinishMessageRootBuffer(fbb, msg_root);
 
 	session->Send(fbb.GetBufferPointer(), fbb.GetSize());
+}
+
+void ManagerServer::NotifyServerList(const Ptr<net::Session>& session)
+{
+    fb::FlatBufferBuilder fbb;
+    std::vector<fb::Offset<PSS::ServerInfo>> vec_server_info;
+    for (auto& e : remote_clients_)
+    {
+        auto client = e.second;
+        auto server_info = PSS::CreateServerInfoDirect(fbb, client->GetSessionID(), client->GetServerName().c_str(), client->GetServerType());
+        vec_server_info.emplace_back(server_info);
+    }
+    
+    auto notify = PSS::CreateNotify_ServerListDirect(fbb, &vec_server_info);
+    PSS::Send(*session, fbb, notify);
 }
 
 void ManagerServer::HandleMessage(const Ptr<net::Session>& session, const uint8_t* buf, size_t bytes)
@@ -225,7 +246,7 @@ void ManagerServer::HandleSessionClosed(const Ptr<net::Session>& session, net::C
 }
 
 // Login ================================================================================================================
-void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Manager::Request_Login* message)
+void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Request_Login* message)
 {
 	if (message == nullptr) return;
 
@@ -236,7 +257,7 @@ void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Manager
 	// 이미 인증됐거나 같은 이름이 있으면 거절
 	if( GetRemoteClient(session->GetID()) || GetRemoteClientByName(name))
 	{
-		Reply_LoginT reply;
+		PSS::Reply_LoginT reply;
 		reply.error_code = PSS::ErrorCode::LOGIN_ALREADY_CONNECTED;
 		PSS::Send(*session, reply);
 		return;
@@ -248,12 +269,19 @@ void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Manager
 
 	BOOST_LOG_TRIVIAL(info) << "Login. Server name: " << new_rc->GetServerName();
 
-	Reply_LoginT reply;
+	PSS::Reply_LoginT reply;
 	reply.error_code = PSS::ErrorCode::OK;
+    reply.session_id = session->GetID();
 	PSS::Send(*session, reply);
+
+    // 모든 클라이언트에게 서버 리스트를 통지
+    for (auto& e : remote_clients_)
+    {
+        NotifyServerList(e.second->GetSession());
+    }
 }
 
-void ManagerServer::OnGenerateCredential(const Ptr<net::Session>& session, const PSS::Manager::Request_GenerateCredential * message)
+void ManagerServer::OnGenerateCredential(const Ptr<net::Session>& session, const PSS::Request_GenerateCredential * message)
 {
 	if (message == nullptr) return;
 
@@ -289,13 +317,13 @@ void ManagerServer::OnGenerateCredential(const Ptr<net::Session>& session, const
 
 	BOOST_LOG_TRIVIAL(info) << "Generate credential. account_uid: " << iter->account_uid_ << " credential: " << iter->credential_;
 
-	Reply_GenerateCredentialT reply;
+	PSS::Reply_GenerateCredentialT reply;
 	reply.session_id = message->session_id();
 	reply.credential = boost::uuids::to_string(new_credential);
 	PSS::Send(*session, reply);
 }
 
-void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const PSS::Manager::Request_VerifyCredential * message)
+void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const PSS::Request_VerifyCredential * message)
 {
 	if (message == nullptr) return;
 
@@ -318,7 +346,7 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
         BOOST_LOG_TRIVIAL(info) << "Failed to verify credential : " << credential;
 
 		// 없으면 실패
-		Reply_VerifyCredentialT reply;
+		PSS::Reply_VerifyCredentialT reply;
         reply.error_code = PSS::ErrorCode::VERIFY_CREDENTIAL_FAILED;
 		reply.session_id = message->session_id();
         reply.credential = str_credential;
@@ -332,7 +360,7 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 
 	BOOST_LOG_TRIVIAL(info) << "Verify credential. account_uid: " << iter->account_uid_ << " credential: " << iter->credential_;
 
-	Reply_VerifyCredentialT reply;
+	PSS::Reply_VerifyCredentialT reply;
 	reply.error_code = PSS::ErrorCode::OK;
 	reply.session_id = message->session_id();
 	reply.credential = str_credential;
@@ -340,7 +368,7 @@ void ManagerServer::OnVerifyCredential(const Ptr<net::Session>& session, const P
 	PSS::Send(*session, reply);
 }
 
-void ManagerServer::OnUserLogout(const Ptr<net::Session>& session, const PSS::Manager::Notify_UserLogout * message)
+void ManagerServer::OnUserLogout(const Ptr<net::Session>& session, const PSS::Notify_UserLogout * message)
 {
 	if (message == nullptr) return;
 
@@ -365,8 +393,8 @@ void ManagerServer::OnUserLogout(const Ptr<net::Session>& session, const PSS::Ma
 
 void ManagerServer::RegisterHandlers()
 {
-	RegisterMessageHandler<PSS::Manager::Request_Login>([this](auto& session, auto* msg) { OnLogin(session, msg); });
-	RegisterMessageHandler<PSS::Manager::Request_GenerateCredential>([this](auto& session, auto* msg) { OnGenerateCredential(session, msg); });
-	RegisterMessageHandler<PSS::Manager::Request_VerifyCredential>([this](auto& session, auto* msg) { OnVerifyCredential(session, msg); });
-	RegisterMessageHandler<PSS::Manager::Notify_UserLogout>([this](auto& session, auto* msg) { OnUserLogout(session, msg); });
+	RegisterMessageHandler<PSS::Request_Login>([this](auto& session, auto* msg) { OnLogin(session, msg); });
+	RegisterMessageHandler<PSS::Request_GenerateCredential>([this](auto& session, auto* msg) { OnGenerateCredential(session, msg); });
+	RegisterMessageHandler<PSS::Request_VerifyCredential>([this](auto& session, auto* msg) { OnVerifyCredential(session, msg); });
+	RegisterMessageHandler<PSS::Notify_UserLogout>([this](auto& session, auto* msg) { OnUserLogout(session, msg); });
 }

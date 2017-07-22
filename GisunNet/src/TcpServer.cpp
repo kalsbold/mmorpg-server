@@ -22,7 +22,7 @@ TcpServer::TcpServer(const ServerConfig & config)
 	strand_ = std::make_unique<strand>(ios_loop_->GetIoService());
 
 	// Free session id list 를 만든다. 
-	for (int i = 0; i < config_.max_session_count; i++)
+	for (int i = 1; i <= config_.max_session_count; i++)
 	{
 		free_session_id_.push_back(i);
 	}
@@ -46,7 +46,7 @@ void TcpServer::Start(std::string address, uint16_t port)
 	{
 		if (!(state_ == State::Ready))
 		{
-			BOOST_LOG_TRIVIAL(info) << "TcpServer can't start : State is not Ready\n";
+			BOOST_LOG_TRIVIAL(info) << "The tcp server can't start: state is not Ready";
 			return;
 		}
 
@@ -54,7 +54,7 @@ void TcpServer::Start(std::string address, uint16_t port)
 		AcceptStart();
 		state_ = State::Start;
 
-		BOOST_LOG_TRIVIAL(info) << "TcpServer start " << endpoint;
+		BOOST_LOG_TRIVIAL(info) << "The tcp server started: " << endpoint;
 	});
 }
 
@@ -63,7 +63,7 @@ void TcpServer::Stop()
 	strand_->dispatch([this, self = shared_from_this()]
 	{
 		if (!(state_ == State::Start))
-		return;
+		    return;
 
 		acceptor_->close();
 		// 모든 세션을 닫는다.
@@ -76,7 +76,7 @@ void TcpServer::Stop()
 
 		state_ = State::Stop;
 
-		BOOST_LOG_TRIVIAL(info) << "TcpServer stop";
+		BOOST_LOG_TRIVIAL(info) << "The tcp server stopped";
 	});
 }
 
@@ -117,7 +117,7 @@ inline void TcpServer::AcceptStart()
 			socket_.reset();
 			//accept_op_ = false;
 			//return;
-			BOOST_LOG_TRIVIAL(info) << "Session is full. max_session_count:" << config_.max_session_count;
+			BOOST_LOG_TRIVIAL(info) << "The tcp server session is full: max_session_count " << config_.max_session_count;
 		}
 		else if (!error)
 		{
@@ -147,7 +147,7 @@ inline void TcpServer::AcceptStart()
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(info) << "Accept error : " << error.message();
+			BOOST_LOG_TRIVIAL(info) << "The tcp server accept error: " << error.message();
 		}
 
 		// 새로운 접속을 받는다

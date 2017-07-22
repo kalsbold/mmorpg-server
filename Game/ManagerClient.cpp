@@ -2,12 +2,13 @@
 #include "ManagerClient.h"
 #include "protocol_ss_helper.h"
 
-using namespace ProtocolSS::Manager;
+namespace PSS = ProtocolSS;
 
-ManagerClient::ManagerClient(const net::ClientConfig& config, IServer* owner, ServerType type, std::string client_name)
+ManagerClient::ManagerClient(const net::ClientConfig& config, IServer* owner, std::string client_name, ServerType type)
 	: owner_(owner)
-	, type_(type)
+	, session_id_(0)
 	, name_(client_name)
+    , type_(type)
 {
 	net_client_ = net::NetClient::Create(config);
 	ios_loop_ = net_client_->GetIoServiceLoop();
@@ -38,6 +39,7 @@ void ManagerClient::Connect(const std::string& address, uint16_t port)
 	{
 		HandleMessage(buf, bytes);
 	});
+
 	// 메시지 핸들러 등록.
 	RegisterHandlers();
 
@@ -45,6 +47,7 @@ void ManagerClient::Connect(const std::string& address, uint16_t port)
 	auto& strand = net_client_->GetStrand();
 	update_timer_ = std::make_shared<timer_type>(strand.get_io_service());
 	ScheduleNextUpdate(clock_type::now(), TIME_STEP);
+
 	// 접속 시작.
 	net_client_->Connect(address, std::to_string(port));
 	
@@ -63,7 +66,7 @@ void ManagerClient::Wait()
 
 void ManagerClient::RequestGenerateCredential(int session_id, int account_uid)
 {
-	Request_GenerateCredentialT req_msg;
+    PSS::Request_GenerateCredentialT req_msg;
 	req_msg.session_id = session_id;
 	req_msg.account_uid = account_uid;
 
@@ -72,7 +75,7 @@ void ManagerClient::RequestGenerateCredential(int session_id, int account_uid)
 
 void ManagerClient::RequestVerifyCredential(int session_id, const uuid & credential)
 {
-	Request_VerifyCredentialT req_msg;
+    PSS::Request_VerifyCredentialT req_msg;
 	req_msg.session_id = session_id;
 	req_msg.credential = boost::uuids::to_string(credential);
 
@@ -81,7 +84,7 @@ void ManagerClient::RequestVerifyCredential(int session_id, const uuid & credent
 
 void ManagerClient::NotifyUserLogout(int account_uid)
 {
-	Notify_UserLogoutT req_msg;
+    PSS::Notify_UserLogoutT req_msg;
 	req_msg.account_uid = account_uid;
 
 	PSS::Send(*net_client_, req_msg);
@@ -92,7 +95,7 @@ void ManagerClient::HandleConnected(bool success)
 	if (success)
 	{
 		// Manager 연결 성공. 로그인 시도.
-		Request_LoginT msg;
+        PSS::Request_LoginT msg;
 		msg.client_name = GetName();
 		msg.client_type = (int)type_;
 		
@@ -101,14 +104,16 @@ void ManagerClient::HandleConnected(bool success)
 	else
 	{
 		// Manager 연결 실패.
-		OnLoginManagerServer(PSS::ErrorCode::LOGIN_CONNECTION_FAILED);
+        if (OnConnected)
+    		OnConnected(PSS::ErrorCode::LOGIN_CONNECTION_FAILED);
 	}
 }
 
 void ManagerClient::HandleDisconnected()
 {
 	// Manager 연결이 끊어짐.
-	OnDisconnectManagerServer();
+    if (OnDisconnected)
+    	OnDisconnected();
 }
 
 void ManagerClient::HandleMessage(const uint8_t * buf, size_t bytes)
@@ -158,21 +163,36 @@ void ManagerClient::ScheduleNextUpdate(const time_point & now, const duration & 
 
 void ManagerClient::RegisterHandlers()
 {
-	RegisterMessageHandler<Reply_Login>([this](const Reply_Login* message) {
-		OnLoginManagerServer(message->error_code());
+	RegisterMessageHandler<PSS::Reply_Login>([this](const PSS::Reply_Login* message)
+    {
+        SetSessionId(message->session_id());
+        if (OnConnected)
+            OnConnected(message->error_code());
 	});
-	RegisterMessageHandler<Reply_GenerateCredential>([this](const Reply_GenerateCredential* message) {
-		uuid credential = boost::uuids::string_generator()(message->credential()->c_str());
-		OnReplyGenerateCredential(message->session_id(), credential);
+	RegisterMessageHandler<PSS::Reply_GenerateCredential>([this](const PSS::Reply_GenerateCredential* message)
+    {
+        if (OnReplyGenerateCredential)
+    		OnReplyGenerateCredential(message);
 	});
-	RegisterMessageHandler<Reply_VerifyCredential>([this](const Reply_VerifyCredential* message) {
-        std::string str = message->credential()->c_str();
+	RegisterMessageHandler<PSS::Reply_VerifyCredential>([this](const PSS::Reply_VerifyCredential* message)
+    {
+        if (OnReplyVerifyCredential)
+            OnReplyVerifyCredential(message);
+	});
+    RegisterMessageHandler<PSS::Notify_ServerList>([this](const PSS::Notify_ServerList* message)
+    {
+        std::unordered_map<int, ServerInfo> server_list;
+        auto list = message->server_list();
+        for (size_t i = 0; i < list->Length(); i++)
+        {
+            auto* server_info = list->Get(i);
+            server_list.emplace(server_info->session_id(), ServerInfo{ server_info->session_id(), std::string(server_info->name()->c_str()), (ServerType)server_info->type() });
+#ifdef _DEBUG
+            auto& value = server_list[server_info->session_id()];
+            std::cout << "Server info -> session id:" << std::get<0>(value) << " server name:" << std::get<1>(value) << " server type:" << std::get<2>(value) << "\n";
+#endif // _DEBUG
+        }
 
-		OnReplyVerifyCredential(
-			message->error_code(),
-			message->session_id(),
-            boost::uuids::string_generator()(str),
-			message->account_uid()
-		);
-	});
+        server_list_.swap(server_list);
+    });
 }

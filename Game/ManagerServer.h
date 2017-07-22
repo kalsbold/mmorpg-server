@@ -15,7 +15,6 @@
 #include <boost\multi_index\hashed_index.hpp>
 #include <boost\multi_index\member.hpp>
 
-namespace PSS = ProtocolSS;
 
 // Manager 서버에 접속한 클라이언트
 class RemoteManagerClient : public RemoteClient
@@ -106,15 +105,16 @@ public:
 	const Ptr<RemoteManagerClient> GetRemoteClientByName(const std::string& name);
 
 	void NotifyUnauthedAccess(const Ptr<net::Session>& session);
+    void NotifyServerList(const Ptr<net::Session>& session);
 private:
 	// Network message handler type.
-	using MessageHandler = std::function<void(const Ptr<net::Session>&, const PSS::MessageRoot* message_root)>;
+	using MessageHandler = std::function<void(const Ptr<net::Session>&, const ProtocolSS::MessageRoot* message_root)>;
 
 	template <typename T, typename Handler>
 	void RegisterMessageHandler(Handler&& handler)
 	{
-		auto key = PSS::MessageTypeTraits<T>::enum_value;
-		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const PSS::MessageRoot* message_root)
+		auto key = ProtocolSS::MessageTypeTraits<T>::enum_value;
+		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const ProtocolSS::MessageRoot* message_root)
 		{
 			auto* message = message_root->message_as<T>();
 			handler(session, message);
@@ -141,10 +141,10 @@ private:
 	void HandleSessionOpened(const Ptr<net::Session>& session);
 	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);
 
-	void OnLogin(const Ptr<net::Session>& session, const PSS::Manager::Request_Login* message);
-	void OnGenerateCredential(const Ptr<net::Session>& session, const PSS::Manager::Request_GenerateCredential* message);
-	void OnVerifyCredential(const Ptr<net::Session>& session, const PSS::Manager::Request_VerifyCredential* message);
-	void OnUserLogout(const Ptr<net::Session>& session, const PSS::Manager::Notify_UserLogout* message);
+	void OnLogin(const Ptr<net::Session>& session, const ProtocolSS::Request_Login* message);
+	void OnGenerateCredential(const Ptr<net::Session>& session, const ProtocolSS::Request_GenerateCredential* message);
+	void OnVerifyCredential(const Ptr<net::Session>& session, const ProtocolSS::Request_VerifyCredential* message);
+	void OnUserLogout(const Ptr<net::Session>& session, const ProtocolSS::Notify_UserLogout* message);
 
 	std::mutex mutex_;
 	
@@ -158,8 +158,8 @@ private:
 
 	std::string name_;
 
-	std::map<PSS::MessageType, MessageHandler> message_handlers_;
-	std::map<int, Ptr<RemoteManagerClient>> remote_clients_;
+	std::unordered_map<ProtocolSS::MessageType, MessageHandler> message_handlers_;
+	std::unordered_map<int, Ptr<RemoteManagerClient>> remote_clients_;
 
 	UserSessionSet user_session_set_;
 };

@@ -7,8 +7,6 @@
 #include "IServer.h"
 #include "MySQL.h"
 
-namespace PCS = ProtocolCS;
-
 class ManagerClient;
 class RemoteLoginClient;
 
@@ -50,7 +48,7 @@ public:
 	void NotifyUnauthedAccess(const Ptr<net::Session>& session);
 private:
 	// Network message handler type.
-	using MessageHandler = std::function<void(const Ptr<net::Session>&, const PCS::MessageRoot* message_root)>;
+	using MessageHandler = std::function<void(const Ptr<net::Session>&, const ProtocolCS::MessageRoot* message_root)>;
 
     // 프레임 업데이트
     void DoUpdate(double delta_time) {}
@@ -60,9 +58,13 @@ private:
 	void RegisterMessageHandler(Handler&& handler)
 	{
 		auto key = PCS::MessageTypeTraits<T>::enum_value;
-		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const PCS::MessageRoot* message_root)
+		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const ProtocolCS::MessageRoot* message_root)
 		{
 			auto* message = message_root->message_as<T>();
+            if (message == nullptr)
+            {
+                BOOST_LOG_TRIVIAL(info) << "Can not cast message_type : " << ProtocolCS::EnumNameMessageType(ProtocolCS::MessageTypeTraits<T>::enum_value);
+            }
 			handler(session, message);
 		};
 
@@ -81,11 +83,11 @@ private:
 	void HandleSessionOpened(const Ptr<net::Session>& session);
 	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);
     // Message Handlers
-	void OnJoin(const Ptr<net::Session>& session, const PCS::Login::Request_Join* message);
-	void OnLogin(const Ptr<net::Session>& session, const PCS::Login::Request_Login* message);
-	void OnCreateHero(const Ptr<net::Session>& session, const PCS::Login::Request_CreateHero* message);
-	void OnHeroList(const Ptr<net::Session>& session, const PCS::Login::Request_HeroList* message);
-	void OnDeleteHero(const Ptr<net::Session>& session, const PCS::Login::Request_DeleteHero* message);
+	void OnJoin(const Ptr<net::Session>& session, const ProtocolCS::Login::Request_Join* message);
+	void OnLogin(const Ptr<net::Session>& session, const ProtocolCS::Login::Request_Login* message);
+	void OnCreateHero(const Ptr<net::Session>& session, const ProtocolCS::Login::Request_CreateHero* message);
+	void OnHeroList(const Ptr<net::Session>& session, const ProtocolCS::Login::Request_HeroList* message);
+	void OnDeleteHero(const Ptr<net::Session>& session, const ProtocolCS::Login::Request_DeleteHero* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();
@@ -103,6 +105,6 @@ private:
 	Ptr<MySQLPool> db_conn_;
 
 	std::string name_;
-	std::map<PCS::MessageType, MessageHandler> message_handlers_;
+	std::map<ProtocolCS::MessageType, MessageHandler> message_handlers_;
 	std::map<int, Ptr<RemoteLoginClient>> remote_clients_;
 };

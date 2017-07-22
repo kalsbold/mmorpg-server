@@ -6,7 +6,6 @@
 #include "Common.h"
 #include "protocol_ss_generated.h"
 
-namespace PSS = ProtocolSS;
 
 enum ServerType : int
 {
@@ -22,9 +21,10 @@ class IServer;
 class ManagerClient
 {
 public:
-	ManagerClient(const net::ClientConfig& config, IServer* owner, ServerType type, std::string client_name);
+	ManagerClient(const net::ClientConfig& config, IServer* owner, std::string client_name, ServerType type);
 	virtual ~ManagerClient();
 
+    int GetSessionId() { return session_id_; }
     // 클라이언트 이름.
 	std::string GetName() { return name_; }
 	// 접속.
@@ -43,14 +43,16 @@ public:
     // 유저의 로그아웃을 통지.
 	void NotifyUserLogout(int account_uid);
 
-	std::function<void(PSS::ErrorCode error)> OnLoginManagerServer;
-	std::function<void()> OnDisconnectManagerServer;
-	std::function<void(int session_id, const uuid& credential)> OnReplyGenerateCredential;
-	std::function<void(PSS::ErrorCode error, int session_id, const uuid& credential, int account_uid)> OnReplyVerifyCredential;
+	std::function<void(ProtocolSS::ErrorCode)> OnConnected;
+	std::function<void()> OnDisconnected;
+	std::function<void(const ProtocolSS::Reply_GenerateCredential*)> OnReplyGenerateCredential;
+	std::function<void(const ProtocolSS::Reply_VerifyCredential*)> OnReplyVerifyCredential;
 
 private:
     // Network message handler type.
-    using MessageHandler = std::function<void(const PSS::MessageRoot* message_root)>;
+    using MessageHandler = std::function<void(const ProtocolSS::MessageRoot* message_root)>;
+
+    void SetSessionId(int session_id) { session_id_ = session_id; }
 
     // 프레임 업데이트
     void DoUpdate(double delta_time) {};
@@ -59,10 +61,14 @@ private:
     template <typename T, typename Handler>
     void RegisterMessageHandler(Handler&& handler)
     {
-        auto key = PSS::MessageTypeTraits<T>::enum_value;
-        auto func = [handler = std::forward<Handler>(handler)](const PSS::MessageRoot* message_root)
+        auto key = ProtocolSS::MessageTypeTraits<T>::enum_value;
+        auto func = [handler = std::forward<Handler>(handler)](const ProtocolSS::MessageRoot* message_root)
         {
             auto* message = message_root->message_as<T>();
+            if (message == nullptr)
+            {
+                BOOST_LOG_TRIVIAL(info) << "Can not cast message_type : " << ProtocolSS::EnumNameMessageType(ProtocolSS::MessageTypeTraits<T>::enum_value);
+            }
             handler(message);
         };
 
@@ -81,12 +87,16 @@ private:
 	Ptr<net::IoServiceLoop> ios_loop_;
 	Ptr<net::NetClient> net_client_;
 	Ptr<timer_type> update_timer_;
+	
+	std::map<ProtocolSS::MessageType, MessageHandler> message_handlers_;
 
-	IServer*	owner_;
-	ServerType	type_;
-	std::string name_;
+    IServer*	owner_;
 
-	std::map<PSS::MessageType, MessageHandler> message_handlers_;
-
-	// TO DO : Manager 서버에 접속해 있는 다른 Manager 클라이언트들 정보.
+    int         session_id_;
+    std::string name_;
+    ServerType	type_;
+    
+	// Manager 서버에 접속해 있는 다른 Manager 클라이언트들 정보.
+    using ServerInfo = std::tuple<int, std::string, ServerType>;
+    std::unordered_map<int, ServerInfo> server_list_;
 };

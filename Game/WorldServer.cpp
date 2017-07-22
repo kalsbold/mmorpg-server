@@ -12,6 +12,8 @@
 
 namespace fb = flatbuffers;
 namespace db = db_schema;
+namespace PSS = ProtocolSS;
+namespace PCS = ProtocolCS;
 
 WorldServer::WorldServer()
 {
@@ -78,7 +80,7 @@ void WorldServer::Run()
     client_config.min_receive_size = settings.min_receive_size;
     client_config.max_receive_buffer_size = settings.max_receive_buffer_size;
     client_config.no_delay = settings.no_delay;
-    manager_client_ = std::make_shared<ManagerClient>(client_config, this, ServerType::Login_Server, GetName());
+    manager_client_ = std::make_shared<ManagerClient>(client_config, this,GetName(), ServerType::World_Server);
     // 클라이언트 에 메시지 핸들러 등록.
     RegisterManagerClientHandlers();
     // Manager 서버에 연결 시작.
@@ -381,7 +383,7 @@ void WorldServer::RegisterHandlers()
 
 void WorldServer::RegisterManagerClientHandlers()
 {
-    manager_client_->OnLoginManagerServer = [this](PSS::ErrorCode ec) {
+    manager_client_->OnConnected = [this](PSS::ErrorCode ec) {
         if (PSS::ErrorCode::OK == ec)
         {
             BOOST_LOG_TRIVIAL(info) << "Connection the Manager Server is successful.";
@@ -394,13 +396,18 @@ void WorldServer::RegisterManagerClientHandlers()
         }
     };
 
-    manager_client_->OnDisconnectManagerServer = [this]() {
+    manager_client_->OnDisconnected = [this]() {
         //  Manager 서버와 연결이 끊어 지면 종료 한다.
         BOOST_LOG_TRIVIAL(info) << "Manager Server is disconnected.";
         Stop();
     };
 
-    manager_client_->OnReplyVerifyCredential = [this](PSS::ErrorCode error_code, int session_id, const uuid& credential, int account_uid) {
+    manager_client_->OnReplyVerifyCredential = [this](const PSS::Reply_VerifyCredential* message)
+    {    
+        auto error_code = message->error_code();
+        int session_id = message->session_id();
+        int account_uid = message->account_uid();
+        uuid credential = boost::uuids::string_generator()(message->credential()->c_str());
 
         auto rc = GetRemoteClient(session_id);
         if (!rc) return;

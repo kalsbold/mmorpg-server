@@ -7,8 +7,6 @@
 #include "IServer.h"
 #include "MySQL.h"
 
-namespace PCS = ProtocolCS;
-
 class ManagerClient;
 class RemoteWorldClient;
 class World;
@@ -54,7 +52,7 @@ public:
 
 private:
 	// Network message handler type.
-	using MessageHandler = std::function<void(const Ptr<net::Session>&, const PCS::MessageRoot* message_root)>;
+	using MessageHandler = std::function<void(const Ptr<net::Session>&, const ProtocolCS::MessageRoot* message_root)>;
     
     // 프레임 업데이트
     void DoUpdate(double delta_time);
@@ -66,13 +64,13 @@ private:
 	template <typename T, typename Handler>
 	void RegisterMessageHandler(Handler&& handler)
 	{
-		auto key = PCS::MessageTypeTraits<T>::enum_value;
-		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const PCS::MessageRoot* message_root)
+		auto key = ProtocolCS::MessageTypeTraits<T>::enum_value;
+		auto func = [handler = std::forward<Handler>(handler)](const Ptr<net::Session>& session, const ProtocolCS::MessageRoot* message_root)
 		{
 			auto* message = message_root->message_as<T>();
             if (message == nullptr)
             {
-                BOOST_LOG_TRIVIAL(info) << "Can not cast message_type : " << PCS::EnumNameMessageType(PCS::MessageTypeTraits<T>::enum_value);
+                BOOST_LOG_TRIVIAL(info) << "Can not cast message_type : " << ProtocolCS::EnumNameMessageType(ProtocolCS::MessageTypeTraits<T>::enum_value);
             }
             
 			handler(session, message);
@@ -93,12 +91,12 @@ private:
 	void HandleSessionOpened(const Ptr<net::Session>& session);
 	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);   
     // Message Handlers
-	void OnLogin(const Ptr<net::Session>& session, const PCS::World::Request_Login* message);
-    void OnLoadFinish(const Ptr<net::Session>& session, const PCS::World::Notify_LoadFinish* message);
-    void OnActionMove(const Ptr<net::Session>& session, const PCS::World::Request_ActionMove* message);
-	void OnActionSkill(const Ptr<net::Session>& session, const PCS::World::Request_ActionSkill* message);
-    void OnRespawn(const Ptr<net::Session>& session, const PCS::World::Request_Respawn* message);
-    void OnEnterGate(const Ptr<net::Session>& session, const PCS::World::Request_EnterGate* message);
+	void OnLogin(const Ptr<net::Session>& session, const ProtocolCS::World::Request_Login* message);
+    void OnLoadFinish(const Ptr<net::Session>& session, const ProtocolCS::World::Notify_LoadFinish* message);
+    void OnActionMove(const Ptr<net::Session>& session, const ProtocolCS::World::Request_ActionMove* message);
+	void OnActionSkill(const Ptr<net::Session>& session, const ProtocolCS::World::Request_ActionSkill* message);
+    void OnRespawn(const Ptr<net::Session>& session, const ProtocolCS::World::Request_Respawn* message);
+    void OnEnterGate(const Ptr<net::Session>& session, const ProtocolCS::World::Request_EnterGate* message);
 
 	// ManagerClient Handlers=======================================================================================
 	void RegisterManagerClientHandlers();
@@ -114,7 +112,7 @@ private:
 	Ptr<timer_type> update_timer_;
 
 	std::string name_;
-	std::map<PCS::MessageType, MessageHandler> message_handlers_;
+	std::map<ProtocolCS::MessageType, MessageHandler> message_handlers_;
 	std::map<int, Ptr<RemoteWorldClient>> remote_clients_;
 
 	Ptr<World> world_;

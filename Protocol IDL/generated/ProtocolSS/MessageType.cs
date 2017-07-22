@@ -9,13 +9,15 @@ public enum MessageType : byte
 {
  NONE = 0,
  Notify_UnauthedAccess = 1,
- Manager_Request_Login = 2,
- Manager_Reply_Login = 3,
- Manager_Request_GenerateCredential = 4,
- Manager_Reply_GenerateCredential = 5,
- Manager_Request_VerifyCredential = 6,
- Manager_Reply_VerifyCredential = 7,
- Manager_Notify_UserLogout = 8,
+ Request_Login = 2,
+ Reply_Login = 3,
+ Request_GenerateCredential = 4,
+ Reply_GenerateCredential = 5,
+ Request_VerifyCredential = 6,
+ Reply_VerifyCredential = 7,
+ Notify_UserLogout = 8,
+ Notify_ServerList = 9,
+ RelayMessage = 10,
 };
 
 

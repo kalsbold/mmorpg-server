@@ -18,9 +18,6 @@ enum ErrorCode : int {
 table Notify_UnauthedAccess {
 }
 
-
-namespace ProtocolSS.Manager;
-
 // Authentication ===================================
 // 하위 서버의 로그인
 table Request_Login {
@@ -30,6 +27,7 @@ table Request_Login {
 // 로그인 결과
 table Reply_Login {
     error_code:ErrorCode;
+    session_id:int;
 }
 
 // 새 인증키를 만든다
@@ -56,9 +54,33 @@ table Reply_VerifyCredential {
 //table Notify_RemoveCredential {
 //    credential:string;
 //}
+
 // 유저 로그아웃
 table Notify_UserLogout {
     account_uid:int;
+}
+// 서버 정보
+table ServerInfo {
+    session_id:int;
+    name:string;
+    type:int;
+}
+// 서버 리스트 통보
+table Notify_ServerList {
+    server_list:[ServerInfo];
+}
+
+// Relay Message ===================================
+table TestRelay{}
+
+union RelayMessageType {
+    TestRelay,
+}
+
+table RelayMessage {
+    from_id:int;
+    to_id:[int];
+    relay_message:RelayMessageType;
 }
 
 namespace ProtocolSS;
@@ -66,14 +88,16 @@ namespace ProtocolSS;
 // 메시지 타입을 정의 한다 ================================================
 union MessageType {
     Notify_UnauthedAccess,
-    Manager.Request_Login,
-    Manager.Reply_Login,
-    Manager.Request_GenerateCredential,
-    Manager.Reply_GenerateCredential,
-    Manager.Request_VerifyCredential,
-    Manager.Reply_VerifyCredential,
+    Request_Login,
+    Reply_Login,
+    Request_GenerateCredential,
+    Reply_GenerateCredential,
+    Request_VerifyCredential,
+    Reply_VerifyCredential,
     //Manager.Notify_RemoveCredential,
-    Manager.Notify_UserLogout
+    Notify_UserLogout,
+    Notify_ServerList,
+    RelayMessage,
 }
 
 // 기본 네트워크 메시지 =================================================================
