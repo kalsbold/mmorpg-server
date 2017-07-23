@@ -66,6 +66,8 @@ void ManagerClient::Wait()
 
 void ManagerClient::RequestGenerateCredential(int session_id, int account_uid)
 {
+    if (GetSessionId() == 0) return;
+
     PSS::Request_GenerateCredentialT req_msg;
 	req_msg.session_id = session_id;
 	req_msg.account_uid = account_uid;
@@ -75,6 +77,8 @@ void ManagerClient::RequestGenerateCredential(int session_id, int account_uid)
 
 void ManagerClient::RequestVerifyCredential(int session_id, const uuid & credential)
 {
+    if (GetSessionId() == 0) return;
+
     PSS::Request_VerifyCredentialT req_msg;
 	req_msg.session_id = session_id;
 	req_msg.credential = boost::uuids::to_string(credential);
@@ -84,6 +88,8 @@ void ManagerClient::RequestVerifyCredential(int session_id, const uuid & credent
 
 void ManagerClient::NotifyUserLogout(int account_uid)
 {
+    if (GetSessionId() == 0) return;
+
     PSS::Notify_UserLogoutT req_msg;
 	req_msg.account_uid = account_uid;
 
@@ -163,22 +169,28 @@ void ManagerClient::ScheduleNextUpdate(const time_point & now, const duration & 
 
 void ManagerClient::RegisterHandlers()
 {
-	RegisterMessageHandler<PSS::Reply_Login>([this](const PSS::Reply_Login* message)
+    RegisterMessageHandler<PSS::RelayMessage>([this](const PSS::RelayMessage* message)
+    {
+        if (OnRelayMessage)
+            OnRelayMessage(message);
+    });
+    RegisterMessageHandler<PSS::Reply_Login>([this](const PSS::Reply_Login* message)
     {
         SetSessionId(message->session_id());
+
         if (OnConnected)
             OnConnected(message->error_code());
-	});
-	RegisterMessageHandler<PSS::Reply_GenerateCredential>([this](const PSS::Reply_GenerateCredential* message)
+    });
+    RegisterMessageHandler<PSS::Reply_GenerateCredential>([this](const PSS::Reply_GenerateCredential* message)
     {
         if (OnReplyGenerateCredential)
-    		OnReplyGenerateCredential(message);
-	});
-	RegisterMessageHandler<PSS::Reply_VerifyCredential>([this](const PSS::Reply_VerifyCredential* message)
+            OnReplyGenerateCredential(message);
+    });
+    RegisterMessageHandler<PSS::Reply_VerifyCredential>([this](const PSS::Reply_VerifyCredential* message)
     {
         if (OnReplyVerifyCredential)
             OnReplyVerifyCredential(message);
-	});
+    });
     RegisterMessageHandler<PSS::Notify_ServerList>([this](const PSS::Notify_ServerList* message)
     {
         std::unordered_map<int, ServerInfo> server_list;
@@ -189,10 +201,11 @@ void ManagerClient::RegisterHandlers()
             server_list.emplace(server_info->session_id(), ServerInfo{ server_info->session_id(), std::string(server_info->name()->c_str()), (ServerType)server_info->type() });
 #ifdef _DEBUG
             auto& value = server_list[server_info->session_id()];
-            std::cout << "Server info -> session id:" << std::get<0>(value) << " server name:" << std::get<1>(value) << " server type:" << std::get<2>(value) << "\n";
+            BOOST_LOG_TRIVIAL(debug) << "Server info -> session id:" << std::get<0>(value) << " server name:" << std::get<1>(value) << " server type:" << std::get<2>(value) << "\n";
 #endif // _DEBUG
         }
 
+        std::lock_guard<std::mutex> guard(mutex_);
         server_list_.swap(server_list);
     });
 }

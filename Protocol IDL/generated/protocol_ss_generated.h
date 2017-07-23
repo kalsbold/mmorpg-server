@@ -8,6 +8,9 @@
 
 namespace ProtocolSS {
 
+struct TestMessage;
+struct TestMessageT;
+
 struct Notify_UnauthedAccess;
 struct Notify_UnauthedAccessT;
 
@@ -38,9 +41,6 @@ struct ServerInfoT;
 struct Notify_ServerList;
 struct Notify_ServerListT;
 
-struct TestRelay;
-struct TestRelayT;
-
 struct RelayMessage;
 struct RelayMessageT;
 
@@ -61,92 +61,28 @@ enum class ErrorCode : int32_t {
   MAX = VERIFY_CREDENTIAL_FAILED
 };
 
-enum class RelayMessageType : uint8_t {
-  NONE = 0,
-  TestRelay = 1,
-  MIN = NONE,
-  MAX = TestRelay
-};
-
-inline const char **EnumNamesRelayMessageType() {
-  static const char *names[] = {
-    "NONE",
-    "TestRelay",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameRelayMessageType(RelayMessageType e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesRelayMessageType()[index];
-}
-
-template<typename T> struct RelayMessageTypeTraits {
-  static const RelayMessageType enum_value = RelayMessageType::NONE;
-};
-
-template<> struct RelayMessageTypeTraits<TestRelay> {
-  static const RelayMessageType enum_value = RelayMessageType::TestRelay;
-};
-
-struct RelayMessageTypeUnion {
-  RelayMessageType type;
-  void *value;
-
-  RelayMessageTypeUnion() : type(RelayMessageType::NONE), value(nullptr) {}
-  RelayMessageTypeUnion(RelayMessageTypeUnion&& u) FLATBUFFERS_NOEXCEPT :
-    type(RelayMessageType::NONE), value(nullptr)
-    { std::swap(type, u.type); std::swap(value, u.value); }
-  RelayMessageTypeUnion(const RelayMessageTypeUnion &) FLATBUFFERS_NOEXCEPT;
-  RelayMessageTypeUnion &operator=(const RelayMessageTypeUnion &u) FLATBUFFERS_NOEXCEPT
-    { RelayMessageTypeUnion t(u); std::swap(type, t.type); std::swap(value, t.value); return *this; }
-  RelayMessageTypeUnion &operator=(RelayMessageTypeUnion &&u) FLATBUFFERS_NOEXCEPT
-    { std::swap(type, u.type); std::swap(value, u.value); return *this; }
-  ~RelayMessageTypeUnion() { Reset(); }
-
-  void Reset();
-
-  template <typename T>
-  void Set(T&& val) {
-    Reset();
-    type = RelayMessageTypeTraits<typename T::TableType>::enum_value;
-    if (type != RelayMessageType::NONE) {
-      value = new T(std::forward<T>(val));
-    }
-  }
-
-  static void *UnPack(const void *obj, RelayMessageType type, const flatbuffers::resolver_function_t *resolver);
-  flatbuffers::Offset<void> Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher = nullptr) const;
-
-  TestRelayT *AsTestRelay() {
-    return type == RelayMessageType::TestRelay ?
-      reinterpret_cast<TestRelayT *>(value) : nullptr;
-  }
-};
-
-bool VerifyRelayMessageType(flatbuffers::Verifier &verifier, const void *obj, RelayMessageType type);
-bool VerifyRelayMessageTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
-
 enum class MessageType : uint8_t {
   NONE = 0,
-  Notify_UnauthedAccess = 1,
-  Request_Login = 2,
-  Reply_Login = 3,
-  Request_GenerateCredential = 4,
-  Reply_GenerateCredential = 5,
-  Request_VerifyCredential = 6,
-  Reply_VerifyCredential = 7,
-  Notify_UserLogout = 8,
-  Notify_ServerList = 9,
-  RelayMessage = 10,
+  RelayMessage = 1,
+  TestMessage = 2,
+  Notify_UnauthedAccess = 3,
+  Request_Login = 4,
+  Reply_Login = 5,
+  Request_GenerateCredential = 6,
+  Reply_GenerateCredential = 7,
+  Request_VerifyCredential = 8,
+  Reply_VerifyCredential = 9,
+  Notify_UserLogout = 10,
+  Notify_ServerList = 11,
   MIN = NONE,
-  MAX = RelayMessage
+  MAX = Notify_ServerList
 };
 
 inline const char **EnumNamesMessageType() {
   static const char *names[] = {
     "NONE",
+    "RelayMessage",
+    "TestMessage",
     "Notify_UnauthedAccess",
     "Request_Login",
     "Reply_Login",
@@ -156,7 +92,6 @@ inline const char **EnumNamesMessageType() {
     "Reply_VerifyCredential",
     "Notify_UserLogout",
     "Notify_ServerList",
-    "RelayMessage",
     nullptr
   };
   return names;
@@ -169,6 +104,14 @@ inline const char *EnumNameMessageType(MessageType e) {
 
 template<typename T> struct MessageTypeTraits {
   static const MessageType enum_value = MessageType::NONE;
+};
+
+template<> struct MessageTypeTraits<RelayMessage> {
+  static const MessageType enum_value = MessageType::RelayMessage;
+};
+
+template<> struct MessageTypeTraits<ProtocolSS::TestMessage> {
+  static const MessageType enum_value = MessageType::TestMessage;
 };
 
 template<> struct MessageTypeTraits<ProtocolSS::Notify_UnauthedAccess> {
@@ -207,10 +150,6 @@ template<> struct MessageTypeTraits<ProtocolSS::Notify_ServerList> {
   static const MessageType enum_value = MessageType::Notify_ServerList;
 };
 
-template<> struct MessageTypeTraits<ProtocolSS::RelayMessage> {
-  static const MessageType enum_value = MessageType::RelayMessage;
-};
-
 struct MessageTypeUnion {
   MessageType type;
   void *value;
@@ -240,6 +179,14 @@ struct MessageTypeUnion {
   static void *UnPack(const void *obj, MessageType type, const flatbuffers::resolver_function_t *resolver);
   flatbuffers::Offset<void> Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher = nullptr) const;
 
+  RelayMessageT *AsRelayMessage() {
+    return type == MessageType::RelayMessage ?
+      reinterpret_cast<RelayMessageT *>(value) : nullptr;
+  }
+  ProtocolSS::TestMessageT *AsTestMessage() {
+    return type == MessageType::TestMessage ?
+      reinterpret_cast<ProtocolSS::TestMessageT *>(value) : nullptr;
+  }
   ProtocolSS::Notify_UnauthedAccessT *AsNotify_UnauthedAccess() {
     return type == MessageType::Notify_UnauthedAccess ?
       reinterpret_cast<ProtocolSS::Notify_UnauthedAccessT *>(value) : nullptr;
@@ -276,14 +223,75 @@ struct MessageTypeUnion {
     return type == MessageType::Notify_ServerList ?
       reinterpret_cast<ProtocolSS::Notify_ServerListT *>(value) : nullptr;
   }
-  ProtocolSS::RelayMessageT *AsRelayMessage() {
-    return type == MessageType::RelayMessage ?
-      reinterpret_cast<ProtocolSS::RelayMessageT *>(value) : nullptr;
-  }
 };
 
 bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, MessageType type);
 bool VerifyMessageTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
+
+struct TestMessageT : public flatbuffers::NativeTable {
+  typedef TestMessage TableType;
+  std::string str_msg;
+  TestMessageT() {
+  }
+};
+
+struct TestMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TestMessageT NativeTableType;
+  enum {
+    VT_STR_MSG = 4
+  };
+  const flatbuffers::String *str_msg() const {
+    return GetPointer<const flatbuffers::String *>(VT_STR_MSG);
+  }
+  flatbuffers::String *mutable_str_msg() {
+    return GetPointer<flatbuffers::String *>(VT_STR_MSG);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_STR_MSG) &&
+           verifier.Verify(str_msg()) &&
+           verifier.EndTable();
+  }
+  TestMessageT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TestMessageT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<TestMessage> Pack(flatbuffers::FlatBufferBuilder &_fbb, const TestMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct TestMessageBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_str_msg(flatbuffers::Offset<flatbuffers::String> str_msg) {
+    fbb_.AddOffset(TestMessage::VT_STR_MSG, str_msg);
+  }
+  TestMessageBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TestMessageBuilder &operator=(const TestMessageBuilder &);
+  flatbuffers::Offset<TestMessage> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<TestMessage>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TestMessage> CreateTestMessage(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> str_msg = 0) {
+  TestMessageBuilder builder_(_fbb);
+  builder_.add_str_msg(str_msg);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TestMessage> CreateTestMessageDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *str_msg = nullptr) {
+  return ProtocolSS::CreateTestMessage(
+      _fbb,
+      str_msg ? _fbb.CreateString(str_msg) : 0);
+}
+
+flatbuffers::Offset<TestMessage> CreateTestMessage(flatbuffers::FlatBufferBuilder &_fbb, const TestMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct Notify_UnauthedAccessT : public flatbuffers::NativeTable {
   typedef Notify_UnauthedAccess TableType;
@@ -1053,181 +1061,36 @@ inline flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerListDirect(
 
 flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerList(flatbuffers::FlatBufferBuilder &_fbb, const Notify_ServerListT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct TestRelayT : public flatbuffers::NativeTable {
-  typedef TestRelay TableType;
-  TestRelayT() {
-  }
-};
-
-struct TestRelay FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef TestRelayT NativeTableType;
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           verifier.EndTable();
-  }
-  TestRelayT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TestRelayT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<TestRelay> Pack(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-struct TestRelayBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  TestRelayBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  TestRelayBuilder &operator=(const TestRelayBuilder &);
-  flatbuffers::Offset<TestRelay> Finish() {
-    const auto end = fbb_.EndTable(start_, 0);
-    auto o = flatbuffers::Offset<TestRelay>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<TestRelay> CreateTestRelay(
-    flatbuffers::FlatBufferBuilder &_fbb) {
-  TestRelayBuilder builder_(_fbb);
-  return builder_.Finish();
-}
-
-flatbuffers::Offset<TestRelay> CreateTestRelay(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
 struct RelayMessageT : public flatbuffers::NativeTable {
   typedef RelayMessage TableType;
-  int32_t from_id;
-  std::vector<int32_t> to_id;
-  RelayMessageTypeUnion relay_message;
+  int32_t source_id;
+  std::vector<int32_t> destinations_id;
+  MessageTypeUnion message;
   RelayMessageT()
-      : from_id(0) {
+      : source_id(0) {
   }
 };
 
 struct RelayMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef RelayMessageT NativeTableType;
   enum {
-    VT_FROM_ID = 4,
-    VT_TO_ID = 6,
-    VT_RELAY_MESSAGE_TYPE = 8,
-    VT_RELAY_MESSAGE = 10
+    VT_SOURCE_ID = 4,
+    VT_DESTINATIONS_ID = 6,
+    VT_MESSAGE_TYPE = 8,
+    VT_MESSAGE = 10
   };
-  int32_t from_id() const {
-    return GetField<int32_t>(VT_FROM_ID, 0);
+  int32_t source_id() const {
+    return GetField<int32_t>(VT_SOURCE_ID, 0);
   }
-  bool mutate_from_id(int32_t _from_id) {
-    return SetField<int32_t>(VT_FROM_ID, _from_id, 0);
+  bool mutate_source_id(int32_t _source_id) {
+    return SetField<int32_t>(VT_SOURCE_ID, _source_id, 0);
   }
-  const flatbuffers::Vector<int32_t> *to_id() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_TO_ID);
+  const flatbuffers::Vector<int32_t> *destinations_id() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DESTINATIONS_ID);
   }
-  flatbuffers::Vector<int32_t> *mutable_to_id() {
-    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_TO_ID);
+  flatbuffers::Vector<int32_t> *mutable_destinations_id() {
+    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_DESTINATIONS_ID);
   }
-  RelayMessageType relay_message_type() const {
-    return static_cast<RelayMessageType>(GetField<uint8_t>(VT_RELAY_MESSAGE_TYPE, 0));
-  }
-  bool mutate_relay_message_type(RelayMessageType _relay_message_type) {
-    return SetField<uint8_t>(VT_RELAY_MESSAGE_TYPE, static_cast<uint8_t>(_relay_message_type), 0);
-  }
-  const void *relay_message() const {
-    return GetPointer<const void *>(VT_RELAY_MESSAGE);
-  }
-  template<typename T> const T *relay_message_as() const;
-  const TestRelay *relay_message_as_TestRelay() const {
-    return relay_message_type() == RelayMessageType::TestRelay ? static_cast<const TestRelay *>(relay_message()) : nullptr;
-  }
-  void *mutable_relay_message() {
-    return GetPointer<void *>(VT_RELAY_MESSAGE);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_FROM_ID) &&
-           VerifyOffset(verifier, VT_TO_ID) &&
-           verifier.Verify(to_id()) &&
-           VerifyField<uint8_t>(verifier, VT_RELAY_MESSAGE_TYPE) &&
-           VerifyOffset(verifier, VT_RELAY_MESSAGE) &&
-           VerifyRelayMessageType(verifier, relay_message(), relay_message_type()) &&
-           verifier.EndTable();
-  }
-  RelayMessageT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(RelayMessageT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<RelayMessage> Pack(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-};
-
-template<> inline const TestRelay *RelayMessage::relay_message_as<TestRelay>() const {
-  return relay_message_as_TestRelay();
-}
-
-struct RelayMessageBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_from_id(int32_t from_id) {
-    fbb_.AddElement<int32_t>(RelayMessage::VT_FROM_ID, from_id, 0);
-  }
-  void add_to_id(flatbuffers::Offset<flatbuffers::Vector<int32_t>> to_id) {
-    fbb_.AddOffset(RelayMessage::VT_TO_ID, to_id);
-  }
-  void add_relay_message_type(RelayMessageType relay_message_type) {
-    fbb_.AddElement<uint8_t>(RelayMessage::VT_RELAY_MESSAGE_TYPE, static_cast<uint8_t>(relay_message_type), 0);
-  }
-  void add_relay_message(flatbuffers::Offset<void> relay_message) {
-    fbb_.AddOffset(RelayMessage::VT_RELAY_MESSAGE, relay_message);
-  }
-  RelayMessageBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  RelayMessageBuilder &operator=(const RelayMessageBuilder &);
-  flatbuffers::Offset<RelayMessage> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<RelayMessage>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<RelayMessage> CreateRelayMessage(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t from_id = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> to_id = 0,
-    RelayMessageType relay_message_type = RelayMessageType::NONE,
-    flatbuffers::Offset<void> relay_message = 0) {
-  RelayMessageBuilder builder_(_fbb);
-  builder_.add_relay_message(relay_message);
-  builder_.add_to_id(to_id);
-  builder_.add_from_id(from_id);
-  builder_.add_relay_message_type(relay_message_type);
-  return builder_.Finish();
-}
-
-inline flatbuffers::Offset<RelayMessage> CreateRelayMessageDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t from_id = 0,
-    const std::vector<int32_t> *to_id = nullptr,
-    RelayMessageType relay_message_type = RelayMessageType::NONE,
-    flatbuffers::Offset<void> relay_message = 0) {
-  return ProtocolSS::CreateRelayMessage(
-      _fbb,
-      from_id,
-      to_id ? _fbb.CreateVector<int32_t>(*to_id) : 0,
-      relay_message_type,
-      relay_message);
-}
-
-flatbuffers::Offset<RelayMessage> CreateRelayMessage(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
-
-struct MessageRootT : public flatbuffers::NativeTable {
-  typedef MessageRoot TableType;
-  MessageTypeUnion message;
-  MessageRootT() {
-  }
-};
-
-struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef MessageRootT NativeTableType;
-  enum {
-    VT_MESSAGE_TYPE = 4,
-    VT_MESSAGE = 6
-  };
   MessageType message_type() const {
     return static_cast<MessageType>(GetField<uint8_t>(VT_MESSAGE_TYPE, 0));
   }
@@ -1238,6 +1101,12 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const void *>(VT_MESSAGE);
   }
   template<typename T> const T *message_as() const;
+  const RelayMessage *message_as_RelayMessage() const {
+    return message_type() == MessageType::RelayMessage ? static_cast<const RelayMessage *>(message()) : nullptr;
+  }
+  const ProtocolSS::TestMessage *message_as_TestMessage() const {
+    return message_type() == MessageType::TestMessage ? static_cast<const ProtocolSS::TestMessage *>(message()) : nullptr;
+  }
   const ProtocolSS::Notify_UnauthedAccess *message_as_Notify_UnauthedAccess() const {
     return message_type() == MessageType::Notify_UnauthedAccess ? static_cast<const ProtocolSS::Notify_UnauthedAccess *>(message()) : nullptr;
   }
@@ -1265,8 +1134,180 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const ProtocolSS::Notify_ServerList *message_as_Notify_ServerList() const {
     return message_type() == MessageType::Notify_ServerList ? static_cast<const ProtocolSS::Notify_ServerList *>(message()) : nullptr;
   }
-  const ProtocolSS::RelayMessage *message_as_RelayMessage() const {
-    return message_type() == MessageType::RelayMessage ? static_cast<const ProtocolSS::RelayMessage *>(message()) : nullptr;
+  void *mutable_message() {
+    return GetPointer<void *>(VT_MESSAGE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_SOURCE_ID) &&
+           VerifyOffset(verifier, VT_DESTINATIONS_ID) &&
+           verifier.Verify(destinations_id()) &&
+           VerifyField<uint8_t>(verifier, VT_MESSAGE_TYPE) &&
+           VerifyOffset(verifier, VT_MESSAGE) &&
+           VerifyMessageType(verifier, message(), message_type()) &&
+           verifier.EndTable();
+  }
+  RelayMessageT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(RelayMessageT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<RelayMessage> Pack(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+template<> inline const RelayMessage *RelayMessage::message_as<RelayMessage>() const {
+  return message_as_RelayMessage();
+}
+
+template<> inline const ProtocolSS::TestMessage *RelayMessage::message_as<ProtocolSS::TestMessage>() const {
+  return message_as_TestMessage();
+}
+
+template<> inline const ProtocolSS::Notify_UnauthedAccess *RelayMessage::message_as<ProtocolSS::Notify_UnauthedAccess>() const {
+  return message_as_Notify_UnauthedAccess();
+}
+
+template<> inline const ProtocolSS::Request_Login *RelayMessage::message_as<ProtocolSS::Request_Login>() const {
+  return message_as_Request_Login();
+}
+
+template<> inline const ProtocolSS::Reply_Login *RelayMessage::message_as<ProtocolSS::Reply_Login>() const {
+  return message_as_Reply_Login();
+}
+
+template<> inline const ProtocolSS::Request_GenerateCredential *RelayMessage::message_as<ProtocolSS::Request_GenerateCredential>() const {
+  return message_as_Request_GenerateCredential();
+}
+
+template<> inline const ProtocolSS::Reply_GenerateCredential *RelayMessage::message_as<ProtocolSS::Reply_GenerateCredential>() const {
+  return message_as_Reply_GenerateCredential();
+}
+
+template<> inline const ProtocolSS::Request_VerifyCredential *RelayMessage::message_as<ProtocolSS::Request_VerifyCredential>() const {
+  return message_as_Request_VerifyCredential();
+}
+
+template<> inline const ProtocolSS::Reply_VerifyCredential *RelayMessage::message_as<ProtocolSS::Reply_VerifyCredential>() const {
+  return message_as_Reply_VerifyCredential();
+}
+
+template<> inline const ProtocolSS::Notify_UserLogout *RelayMessage::message_as<ProtocolSS::Notify_UserLogout>() const {
+  return message_as_Notify_UserLogout();
+}
+
+template<> inline const ProtocolSS::Notify_ServerList *RelayMessage::message_as<ProtocolSS::Notify_ServerList>() const {
+  return message_as_Notify_ServerList();
+}
+
+struct RelayMessageBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_source_id(int32_t source_id) {
+    fbb_.AddElement<int32_t>(RelayMessage::VT_SOURCE_ID, source_id, 0);
+  }
+  void add_destinations_id(flatbuffers::Offset<flatbuffers::Vector<int32_t>> destinations_id) {
+    fbb_.AddOffset(RelayMessage::VT_DESTINATIONS_ID, destinations_id);
+  }
+  void add_message_type(MessageType message_type) {
+    fbb_.AddElement<uint8_t>(RelayMessage::VT_MESSAGE_TYPE, static_cast<uint8_t>(message_type), 0);
+  }
+  void add_message(flatbuffers::Offset<void> message) {
+    fbb_.AddOffset(RelayMessage::VT_MESSAGE, message);
+  }
+  RelayMessageBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  RelayMessageBuilder &operator=(const RelayMessageBuilder &);
+  flatbuffers::Offset<RelayMessage> Finish() {
+    const auto end = fbb_.EndTable(start_, 4);
+    auto o = flatbuffers::Offset<RelayMessage>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<RelayMessage> CreateRelayMessage(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t source_id = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> destinations_id = 0,
+    MessageType message_type = MessageType::NONE,
+    flatbuffers::Offset<void> message = 0) {
+  RelayMessageBuilder builder_(_fbb);
+  builder_.add_message(message);
+  builder_.add_destinations_id(destinations_id);
+  builder_.add_source_id(source_id);
+  builder_.add_message_type(message_type);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<RelayMessage> CreateRelayMessageDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t source_id = 0,
+    const std::vector<int32_t> *destinations_id = nullptr,
+    MessageType message_type = MessageType::NONE,
+    flatbuffers::Offset<void> message = 0) {
+  return ProtocolSS::CreateRelayMessage(
+      _fbb,
+      source_id,
+      destinations_id ? _fbb.CreateVector<int32_t>(*destinations_id) : 0,
+      message_type,
+      message);
+}
+
+flatbuffers::Offset<RelayMessage> CreateRelayMessage(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct MessageRootT : public flatbuffers::NativeTable {
+  typedef MessageRoot TableType;
+  MessageTypeUnion message;
+  MessageRootT() {
+  }
+};
+
+struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef MessageRootT NativeTableType;
+  enum {
+    VT_MESSAGE_TYPE = 4,
+    VT_MESSAGE = 6
+  };
+  MessageType message_type() const {
+    return static_cast<MessageType>(GetField<uint8_t>(VT_MESSAGE_TYPE, 0));
+  }
+  bool mutate_message_type(MessageType _message_type) {
+    return SetField<uint8_t>(VT_MESSAGE_TYPE, static_cast<uint8_t>(_message_type), 0);
+  }
+  const void *message() const {
+    return GetPointer<const void *>(VT_MESSAGE);
+  }
+  template<typename T> const T *message_as() const;
+  const RelayMessage *message_as_RelayMessage() const {
+    return message_type() == MessageType::RelayMessage ? static_cast<const RelayMessage *>(message()) : nullptr;
+  }
+  const ProtocolSS::TestMessage *message_as_TestMessage() const {
+    return message_type() == MessageType::TestMessage ? static_cast<const ProtocolSS::TestMessage *>(message()) : nullptr;
+  }
+  const ProtocolSS::Notify_UnauthedAccess *message_as_Notify_UnauthedAccess() const {
+    return message_type() == MessageType::Notify_UnauthedAccess ? static_cast<const ProtocolSS::Notify_UnauthedAccess *>(message()) : nullptr;
+  }
+  const ProtocolSS::Request_Login *message_as_Request_Login() const {
+    return message_type() == MessageType::Request_Login ? static_cast<const ProtocolSS::Request_Login *>(message()) : nullptr;
+  }
+  const ProtocolSS::Reply_Login *message_as_Reply_Login() const {
+    return message_type() == MessageType::Reply_Login ? static_cast<const ProtocolSS::Reply_Login *>(message()) : nullptr;
+  }
+  const ProtocolSS::Request_GenerateCredential *message_as_Request_GenerateCredential() const {
+    return message_type() == MessageType::Request_GenerateCredential ? static_cast<const ProtocolSS::Request_GenerateCredential *>(message()) : nullptr;
+  }
+  const ProtocolSS::Reply_GenerateCredential *message_as_Reply_GenerateCredential() const {
+    return message_type() == MessageType::Reply_GenerateCredential ? static_cast<const ProtocolSS::Reply_GenerateCredential *>(message()) : nullptr;
+  }
+  const ProtocolSS::Request_VerifyCredential *message_as_Request_VerifyCredential() const {
+    return message_type() == MessageType::Request_VerifyCredential ? static_cast<const ProtocolSS::Request_VerifyCredential *>(message()) : nullptr;
+  }
+  const ProtocolSS::Reply_VerifyCredential *message_as_Reply_VerifyCredential() const {
+    return message_type() == MessageType::Reply_VerifyCredential ? static_cast<const ProtocolSS::Reply_VerifyCredential *>(message()) : nullptr;
+  }
+  const ProtocolSS::Notify_UserLogout *message_as_Notify_UserLogout() const {
+    return message_type() == MessageType::Notify_UserLogout ? static_cast<const ProtocolSS::Notify_UserLogout *>(message()) : nullptr;
+  }
+  const ProtocolSS::Notify_ServerList *message_as_Notify_ServerList() const {
+    return message_type() == MessageType::Notify_ServerList ? static_cast<const ProtocolSS::Notify_ServerList *>(message()) : nullptr;
   }
   void *mutable_message() {
     return GetPointer<void *>(VT_MESSAGE);
@@ -1282,6 +1323,14 @@ struct MessageRoot FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   void UnPackTo(MessageRootT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
   static flatbuffers::Offset<MessageRoot> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MessageRootT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
+
+template<> inline const RelayMessage *MessageRoot::message_as<RelayMessage>() const {
+  return message_as_RelayMessage();
+}
+
+template<> inline const ProtocolSS::TestMessage *MessageRoot::message_as<ProtocolSS::TestMessage>() const {
+  return message_as_TestMessage();
+}
 
 template<> inline const ProtocolSS::Notify_UnauthedAccess *MessageRoot::message_as<ProtocolSS::Notify_UnauthedAccess>() const {
   return message_as_Notify_UnauthedAccess();
@@ -1319,10 +1368,6 @@ template<> inline const ProtocolSS::Notify_ServerList *MessageRoot::message_as<P
   return message_as_Notify_ServerList();
 }
 
-template<> inline const ProtocolSS::RelayMessage *MessageRoot::message_as<ProtocolSS::RelayMessage>() const {
-  return message_as_RelayMessage();
-}
-
 struct MessageRootBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
@@ -1355,6 +1400,31 @@ inline flatbuffers::Offset<MessageRoot> CreateMessageRoot(
 }
 
 flatbuffers::Offset<MessageRoot> CreateMessageRoot(flatbuffers::FlatBufferBuilder &_fbb, const MessageRootT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+inline TestMessageT *TestMessage::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = new TestMessageT();
+  UnPackTo(_o, _resolver);
+  return _o;
+}
+
+inline void TestMessage::UnPackTo(TestMessageT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = str_msg(); if (_e) _o->str_msg = _e->str(); };
+}
+
+inline flatbuffers::Offset<TestMessage> TestMessage::Pack(flatbuffers::FlatBufferBuilder &_fbb, const TestMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateTestMessage(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<TestMessage> CreateTestMessage(flatbuffers::FlatBufferBuilder &_fbb, const TestMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  auto _str_msg = _o->str_msg.size() ? _fbb.CreateString(_o->str_msg) : 0;
+  return ProtocolSS::CreateTestMessage(
+      _fbb,
+      _str_msg);
+}
 
 inline Notify_UnauthedAccessT *Notify_UnauthedAccess::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new Notify_UnauthedAccessT();
@@ -1633,28 +1703,6 @@ inline flatbuffers::Offset<Notify_ServerList> CreateNotify_ServerList(flatbuffer
       _server_list);
 }
 
-inline TestRelayT *TestRelay::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = new TestRelayT();
-  UnPackTo(_o, _resolver);
-  return _o;
-}
-
-inline void TestRelay::UnPackTo(TestRelayT *_o, const flatbuffers::resolver_function_t *_resolver) const {
-  (void)_o;
-  (void)_resolver;
-}
-
-inline flatbuffers::Offset<TestRelay> TestRelay::Pack(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateTestRelay(_fbb, _o, _rehasher);
-}
-
-inline flatbuffers::Offset<TestRelay> CreateTestRelay(flatbuffers::FlatBufferBuilder &_fbb, const TestRelayT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
-  (void)_rehasher;
-  (void)_o;
-  return ProtocolSS::CreateTestRelay(
-      _fbb);
-}
-
 inline RelayMessageT *RelayMessage::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
   auto _o = new RelayMessageT();
   UnPackTo(_o, _resolver);
@@ -1664,10 +1712,10 @@ inline RelayMessageT *RelayMessage::UnPack(const flatbuffers::resolver_function_
 inline void RelayMessage::UnPackTo(RelayMessageT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = from_id(); _o->from_id = _e; };
-  { auto _e = to_id(); if (_e) { _o->to_id.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->to_id[_i] = _e->Get(_i); } } };
-  { auto _e = relay_message_type(); _o->relay_message.type = _e; };
-  { auto _e = relay_message(); if (_e) _o->relay_message.value = RelayMessageTypeUnion::UnPack(_e, relay_message_type(), _resolver); };
+  { auto _e = source_id(); _o->source_id = _e; };
+  { auto _e = destinations_id(); if (_e) { _o->destinations_id.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->destinations_id[_i] = _e->Get(_i); } } };
+  { auto _e = message_type(); _o->message.type = _e; };
+  { auto _e = message(); if (_e) _o->message.value = MessageTypeUnion::UnPack(_e, message_type(), _resolver); };
 }
 
 inline flatbuffers::Offset<RelayMessage> RelayMessage::Pack(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -1677,16 +1725,16 @@ inline flatbuffers::Offset<RelayMessage> RelayMessage::Pack(flatbuffers::FlatBuf
 inline flatbuffers::Offset<RelayMessage> CreateRelayMessage(flatbuffers::FlatBufferBuilder &_fbb, const RelayMessageT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  auto _from_id = _o->from_id;
-  auto _to_id = _o->to_id.size() ? _fbb.CreateVector(_o->to_id) : 0;
-  auto _relay_message_type = _o->relay_message.type;
-  auto _relay_message = _o->relay_message.Pack(_fbb);
+  auto _source_id = _o->source_id;
+  auto _destinations_id = _o->destinations_id.size() ? _fbb.CreateVector(_o->destinations_id) : 0;
+  auto _message_type = _o->message.type;
+  auto _message = _o->message.Pack(_fbb);
   return ProtocolSS::CreateRelayMessage(
       _fbb,
-      _from_id,
-      _to_id,
-      _relay_message_type,
-      _relay_message);
+      _source_id,
+      _destinations_id,
+      _message_type,
+      _message);
 }
 
 inline MessageRootT *MessageRoot::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -1717,78 +1765,18 @@ inline flatbuffers::Offset<MessageRoot> CreateMessageRoot(flatbuffers::FlatBuffe
       _message);
 }
 
-inline bool VerifyRelayMessageType(flatbuffers::Verifier &verifier, const void *obj, RelayMessageType type) {
-  switch (type) {
-    case RelayMessageType::NONE: {
-      return true;
-    }
-    case RelayMessageType::TestRelay: {
-      auto ptr = reinterpret_cast<const TestRelay *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    default: return false;
-  }
-}
-
-inline bool VerifyRelayMessageTypeVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
-  if (values->size() != types->size()) return false;
-  for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
-    if (!VerifyRelayMessageType(
-        verifier,  values->Get(i), types->GetEnum<RelayMessageType>(i))) {
-      return false;
-    }
-  }
-  return true;
-}
-
-inline void *RelayMessageTypeUnion::UnPack(const void *obj, RelayMessageType type, const flatbuffers::resolver_function_t *resolver) {
-  switch (type) {
-    case RelayMessageType::TestRelay: {
-      auto ptr = reinterpret_cast<const TestRelay *>(obj);
-      return ptr->UnPack(resolver);
-    }
-    default: return nullptr;
-  }
-}
-
-inline flatbuffers::Offset<void> RelayMessageTypeUnion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher) const {
-  switch (type) {
-    case RelayMessageType::TestRelay: {
-      auto ptr = reinterpret_cast<const TestRelayT *>(value);
-      return CreateTestRelay(_fbb, ptr, _rehasher).Union();
-    }
-    default: return 0;
-  }
-}
-
-inline RelayMessageTypeUnion::RelayMessageTypeUnion(const RelayMessageTypeUnion &u) FLATBUFFERS_NOEXCEPT : type(u.type), value(nullptr) {
-  switch (type) {
-    case RelayMessageType::TestRelay: {
-      value = new TestRelayT(*reinterpret_cast<TestRelayT *>(u.value));
-      break;
-    }
-    default:
-      break;
-  }
-}
-
-inline void RelayMessageTypeUnion::Reset() {
-  switch (type) {
-    case RelayMessageType::TestRelay: {
-      auto ptr = reinterpret_cast<TestRelayT *>(value);
-      delete ptr;
-      break;
-    }
-    default: break;
-  }
-  value = nullptr;
-  type = RelayMessageType::NONE;
-}
-
 inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, MessageType type) {
   switch (type) {
     case MessageType::NONE: {
       return true;
+    }
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<const RelayMessage *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MessageType::TestMessage: {
+      auto ptr = reinterpret_cast<const ProtocolSS::TestMessage *>(obj);
+      return verifier.VerifyTable(ptr);
     }
     case MessageType::Notify_UnauthedAccess: {
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_UnauthedAccess *>(obj);
@@ -1824,10 +1812,6 @@ inline bool VerifyMessageType(flatbuffers::Verifier &verifier, const void *obj, 
     }
     case MessageType::Notify_ServerList: {
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_ServerList *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case MessageType::RelayMessage: {
-      auto ptr = reinterpret_cast<const ProtocolSS::RelayMessage *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -1847,6 +1831,14 @@ inline bool VerifyMessageTypeVector(flatbuffers::Verifier &verifier, const flatb
 
 inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const flatbuffers::resolver_function_t *resolver) {
   switch (type) {
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<const RelayMessage *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case MessageType::TestMessage: {
+      auto ptr = reinterpret_cast<const ProtocolSS::TestMessage *>(obj);
+      return ptr->UnPack(resolver);
+    }
     case MessageType::Notify_UnauthedAccess: {
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_UnauthedAccess *>(obj);
       return ptr->UnPack(resolver);
@@ -1883,16 +1875,20 @@ inline void *MessageTypeUnion::UnPack(const void *obj, MessageType type, const f
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_ServerList *>(obj);
       return ptr->UnPack(resolver);
     }
-    case MessageType::RelayMessage: {
-      auto ptr = reinterpret_cast<const ProtocolSS::RelayMessage *>(obj);
-      return ptr->UnPack(resolver);
-    }
     default: return nullptr;
   }
 }
 
 inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *_rehasher) const {
   switch (type) {
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<const RelayMessageT *>(value);
+      return CreateRelayMessage(_fbb, ptr, _rehasher).Union();
+    }
+    case MessageType::TestMessage: {
+      auto ptr = reinterpret_cast<const ProtocolSS::TestMessageT *>(value);
+      return CreateTestMessage(_fbb, ptr, _rehasher).Union();
+    }
     case MessageType::Notify_UnauthedAccess: {
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_UnauthedAccessT *>(value);
       return CreateNotify_UnauthedAccess(_fbb, ptr, _rehasher).Union();
@@ -1929,16 +1925,20 @@ inline flatbuffers::Offset<void> MessageTypeUnion::Pack(flatbuffers::FlatBufferB
       auto ptr = reinterpret_cast<const ProtocolSS::Notify_ServerListT *>(value);
       return CreateNotify_ServerList(_fbb, ptr, _rehasher).Union();
     }
-    case MessageType::RelayMessage: {
-      auto ptr = reinterpret_cast<const ProtocolSS::RelayMessageT *>(value);
-      return CreateRelayMessage(_fbb, ptr, _rehasher).Union();
-    }
     default: return 0;
   }
 }
 
 inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS_NOEXCEPT : type(u.type), value(nullptr) {
   switch (type) {
+    case MessageType::RelayMessage: {
+      value = new RelayMessageT(*reinterpret_cast<RelayMessageT *>(u.value));
+      break;
+    }
+    case MessageType::TestMessage: {
+      value = new ProtocolSS::TestMessageT(*reinterpret_cast<ProtocolSS::TestMessageT *>(u.value));
+      break;
+    }
     case MessageType::Notify_UnauthedAccess: {
       value = new ProtocolSS::Notify_UnauthedAccessT(*reinterpret_cast<ProtocolSS::Notify_UnauthedAccessT *>(u.value));
       break;
@@ -1975,10 +1975,6 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
       assert(false);  // ProtocolSS::Notify_ServerListT not copyable.
       break;
     }
-    case MessageType::RelayMessage: {
-      value = new ProtocolSS::RelayMessageT(*reinterpret_cast<ProtocolSS::RelayMessageT *>(u.value));
-      break;
-    }
     default:
       break;
   }
@@ -1986,6 +1982,16 @@ inline MessageTypeUnion::MessageTypeUnion(const MessageTypeUnion &u) FLATBUFFERS
 
 inline void MessageTypeUnion::Reset() {
   switch (type) {
+    case MessageType::RelayMessage: {
+      auto ptr = reinterpret_cast<RelayMessageT *>(value);
+      delete ptr;
+      break;
+    }
+    case MessageType::TestMessage: {
+      auto ptr = reinterpret_cast<ProtocolSS::TestMessageT *>(value);
+      delete ptr;
+      break;
+    }
     case MessageType::Notify_UnauthedAccess: {
       auto ptr = reinterpret_cast<ProtocolSS::Notify_UnauthedAccessT *>(value);
       delete ptr;
@@ -2028,11 +2034,6 @@ inline void MessageTypeUnion::Reset() {
     }
     case MessageType::Notify_ServerList: {
       auto ptr = reinterpret_cast<ProtocolSS::Notify_ServerListT *>(value);
-      delete ptr;
-      break;
-    }
-    case MessageType::RelayMessage: {
-      auto ptr = reinterpret_cast<ProtocolSS::RelayMessageT *>(value);
       delete ptr;
       break;
     }

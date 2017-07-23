@@ -141,6 +141,9 @@ private:
 	void HandleSessionOpened(const Ptr<net::Session>& session);
 	void HandleSessionClosed(const Ptr<net::Session>& session, net::CloseReason reason);
 
+    void OnRelayMessage(const Ptr<net::Session>& session, const ProtocolSS::RelayMessage* message);
+
+    // Message Handlers
 	void OnLogin(const Ptr<net::Session>& session, const ProtocolSS::Request_Login* message);
 	void OnGenerateCredential(const Ptr<net::Session>& session, const ProtocolSS::Request_GenerateCredential* message);
 	void OnVerifyCredential(const Ptr<net::Session>& session, const ProtocolSS::Request_VerifyCredential* message);

@@ -8,16 +8,17 @@ namespace ProtocolSS
 public enum MessageType : byte
 {
  NONE = 0,
- Notify_UnauthedAccess = 1,
- Request_Login = 2,
- Reply_Login = 3,
- Request_GenerateCredential = 4,
- Reply_GenerateCredential = 5,
- Request_VerifyCredential = 6,
- Reply_VerifyCredential = 7,
- Notify_UserLogout = 8,
- Notify_ServerList = 9,
- RelayMessage = 10,
+ RelayMessage = 1,
+ TestMessage = 2,
+ Notify_UnauthedAccess = 3,
+ Request_Login = 4,
+ Reply_Login = 5,
+ Request_GenerateCredential = 6,
+ Reply_GenerateCredential = 7,
+ Request_VerifyCredential = 8,
+ Reply_VerifyCredential = 9,
+ Notify_UserLogout = 10,
+ Notify_ServerList = 11,
 };
 
 

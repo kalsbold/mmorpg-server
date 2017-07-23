@@ -402,6 +402,15 @@ void WorldServer::RegisterManagerClientHandlers()
         Stop();
     };
 
+    manager_client_->OnRelayMessage = [this](const PSS::RelayMessage* message) {
+        // Test Code
+        /*auto* msg = message->message_as<PSS::TestMessage>();
+        if (msg != nullptr)
+        {
+            std::cout << msg->str_msg()->c_str() << std::endl;
+        }*/
+    };
+
     manager_client_->OnReplyVerifyCredential = [this](const PSS::Reply_VerifyCredential* message)
     {    
         auto error_code = message->error_code();

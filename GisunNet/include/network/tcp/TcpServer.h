@@ -59,6 +59,7 @@ namespace net {
 
 		void Listen(tcp::endpoint endpoint);
 		void AcceptStart();
+        void _Stop();
 
 		// Session Handler. Session(socket)에 할당된 io_service thread 에서 호출된다. 동기화 필요함. 
 		void HandleSessionOpen(const Ptr<TcpSession>& session);

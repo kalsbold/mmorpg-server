@@ -25,26 +25,25 @@ void ManagerServer::Run()
 
 	// Create io_service loop
 	size_t thread_count = settings.thread_count;
-	ios_loop_ = std::make_shared<net::IoServiceLoop>(thread_count);
+	auto ios_loop = std::make_shared<net::IoServiceLoop>(thread_count);
 	
 	// NetServer Config
 	net::ServerConfig net_config;
-	net_config.io_service_loop = ios_loop_;
+	net_config.io_service_loop = ios_loop;
 	net_config.max_session_count = settings.max_session_count;
 	net_config.max_receive_buffer_size = settings.max_receive_buffer_size;
 	net_config.min_receive_size = settings.min_receive_size;
 	net_config.no_delay = settings.no_delay;
 	// Create NetServer
-	net_server_ = net::NetServer::Create(net_config);
-	net_server_->RegisterSessionOpenedHandler([this](auto& session) { HandleSessionOpened(session); });
-	net_server_->RegisterSessionClosedHandler([this](auto& session, auto reason) { HandleSessionClosed(session, reason); });
-	net_server_->RegisterMessageHandler([this](auto& session, auto buf, auto bytes) { HandleMessage(session, buf, bytes); });
-
+	auto net_server = net::NetServer::Create(net_config);
+	net_server->RegisterSessionOpenedHandler([this](auto& session) { HandleSessionOpened(session); });
+	net_server->RegisterSessionClosedHandler([this](auto& session, auto reason) { HandleSessionClosed(session, reason); });
+	net_server->RegisterMessageHandler([this](auto& session, auto buf, auto bytes) { HandleMessage(session, buf, bytes); });
 	// 메시지 핸들러 등록
 	RegisterHandlers();
 
 	// Create DB connection Pool
-	db_conn_ = MySQLPool::Create(
+	auto db_conn = MySQLPool::Create(
 		settings.db_host,
 		settings.db_user,
 		settings.db_password,
@@ -52,14 +51,20 @@ void ManagerServer::Run()
 		settings.db_connection_pool);
 
 	// Frame Update 시작.
-	strand_ = std::make_shared<boost::asio::strand>(ios_loop_->GetIoService());
-	update_timer_ = std::make_shared<timer_type>(strand_->get_io_service());
+	auto strand = std::make_shared<boost::asio::strand>(ios_loop->GetIoService());
+	auto update_timer = std::make_shared<timer_type>(strand->get_io_service());
 	ScheduleNextUpdate(clock_type::now(), TIME_STEP);
+
+    ios_loop_ = ios_loop;
+    net_server_ = net_server;
+    db_conn_ = db_conn;
+    strand_ = strand;
+    update_timer_ = update_timer;
 
 	// NetServer 를 시작시킨다.
 	std::string bind_address = settings.bind_address;
 	uint16_t bind_port = settings.bind_port;
-	net_server_->Start(bind_address, bind_port);
+	net_server->Start(bind_address, bind_port);
 
 	BOOST_LOG_TRIVIAL(info) << "Run " << GetName();
 }
@@ -67,8 +72,8 @@ void ManagerServer::Run()
 void ManagerServer::Stop()
 {
 	// 종료 작업.
-	net_server_->Stop();
-	ios_loop_->Stop();
+    if (ios_loop_)
+        ios_loop_->Stop();
 
 	BOOST_LOG_TRIVIAL(info) << "Stop " << GetName();
 }
@@ -245,6 +250,25 @@ void ManagerServer::HandleSessionClosed(const Ptr<net::Session>& session, net::C
 	ProcessRemoteClientDisconnected(remote_client);
 }
 
+void ManagerServer::OnRelayMessage(const Ptr<net::Session>& session, const PSS::RelayMessage * message)
+{
+    fb::FlatBufferBuilder fbb;
+    auto relay_offset = PSS::RelayMessage::Pack(fbb, message->UnPack());
+    auto offset_root = PSS::CreateMessageRoot(fbb, PSS::MessageTypeTraits<PSS::RelayMessage>::enum_value, relay_offset.Union());
+    FinishMessageRootBuffer(fbb, offset_root);
+
+    auto* destinations_id = message->destinations_id();
+    for (size_t i = 0; i < destinations_id->Length(); i++)
+    {
+        int id = destinations_id->Get(i);
+        auto dest_client = GetRemoteClient(id);
+        if (dest_client)
+        {
+            dest_client->Send(fbb.GetBufferPointer(), fbb.GetSize());
+        }
+    }
+}
+
 // Login ================================================================================================================
 void ManagerServer::OnLogin(const Ptr<net::Session>& session, const PSS::Request_Login* message)
 {
@@ -393,6 +417,7 @@ void ManagerServer::OnUserLogout(const Ptr<net::Session>& session, const PSS::No
 
 void ManagerServer::RegisterHandlers()
 {
+    RegisterMessageHandler<PSS::RelayMessage>([this](auto& session, auto* msg) { OnRelayMessage(session, msg); });
 	RegisterMessageHandler<PSS::Request_Login>([this](auto& session, auto* msg) { OnLogin(session, msg); });
 	RegisterMessageHandler<PSS::Request_GenerateCredential>([this](auto& session, auto* msg) { OnGenerateCredential(session, msg); });
 	RegisterMessageHandler<PSS::Request_VerifyCredential>([this](auto& session, auto* msg) { OnVerifyCredential(session, msg); });

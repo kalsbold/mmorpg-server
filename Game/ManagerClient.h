@@ -6,13 +6,14 @@
 #include "Common.h"
 #include "protocol_ss_generated.h"
 
-
 enum ServerType : int
 {
 	None,
 	Login_Server,
 	World_Server
 };
+
+using ServerInfo = std::tuple<int, std::string, ServerType>;
 
 class IServer;
 
@@ -33,20 +34,55 @@ public:
 	void Disconnect();
 	// 종료될 때 까지 대기.
 	void Wait();
-    // 이 크라이언트가 실행되고 있는 IoServiceLoop 객체.
+    // 이 클라이언트가 실행되고 있는 IoServiceLoop 객체.
 	const Ptr<net::IoServiceLoop>& GetIoServiceLoop() { return ios_loop_; }
-
     // 인증키 생성을 요청.
 	void RequestGenerateCredential(int session_id, int account_uid);
     // 인증키 검증을 요청.
 	void RequestVerifyCredential(int session_id, const uuid& credential);
     // 유저의 로그아웃을 통지.
 	void NotifyUserLogout(int account_uid);
+    // Manager 서버에 접속해 있는 다른 서버들 정보.
+    const std::unordered_map<int, ServerInfo> GetServerList() { return  server_list_; }
+    
+    // 릴레이 메시지를 전송
+    template<class T>
+    void SendRelayMessage(int destination, const T& message)
+    {
+        if (GetSessionId() == 0) return;
+
+        ProtocolSS::SendRelay(*net_client_, session_id_, std::vector<int>{ destination }, message);
+    }
+    template<class T>
+    void SendRelayMessage(const std::vector<int>& destinations, const T& message)
+    {
+        if (GetSessionId() == 0) return;
+
+        ProtocolSS::SendRelay(*net_client_, session_id_, destinations, message);
+    }
+    // 모든 서버에게 릴레이 메시지 전송
+    template<class T>
+    void SendRelayMessage(const T& message)
+    {
+        if (GetSessionId() == 0) return;
+
+        std::vector<int> destinations;
+        {
+            std::lock_guard<std::mutex> guard(mutex_);
+            std::for_each(std::begin(server_list_), std::end(server_list_), [this, &destinations](auto& e)
+            {
+                if (std::get<0>(e.second) != GetSessionId())
+                    destinations.emplace_back(std::get<0>(e.second));
+            });
+        }
+        ProtocolSS::SendRelay(*net_client_, session_id_, destinations, message);
+    }
 
 	std::function<void(ProtocolSS::ErrorCode)> OnConnected;
 	std::function<void()> OnDisconnected;
 	std::function<void(const ProtocolSS::Reply_GenerateCredential*)> OnReplyGenerateCredential;
 	std::function<void(const ProtocolSS::Reply_VerifyCredential*)> OnReplyVerifyCredential;
+    std::function<void(const ProtocolSS::RelayMessage*)> OnRelayMessage;
 
 private:
     // Network message handler type.
@@ -95,8 +131,6 @@ private:
     int         session_id_;
     std::string name_;
     ServerType	type_;
-    
-	// Manager 서버에 접속해 있는 다른 Manager 클라이언트들 정보.
-    using ServerInfo = std::tuple<int, std::string, ServerType>;
+
     std::unordered_map<int, ServerInfo> server_list_;
 };

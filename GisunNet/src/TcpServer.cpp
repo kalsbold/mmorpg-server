@@ -30,7 +30,7 @@ TcpServer::TcpServer(const ServerConfig & config)
 
 TcpServer::~TcpServer()
 {
-	Stop();
+	_Stop();
 }
 
 void TcpServer::Start(uint16_t port)
@@ -62,21 +62,7 @@ void TcpServer::Stop()
 {
 	strand_->dispatch([this, self = shared_from_this()]
 	{
-		if (!(state_ == State::Start))
-		    return;
-
-		acceptor_->close();
-		// 모든 세션을 닫는다.
-		for (auto& pair : sessions_)
-		{
-			pair.second->Close();
-		}
-		sessions_.clear();
-		free_session_id_.clear();
-
-		state_ = State::Stop;
-
-		BOOST_LOG_TRIVIAL(info) << "The tcp server stopped";
+        _Stop();
 	});
 }
 
@@ -155,6 +141,25 @@ inline void TcpServer::AcceptStart()
 	}));
 
 	//accept_op_ = true;
+}
+
+void TcpServer::_Stop()
+{
+    if (!(state_ == State::Start))
+        return;
+
+    acceptor_->close();
+    // 모든 세션을 닫는다.
+    for (auto& pair : sessions_)
+    {
+        pair.second->Close();
+    }
+    sessions_.clear();
+    free_session_id_.clear();
+
+    state_ = State::Stop;
+
+    BOOST_LOG_TRIVIAL(info) << "The tcp server stopped";
 }
 
 inline void TcpServer::HandleSessionOpen(const Ptr<TcpSession>& session)

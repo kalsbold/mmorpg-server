@@ -14,6 +14,10 @@ enum ErrorCode : int {
     VERIFY_CREDENTIAL_FAILED = 103,
 }
 
+table TestMessage {
+    str_msg:string;
+}
+
 // 로그인 하지 않은 유저가 로그인이 선결되어야 하는 요청을 했을때 보내는 경고
 table Notify_UnauthedAccess {
 }
@@ -70,23 +74,12 @@ table Notify_ServerList {
     server_list:[ServerInfo];
 }
 
-// Relay Message ===================================
-table TestRelay{}
-
-union RelayMessageType {
-    TestRelay,
-}
-
-table RelayMessage {
-    from_id:int;
-    to_id:[int];
-    relay_message:RelayMessageType;
-}
-
 namespace ProtocolSS;
 
 // 메시지 타입을 정의 한다 ================================================
 union MessageType {
+    RelayMessage,
+    TestMessage,
     Notify_UnauthedAccess,
     Request_Login,
     Reply_Login,
@@ -97,7 +90,13 @@ union MessageType {
     //Manager.Notify_RemoveCredential,
     Notify_UserLogout,
     Notify_ServerList,
-    RelayMessage,
+}
+
+// Relay Message ===================================
+table RelayMessage {
+    source_id:int;
+    destinations_id:[int];
+    message:MessageType;
 }
 
 // 기본 네트워크 메시지 =================================================================

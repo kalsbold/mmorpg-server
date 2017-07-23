@@ -158,6 +158,11 @@ void LoginServer::ProcessRemoteClientDisconnected(const Ptr<RemoteLoginClient>& 
     }
 }
 
+// 프레임 업데이트
+inline void LoginServer::DoUpdate(double delta_time)
+{
+}
+
 void LoginServer::ScheduleNextUpdate(const time_point& now, const duration& timestep)
 {
 	auto update_time = now + timestep;
@@ -491,6 +496,15 @@ void LoginServer::RegisterManagerClientHandlers()
 		BOOST_LOG_TRIVIAL(info) << "Manager Server is disconnected.";
 		Stop();
 	};
+
+    manager_client_->OnRelayMessage = [this](const PSS::RelayMessage* message) {
+        // Test Code
+        /*auto* msg = message->message_as<PSS::TestMessage>();
+        if (msg != nullptr)
+        {
+            std::cout << msg->str_msg()->c_str() << std::endl;
+        }*/
+    };
 
 	manager_client_->OnReplyGenerateCredential = [this](const PSS::Reply_GenerateCredential* message)
     {

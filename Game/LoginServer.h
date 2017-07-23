@@ -51,7 +51,7 @@ private:
 	using MessageHandler = std::function<void(const Ptr<net::Session>&, const ProtocolCS::MessageRoot* message_root)>;
 
     // 프레임 업데이트
-    void DoUpdate(double delta_time) {}
+    void DoUpdate(double delta_time);
     void ScheduleNextUpdate(const time_point& now, const duration& timestep);
 
 	template <typename T, typename Handler>
